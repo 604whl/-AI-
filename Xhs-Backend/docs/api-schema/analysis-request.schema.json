@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://xhs-agent.local/schemas/analysis-request.schema.json",
+  "title": "AnalysisCreateRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["scenario"],
+  "properties": {
+    "scenario": {
+      "type": "string",
+      "enum": ["draft", "published", "competitor"],
+      "description": "分析场景"
+    },
+    "persona": {
+      "type": "string",
+      "enum": ["agency", "mentor", "senior"],
+      "default": "agency",
+      "description": "账号人设，影响 CTA 与语气建议"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 100,
+      "description": "笔记标题"
+    },
+    "body": {
+      "type": "string",
+      "maxLength": 10000,
+      "description": "笔记正文"
+    },
+    "coverImageUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "已上传封面的 URL（先走上传接口获得）"
+    },
+    "publishedMetrics": {
+      "$ref": "#/$defs/PublishedMetrics",
+      "description": "已发复盘场景可选，P1 用于对比"
+    }
+  },
+  "anyOf": [
+    { "required": ["title"], "properties": { "title": { "minLength": 1 } } },
+    { "required": ["body"], "properties": { "body": { "minLength": 1 } } }
+  ],
+  "$defs": {
+    "PublishedMetrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "noteUrl": { "type": "string", "maxLength": 500 },
+        "impressions": { "type": "integer", "minimum": 0 },
+        "likes": { "type": "integer", "minimum": 0 },
+        "collects": { "type": "integer", "minimum": 0 },
+        "comments": { "type": "integer", "minimum": 0 },
+        "dmInquiries": { "type": "integer", "minimum": 0 },
+        "publishedAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

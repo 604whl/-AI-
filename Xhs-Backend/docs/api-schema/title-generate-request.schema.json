@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://xhs-agent.local/schemas/title-generate-request.schema.json",
+  "title": "TitleGenerateRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["goal"],
+  "properties": {
+    "analysisId": {
+      "type": "string",
+      "pattern": "^ana_[a-zA-Z0-9]+$",
+      "description": "可选，关联分析任务以带入正文上下文"
+    },
+    "goal": {
+      "type": "string",
+      "enum": ["high_ctr", "high_collect", "high_conversion", "anxiety", "offer", "info_gap"]
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 10,
+      "default": 8
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 100,
+      "description": "独立生成时建议提供当前标题"
+    },
+    "body": {
+      "type": "string",
+      "maxLength": 10000,
+      "description": "正文摘要或全文，用于保证标题相关性"
+    },
+    "persona": {
+      "type": "string",
+      "enum": ["agency", "mentor", "senior"]
+    },
+    "keywords": {
+      "type": "array",
+      "items": { "type": "string", "maxLength": 20 },
+      "maxItems": 5,
+      "description": "可选强制包含的垂类关键词"
+    }
+  },
+  "anyOf": [
+    { "required": ["analysisId"] },
+    {
+      "anyOf": [
+        { "required": ["body"], "properties": { "body": { "minLength": 10 } } },
+        { "required": ["title"], "properties": { "title": { "minLength": 1 } } }
+      ]
+    }
+  ]
+}

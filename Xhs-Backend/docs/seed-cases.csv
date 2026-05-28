@@ -1,0 +1,21 @@
+caseId,title,bodyPreview,persona,scenario,expectedContentType,ctrMin,ctrMax,emotionMin,emotionMax,collectMin,collectMax,conversionMin,conversionMax,viralMin,viralMax,expectComplianceWarning,notes
+CASE-01,海投 300 份 0 面试后我才懂海归求职有多残酷,回国第2个月简历石沉大海同届已上岸3个总结5个海归专属坑评论【坑】领自查表,agency,draft,ANXIETY,85,95,80,92,65,78,75,88,80,92,N,高CTR焦虑标杆
+CASE-02,双非逆袭字节产品实习我的6周上岸时间线附投递表,收到字节PM实习offer Week1-6任务拆解私信【表】发tracker,agency,draft,OFFER,82,94,70,85,78,90,88,98,85,95,N,高转化标杆
+CASE-03,90%留学生不知道的秋招内推渠道第3个最有效,校招渠道对比误区vs实操步骤收藏备用,agency,draft,INFO_GAP,78,90,60,75,88,98,70,85,78,90,N,高收藏标杆
+CASE-04,高盛IBD一面面经3道行为题+1道估值思路26届,岗位NYC SA Q1-Q3回答框架附书单,agency,draft,INTERVIEW,75,88,55,70,85,95,65,80,72,85,N,面经型
+CASE-05,26届海归秋招时间线3月到12月每月做什么照抄版,3月定方向至12月offer决策每月3条任务,agency,draft,TIMELINE,80,92,55,68,90,100,72,85,80,92,N,时间线型
+CASE-06,Gap一年GPA3.2的我如何拿到四大审计full-time,一年前被拒转折点实习+简历重写现入职德勤4个可复制动作,agency,draft,COMEBACK,80,93,82,95,72,85,80,92,82,94,N,逆袭型
+CASE-07,留学生求职经验分享,找工作很重要要多投简历注意面试加油,agency,draft,ANXIETY,35,50,40,55,30,45,35,50,35,50,N,低分反例需多条诊断
+CASE-08,保offer！100%上岸求职辅导,签约保证录取不上岸全额退款加微信,agency,draft,OFFER,40,60,30,50,20,40,20,45,30,50,Y,合规红线必触发警告
+CASE-09,【XX求职】行业领先一站式留学就业服务,本公司十年经验欢迎商务合作,agency,draft,ANXIETY,30,45,30,45,25,40,40,55,35,50,N,机构硬广口吻
+CASE-10,带过200+留学生的我秋招最容易踩的3个简历坑,前摩根HR坑1-3评论【简历】预约诊断,mentor,draft,INFO_GAP,75,88,65,78,80,92,85,95,80,92,N,导师IP高转化
+CASE-11,USC学姐在美找实习我踩过的5个坑26届亲测,刚拿亚马逊实习CPT坑评论【组队】,senior,draft,ANXIETY,78,90,75,88,70,82,72,85,78,90,N,学长学姐人设
+CASE-12,终于上岸Google L4！！！,激动到哭感谢爸妈无过程无干货,agency,draft,OFFER,70,85,60,75,35,50,50,65,55,70,N,collect应偏低
+CASE-13,OPT只剩60天仍0 offer留学生必须懂的4条出路,签证倒计时4条出路对比表,agency,draft,ANXIETY,85,95,88,98,75,88,70,85,82,94,N,签证焦虑
+CASE-14,海归硕士不如国内二本我用数据聊2025就业真相,招聘趋势5组对比理性避焦虑,agency,draft,INFO_GAP,72,85,70,82,80,92,55,70,75,88,N,学历贬值话题
+CASE-15,26届注意这些大厂提前批3月就开了含链接整理,公司列表截止日期材料checklist,agency,draft,TIMELINE,80,90,50,65,88,98,65,80,78,90,N,提前批清单
+CASE-16,零基础转码3个月进FAANG全流程,竞品内容结构参考,agency,competitor,COMEBACK,75,90,70,85,75,88,65,80,75,88,N,P1需borrowPoints
+CASE-17,我的2年求职血泪史1万字实录,散文无小标题情绪强难收藏,agency,draft,COMEBACK,65,78,75,88,45,60,40,55,58,72,N,建议加结构
+CASE-18,简历一页改完前后对比,正文略封面左右对比大图改前改后,agency,draft,INFO_GAP,80,92,55,70,82,95,60,75,75,88,N,ctr须评封面
+CASE-19,留子秋招Survival Guide10个英文简历地道表达,公式例题常见错误,agency,draft,INFO_GAP,72,85,50,65,85,95,45,58,70,82,N,弱CTA高干货
+CASE-20,投行估值3种方法小白版DCF手把手,公式例题文末希望对大家有用,agency,draft,INFO_GAP,68,80,45,58,90,100,45,58,65,78,N,conversion低分合理

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://xhs-agent.local/schemas/optimize-draft-response.schema.json",
+  "title": "OptimizeDraftResponse",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["analysisId", "optimizedTitle", "optimizedBody", "promptVersion"],
+  "properties": {
+    "analysisId": { "type": "string" },
+    "optimizedTitle": { "type": "string", "maxLength": 100 },
+    "optimizedBody": { "type": "string" },
+    "structureOutline": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 5,
+      "maxItems": 5,
+      "description": "五段结构：Hook/放大/经历/结果/CTA 各一句摘要"
+    },
+    "cta": { "type": "string" },
+    "complianceWarnings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["rule", "matchedText", "suggestion"],
+        "properties": {
+          "rule": { "type": "string" },
+          "matchedText": { "type": "string" },
+          "suggestion": { "type": "string" }
+        }
+      }
+    },
+    "promptVersion": { "type": "string" },
+    "wordCount": { "type": "integer", "minimum": 0 }
+  }
+}

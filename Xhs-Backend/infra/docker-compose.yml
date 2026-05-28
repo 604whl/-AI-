@@ -1,0 +1,47 @@
+# 本地开发依赖：PostgreSQL(pgvector) + Redis + MinIO
+# 启动：docker compose -f infra/docker-compose.yml up -d
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: xhsagent-postgres
+    environment:
+      POSTGRES_USER: xhsagent
+      POSTGRES_PASSWORD: xhsagent_dev
+      POSTGRES_DB: xhsagent
+    ports:
+      - "5432:5432"
+    volumes:
+      - xhsagent_pg_data:/var/lib/postgresql/data
+      - ../db/migration/V1__init_schema.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U xhsagent -d xhsagent"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: xhsagent-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - xhsagent_redis_data:/data
+
+  minio:
+    image: minio/minio:latest
+    container_name: xhsagent-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - xhsagent_minio_data:/data
+
+volumes:
+  xhsagent_pg_data:
+  xhsagent_redis_data:
+  xhsagent_minio_data:

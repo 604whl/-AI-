@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://xhs-agent.local/schemas/optimize-draft-request.schema.json",
+  "title": "OptimizeDraftRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["analysisId"],
+  "properties": {
+    "analysisId": {
+      "type": "string",
+      "pattern": "^ana_[a-zA-Z0-9]+$"
+    },
+    "includeTitle": {
+      "type": "boolean",
+      "default": true,
+      "description": "优化稿是否包含建议标题"
+    },
+    "tone": {
+      "type": "string",
+      "enum": ["default", "more_anxiety", "more_professional", "more_friendly"],
+      "default": "default"
+    },
+    "maxLength": {
+      "type": "integer",
+      "minimum": 500,
+      "maximum": 2000,
+      "default": 1200,
+      "description": "正文建议字数上限（小红书常见篇幅）"
+    }
+  }
+}

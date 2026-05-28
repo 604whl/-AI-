@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://xhs-agent.local/schemas/title-generate-response.schema.json",
+  "title": "TitleGenerateResponse",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["goal", "titles", "promptVersion"],
+  "properties": {
+    "analysisId": { "type": ["string", "null"] },
+    "goal": {
+      "type": "string",
+      "enum": ["high_ctr", "high_collect", "high_conversion", "anxiety", "offer", "info_gap"]
+    },
+    "promptVersion": { "type": "string" },
+    "titles": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "required": ["text", "highlights"],
+        "properties": {
+          "text": { "type": "string", "maxLength": 100 },
+          "highlights": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "该标题使用的运营手法，如「数字」「身份标签」"
+          },
+          "estimatedCtr": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+          }
+        }
+      }
+    }
+  }
+}

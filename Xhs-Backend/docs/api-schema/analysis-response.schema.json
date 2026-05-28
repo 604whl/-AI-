@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://xhs-agent.local/schemas/analysis-response.schema.json",
+  "title": "AnalysisDetail",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "status", "scenario", "createdAt", "updatedAt"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^ana_[a-zA-Z0-9]+$" },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "processing", "completed", "failed"]
+    },
+    "scenario": { "type": "string", "enum": ["draft", "published", "competitor"] },
+    "persona": { "type": "string", "enum": ["agency", "mentor", "senior"] },
+    "title": { "type": "string" },
+    "body": { "type": "string" },
+    "coverImageUrl": { "type": ["string", "null"], "format": "uri" },
+    "publishedMetrics": { "$ref": "#/$defs/PublishedMetrics" },
+    "promptVersion": {
+      "type": "string",
+      "description": "Rubric/Prompt 版本，如 rubric-1.0.0"
+    },
+    "model": { "type": "string", "description": "使用的模型标识" },
+    "processingMs": { "type": "integer", "minimum": 0 },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "failure": { "$ref": "#/$defs/Failure" },
+    "report": { "$ref": "#/$defs/AnalysisReport" },
+    "coverAnalysis": { "$ref": "#/$defs/CoverAnalysis" }
+  },
+  "$defs": {
+    "PublishedMetrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "noteUrl": { "type": "string" },
+        "impressions": { "type": "integer", "minimum": 0 },
+        "likes": { "type": "integer", "minimum": 0 },
+        "collects": { "type": "integer", "minimum": 0 },
+        "comments": { "type": "integer", "minimum": 0 },
+        "dmInquiries": { "type": "integer", "minimum": 0 },
+        "publishedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Failure": {
+      "type": "object",
+      "required": ["reason", "code"],
+      "properties": {
+        "reason": {
+          "type": "string",
+          "enum": ["timeout", "ai_error", "storage_error", "unknown"]
+        },
+        "code": { "type": "integer" },
+        "message": { "type": "string" }
+      }
+    },
+    "ScoreDimension": {
+      "type": "object",
+      "required": ["score", "reason"],
+      "properties": {
+        "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "reason": { "type": "string", "maxLength": 80 },
+        "level": {
+          "type": "string",
+          "enum": ["low", "medium", "high"],
+          "description": "低/中/高潜力，可由服务端由分数映射"
+        }
+      }
+    },
+    "AnalysisReport": {
+      "type": "object",
+      "required": [
+        "contentType",
+        "secondaryTags",
+        "structure",
+        "scores",
+        "issues",
+        "optimizations",
+        "complianceWarnings"
+      ],
+      "properties": {
+        "contentType": {
+          "type": "string",
+          "enum": ["ANXIETY", "OFFER", "INFO_GAP", "INTERVIEW", "TIMELINE", "COMEBACK"]
+        },
+        "secondaryTags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["ANXIETY", "OFFER", "INFO_GAP", "INTERVIEW", "TIMELINE", "COMEBACK"]
+          },
+          "maxItems": 2
+        },
+        "structure": {
+          "type": "object",
+          "required": ["hook", "emotionArc", "savePoints", "conversionPath", "cta"],
+          "properties": {
+            "hook": { "type": "string" },
+            "emotionArc": {
+              "type": "array",
+              "items": { "type": "string" },
+              "minItems": 4,
+              "maxItems": 4,
+              "description": "起、承、转、合"
+            },
+            "savePoints": {
+              "type": "array",
+              "items": { "type": "string" },
+              "minItems": 1,
+              "maxItems": 5
+            },
+            "conversionPath": { "type": "string" },
+            "cta": {
+              "type": "object",
+              "required": ["text", "rating", "comment"],
+              "properties": {
+                "text": { "type": "string" },
+                "rating": { "type": "integer", "minimum": 1, "maximum": 5 },
+                "comment": { "type": "string" }
+              }
+            }
+          }
+        },
+        "scores": {
+          "type": "object",
+          "required": ["ctr", "emotion", "collect", "conversion", "viral"],
+          "properties": {
+            "ctr": { "$ref": "#/$defs/ScoreDimension" },
+            "emotion": { "$ref": "#/$defs/ScoreDimension" },
+            "collect": { "$ref": "#/$defs/ScoreDimension" },
+            "conversion": { "$ref": "#/$defs/ScoreDimension" },
+            "viral": { "$ref": "#/$defs/ScoreDimension" }
+          }
+        },
+        "issues": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["severity", "category", "description", "suggestion"],
+            "properties": {
+              "severity": { "type": "string", "enum": ["high", "medium", "low"] },
+              "category": {
+                "type": "string",
+                "enum": ["ctr", "emotion", "collect", "conversion", "compliance"]
+              },
+              "description": { "type": "string" },
+              "suggestion": { "type": "string" }
+            }
+          }
+        },
+        "optimizations": {
+          "type": "object",
+          "required": ["title", "structure", "emotion", "cta"],
+          "properties": {
+            "title": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/TextPair" }
+            },
+            "structure": { "type": "array", "items": { "type": "string" } },
+            "emotion": { "type": "array", "items": { "type": "string" } },
+            "cta": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "complianceWarnings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["rule", "matchedText", "suggestion"],
+            "properties": {
+              "rule": { "type": "string" },
+              "matchedText": { "type": "string" },
+              "suggestion": { "type": "string" }
+            }
+          }
+        },
+        "optimizedDraft": {
+          "type": "string",
+          "description": "仅当同步生成或单独接口已调用时返回"
+        },
+        "borrowPoints": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "P1 竞品场景：可借鉴点"
+        },
+        "doNotCopy": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "P1 竞品场景：勿照搬点"
+        },
+        "retrospective": {
+          "$ref": "#/$defs/Retrospective",
+          "description": "P1 已发复盘对比"
+        }
+      }
+    },
+    "TextPair": {
+      "type": "object",
+      "required": ["original", "optimized"],
+      "properties": {
+        "original": { "type": "string" },
+        "optimized": { "type": "string" }
+      }
+    },
+    "CoverAnalysis": {
+      "type": "object",
+      "properties": {
+        "available": { "type": "boolean" },
+        "keywords": { "type": "array", "items": { "type": "string" } },
+        "contrastComment": { "type": "string" },
+        "emotionMatch": { "type": "string" },
+        "ctrImpact": { "type": "string" }
+      }
+    },
+    "Retrospective": {
+      "type": "object",
+      "properties": {
+        "predictedSummary": { "type": "string" },
+        "actualSummary": { "type": "string" },
+        "gapAnalysis": { "type": "string" },
+        "nextSteps": { "type": "array", "items": { "type": "string" }, "minItems": 3 }
+      }
+    }
+  }
+}
