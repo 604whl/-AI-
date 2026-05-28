@@ -1,0 +1,68 @@
+import type { ScoredTitle } from '@/types/title'
+
+export const MOCK_SCORED_TITLES: ScoredTitle[] = [
+  {
+    title: '海投300份后，我终于认清现实',
+    ctr: 92,
+    viral: 88,
+    emotion: 91,
+    typeTag: 'anxiety',
+    highlights: ['海投300份', '认清现实'],
+  },
+  {
+    title: '留学生秋招已经卷疯了',
+    ctr: 89,
+    viral: 85,
+    emotion: 90,
+    typeTag: 'conflict',
+    highlights: ['秋招', '卷疯了'],
+  },
+  {
+    title: '英国硕士毕业后，我彻底破防了',
+    ctr: 87,
+    viral: 86,
+    emotion: 93,
+    typeTag: 'comeback',
+    highlights: ['英国硕士', '彻底破防'],
+  },
+  {
+    title: '没人告诉你的留学生求职信息差',
+    ctr: 85,
+    viral: 82,
+    emotion: 84,
+    typeTag: 'info_gap',
+    highlights: ['信息差', '没人告诉'],
+  },
+  {
+    title: '300份简历0回复，留学生的至暗时刻',
+    ctr: 90,
+    viral: 89,
+    emotion: 92,
+    typeTag: 'anxiety',
+    highlights: ['300份简历', '0回复', '至暗时刻'],
+  },
+  {
+    title: '秋招第47天，我悟了这3个真相',
+    ctr: 88,
+    viral: 84,
+    emotion: 86,
+    typeTag: 'info_gap',
+    highlights: ['秋招第47天', '3个真相'],
+  },
+  {
+    title: '从0 Offer到上岸，我做对了什么',
+    ctr: 86,
+    viral: 90,
+    emotion: 88,
+    typeTag: 'comeback',
+    highlights: ['0 Offer', '上岸'],
+  },
+  {
+    title: 'HR一句话，让我当场破防',
+    ctr: 84,
+    viral: 83,
+    emotion: 94,
+    typeTag: 'conflict',
+    highlights: ['HR一句话', '当场破防'],
+  },
+]
