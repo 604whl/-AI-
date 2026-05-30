@@ -49,6 +49,13 @@
             />
           </el-form-item>
 
+          <AnalysisContentFields
+            v-model:cover-image-url="form.coverImageUrl"
+            v-model:published-metrics="form.publishedMetrics"
+            v-model:competitor-context="form.competitorContext"
+            :scenario="form.scenario"
+          />
+
           <SensitiveWordDetector
             :result="workbench.sensitiveWords.value"
             :title="form.title"
@@ -60,9 +67,18 @@
               type="primary"
               size="large"
               :loading="submitting || workbench.loading.value"
+              :disabled="remainingQuota <= 0"
               @click="handleAnalyze"
             >
               {{ t('dashboard.analyzeNow') }}
+            </el-button>
+            <el-button
+              v-if="lastAnalysisId && workbench.hasResult.value"
+              type="success"
+              plain
+              @click="goToReport(lastAnalysisId)"
+            >
+              {{ t('report.viewFullReport') }}
             </el-button>
             <el-button text @click="fillSample">{{ t('dashboard.trySample') }}</el-button>
             <el-button
@@ -73,6 +89,16 @@
               {{ t('dashboard.generateTitles') }}
             </el-button>
           </div>
+          <el-alert
+            v-if="showInPlaceHint"
+            type="success"
+            :closable="true"
+            show-icon
+            class="in-place-hint"
+            @close="showInPlaceHint = false"
+          >
+            {{ t('report.analyzeInPlaceHint') }}
+          </el-alert>
         </el-form>
 
         <HotTopicsPanel
@@ -84,6 +110,9 @@
 
       <aside class="insight-aside">
         <WorkbenchInsightPanel
+          :content-type="workbench.contentType.value"
+          :secondary-tags="workbench.secondaryTags.value"
+          :structure="workbench.structure.value"
           :scores="workbench.scores.value"
           :recommended-titles="workbench.recommendedTitles.value"
           :hot-points="workbench.hotPoints.value"
@@ -96,6 +125,7 @@
           @refresh="refreshInsight"
           @regenerate-titles="regenerateTitles"
           @select-topic="applyHotTopic"
+          @apply-title="applyRecommendedTitle"
         />
       </aside>
     </div>
@@ -110,34 +140,50 @@ import { ElMessage } from 'element-plus'
 import { DataAnalysis } from '@element-plus/icons-vue'
 import { createAnalysis, fetchAnalysis } from '@/api/analysis'
 import { MOCK_HOT_TOPICS } from '@/mocks/workbench'
+import AnalysisContentFields from '@/components/analysis/AnalysisContentFields.vue'
 import SensitiveWordDetector from '@/components/workbench/SensitiveWordDetector.vue'
 import HotTopicsPanel from '@/components/workbench/HotTopicsPanel.vue'
 import WorkbenchInsightPanel from '@/components/workbench/WorkbenchInsightPanel.vue'
 import { useAnalysisPoll } from '@/composables/useAnalysisPoll'
 import { useWorkbenchAnalysis } from '@/composables/useWorkbenchAnalysis'
+import { ERROR_QUOTA_EXCEEDED } from '@/constants/quota'
 import { useUserStore } from '@/stores/user'
-import type { AnalysisScenario, PersonaType } from '@/types/api'
+import type { AnalysisScenario, CompetitorContext, PersonaType, PublishedMetrics } from '@/types/api'
 import { clearAnalysisDraft, loadAnalysisDraft } from '@/utils/analysisDraft'
+import {
+  buildAnalysisCreatePayload,
+  createEmptyCompetitorContext,
+  createEmptyPublishedMetrics,
+} from '@/utils/analysisPayload'
 
 const { t } = useI18n()
 const router = useRouter()
 const userStore = useUserStore()
 const workbench = useWorkbenchAnalysis()
 
+const remainingQuota = computed(() => userStore.usage?.remaining ?? 0)
+
 const form = reactive<{
   scenario: AnalysisScenario
   persona: PersonaType
   title: string
   body: string
+  coverImageUrl?: string
+  publishedMetrics: PublishedMetrics
+  competitorContext: CompetitorContext
 }>({
   scenario: 'draft',
   persona: 'agency',
   title: '',
   body: '',
+  publishedMetrics: createEmptyPublishedMetrics(),
+  competitorContext: createEmptyCompetitorContext(),
 })
 
 const submitting = ref(false)
 const pollingId = ref<string | null>(null)
+const lastAnalysisId = ref<string | null>(null)
+const showInPlaceHint = ref(false)
 
 const poll = useAnalysisPoll(async () => {
   if (!pollingId.value) throw new Error('missing analysis id')
@@ -164,6 +210,9 @@ onMounted(() => {
     form.persona = draft.persona
     form.title = draft.title
     form.body = draft.body
+    form.coverImageUrl = draft.coverImageUrl
+    form.publishedMetrics = { ...createEmptyPublishedMetrics(), ...draft.publishedMetrics }
+    form.competitorContext = { ...createEmptyCompetitorContext(), ...draft.competitorContext }
     clearAnalysisDraft()
     return
   }
@@ -173,7 +222,12 @@ onMounted(() => {
 })
 
 function getAnalyzeParams() {
-  return { title: form.title.trim(), body: form.body.trim() }
+  return {
+    title: form.title.trim(),
+    body: form.body.trim(),
+    persona: form.persona,
+    analysisId: pollingId.value ?? workbench.analysisId.value ?? undefined,
+  }
 }
 
 function fillSample() {
@@ -186,16 +240,40 @@ function applyHotTopic(topic: string) {
   ElMessage.success(t('workbench.topicApplied'))
 }
 
+function applyRecommendedTitle(title: string) {
+  form.title = title
+}
+
 async function refreshInsight() {
   if (!form.title.trim() && !form.body.trim()) {
     ElMessage.warning(t('dashboard.validationRequired'))
     return
   }
-  await workbench.refresh(getAnalyzeParams())
+  if (!workbench.analysisId.value && !pollingId.value) {
+    ElMessage.warning(t('workbench.refreshNeedAnalysis'))
+    return
+  }
+  try {
+    await workbench.refresh(getAnalyzeParams())
+  } catch {
+    ElMessage.warning(t('dashboard.validationRequired'))
+  }
 }
 
 async function regenerateTitles() {
+  if (!workbench.analysisId.value && !pollingId.value) {
+    ElMessage.warning(t('workbench.regenerateNeedAnalysis'))
+    return
+  }
   await workbench.regenerateTitles(getAnalyzeParams())
+}
+
+function goToReport(id: string) {
+  router.push(`/analysis/${id}`)
+}
+
+function isQuotaExceededError(err: unknown): boolean {
+  return (err as Error & { code?: number }).code === ERROR_QUOTA_EXCEEDED
 }
 
 async function handleAnalyze() {
@@ -203,34 +281,43 @@ async function handleAnalyze() {
     ElMessage.warning(t('dashboard.validationRequired'))
     return
   }
+  if (remainingQuota.value <= 0) {
+    ElMessage.warning(t('dashboard.quotaExceededMessage'))
+    return
+  }
 
   submitting.value = true
-  const insightPromise = workbench.analyze(getAnalyzeParams())
-
+  showInPlaceHint.value = false
+  let analysisCreated = false
   try {
-    const res = await createAnalysis({
-      scenario: form.scenario,
-      persona: form.persona,
-      title: form.title.trim() || undefined,
-      body: form.body.trim() || undefined,
-    })
+    const res = await createAnalysis(buildAnalysisCreatePayload(form))
+    analysisCreated = true
     const { id } = res.data.data
     pollingId.value = id
-    const ok = await poll.start()
-    await insightPromise
+    lastAnalysisId.value = id
+    workbench.setAnalysisId(id)
 
+    const ok = await poll.start()
     if (ok) {
+      await workbench.hydrateFromAnalysisId(id)
       ElMessage.success(t('dashboard.analyzeSuccess'))
-      await router.push(`/analysis/${id}`)
+      showInPlaceHint.value = true
       return
     }
 
     ElMessage.error(poll.error.value || t('dashboard.analyzeFailed'))
     await router.push(`/analysis/${id}`)
-  } catch {
-    await insightPromise
-    ElMessage.success(t('analysis.mockAnalyzeDone'))
+  } catch (err) {
+    if (isQuotaExceededError(err)) {
+      await userStore.fetchUsage()
+      ElMessage.warning(t('dashboard.quotaExceededMessage'))
+      return
+    }
+    ElMessage.error(t('dashboard.analyzeFailed'))
   } finally {
+    if (analysisCreated) {
+      await userStore.fetchUsage()
+    }
     submitting.value = false
   }
 }
@@ -293,6 +380,10 @@ async function handleAnalyze() {
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 8px;
+}
+
+.in-place-hint {
+  margin-top: 12px;
 }
 
 .bottom-topics {

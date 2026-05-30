@@ -6,6 +6,8 @@ import type {
   ViralScoreCard,
   WorkbenchInsightResult,
 } from '@/types/workbench'
+import { complianceWarningsToResult } from '@/utils/complianceResult'
+import { scanComplianceLocal } from '@/utils/complianceScan'
 
 export const MOCK_OPTIMIZATION: AiOptimizationAdvice = {
   issues: ['缺少结果展示', '没有身份标签', '缺少时间节点'],
@@ -58,12 +60,13 @@ export const MOCK_HOT_TOPICS: string[] = [
   '留学生失业',
 ]
 
-export const MOCK_SENSITIVE_WORDS: string[] = ['保Offer', '兼职代投', '保录']
+const MOCK_COMPLIANCE_DEMO = scanComplianceLocal(
+  '留学中介保Offer真的靠谱吗',
+  '我们保证录取，再不申请就完了',
+)
 
-export const MOCK_SENSITIVE_RESULT: SensitiveWordResult = {
-  words: MOCK_SENSITIVE_WORDS,
-  riskLevel: 'high',
-}
+export const MOCK_SENSITIVE_RESULT: SensitiveWordResult =
+  complianceWarningsToResult(MOCK_COMPLIANCE_DEMO)
 
 export const MOCK_WORKBENCH_INSIGHT: WorkbenchInsightResult = {
   scores: MOCK_VIRAL_SCORES,

@@ -3,9 +3,10 @@ import { onUnmounted, ref } from 'vue'
 /**
  * 分析任务轮询：2s 间隔，最多 30 次（对齐 PRD P95 45s）
  */
-export function useAnalysisPoll(fetcher: () => Promise<{ status: string }>) {
+export function useAnalysisPoll<T extends { status: string }>(fetcher: () => Promise<T>) {
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const lastResult = ref<T | null>(null)
   let timer: ReturnType<typeof setInterval> | null = null
   let count = 0
 
@@ -23,6 +24,7 @@ export function useAnalysisPoll(fetcher: () => Promise<{ status: string }>) {
         try {
           const data = await fetcher()
           if (data.status === 'completed') {
+            lastResult.value = data
             stop()
             loading.value = false
             resolve(true)
@@ -56,5 +58,5 @@ export function useAnalysisPoll(fetcher: () => Promise<{ status: string }>) {
 
   onUnmounted(stop)
 
-  return { loading, error, start, stop }
+  return { loading, error, lastResult, start, stop }
 }

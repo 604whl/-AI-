@@ -25,6 +25,17 @@ export interface UserProfile {
   dailyQuota: number
 }
 
+export interface UserUsage {
+  dailyQuota: number
+  usedToday: number
+  remaining: number
+}
+
+export interface UpdateProfileRequest {
+  displayName?: string
+  defaultPersona?: PersonaType
+}
+
 export interface AuthResponse {
   accessToken: string
   refreshToken: string

@@ -36,6 +36,9 @@ http.interceptors.request.use((config) => {
 
 http.interceptors.response.use(
   (res) => {
+    if (res.config.responseType === 'blob') {
+      return res
+    }
     const body = res.data as ApiResponse<unknown>
     if (body.code !== 0) {
       const err = new Error(body.message || i18n.global.t('common.requestFailed')) as Error & { code?: number }

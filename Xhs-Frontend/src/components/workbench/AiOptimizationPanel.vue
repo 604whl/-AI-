@@ -9,6 +9,30 @@
     </div>
 
     <template v-if="hasData && advice">
+      <div v-if="advice.titleOptimizations?.length" class="section title-opt-section">
+        <h5 class="section-title">
+          <el-icon><EditPen /></el-icon>
+          {{ t('workbench.titleOptimization') }}
+        </h5>
+        <div
+          v-for="(pair, index) in advice.titleOptimizations"
+          :key="index"
+          class="title-pair"
+        >
+          <div class="pair-row original">
+            <span class="pair-label">{{ t('workbench.originalSentence') }}</span>
+            <span class="pair-text">{{ pair.original }}</span>
+          </div>
+          <div class="pair-arrow">
+            <el-icon><Bottom /></el-icon>
+          </div>
+          <div class="pair-row optimized">
+            <span class="pair-label">{{ t('workbench.optimizedSentence') }}</span>
+            <span class="pair-text">{{ pair.optimized }}</span>
+          </div>
+        </div>
+      </div>
+
       <div class="section issues-section">
         <h5 class="section-title">
           <el-icon><Warning /></el-icon>
@@ -49,7 +73,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { MagicStick, Opportunity, Warning } from '@element-plus/icons-vue'
+import { Bottom, EditPen, MagicStick, Opportunity, Warning } from '@element-plus/icons-vue'
 import type { AiOptimizationAdvice } from '@/types/workbench'
 
 defineProps<{
@@ -109,6 +133,44 @@ const { t } = useI18n()
 
 .issues-section .section-title {
   color: #b45309;
+}
+
+.title-pair {
+  padding: 12px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+}
+
+.pair-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pair-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+}
+
+.pair-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #374151;
+}
+
+.pair-row.optimized .pair-text {
+  color: #059669;
+  font-weight: 500;
+}
+
+.pair-arrow {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
+  color: #9ca3af;
 }
 
 .issue-list {

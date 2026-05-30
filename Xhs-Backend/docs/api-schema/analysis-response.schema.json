@@ -17,6 +17,7 @@
     "body": { "type": "string" },
     "coverImageUrl": { "type": ["string", "null"], "format": "uri" },
     "publishedMetrics": { "$ref": "#/$defs/PublishedMetrics" },
+    "competitorContext": { "$ref": "#/$defs/CompetitorContext" },
     "promptVersion": {
       "type": "string",
       "description": "Rubric/Prompt 版本，如 rubric-1.0.0"
@@ -41,6 +42,15 @@
         "comments": { "type": "integer", "minimum": 0 },
         "dmInquiries": { "type": "integer", "minimum": 0 },
         "publishedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "CompetitorContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "accountName": { "type": "string" },
+        "noteUrl": { "type": "string" },
+        "learningFocus": { "type": "string" }
       }
     },
     "Failure": {

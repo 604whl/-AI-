@@ -35,6 +35,10 @@
     "publishedMetrics": {
       "$ref": "#/$defs/PublishedMetrics",
       "description": "已发复盘场景可选，P1 用于对比"
+    },
+    "competitorContext": {
+      "$ref": "#/$defs/CompetitorContext",
+      "description": "竞品学习场景可选"
     }
   },
   "anyOf": [
@@ -53,6 +57,15 @@
         "comments": { "type": "integer", "minimum": 0 },
         "dmInquiries": { "type": "integer", "minimum": 0 },
         "publishedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "CompetitorContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "accountName": { "type": "string", "maxLength": 64, "description": "对标账号/博主名" },
+        "noteUrl": { "type": "string", "maxLength": 500, "description": "竞品笔记链接" },
+        "learningFocus": { "type": "string", "maxLength": 200, "description": "想借鉴的方向" }
       }
     }
   }

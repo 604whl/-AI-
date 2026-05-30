@@ -108,10 +108,19 @@
               {{ formatRelativeTime(row.createdAt, locale) }}
             </template>
           </el-table-column>
-          <el-table-column :label="t('history.actions')" width="140" fixed="right">
+          <el-table-column :label="t('history.actions')" width="220" fixed="right">
             <template #default="{ row }">
               <el-button text type="primary" size="small" @click.stop="goToReport(row)">
                 {{ t('history.view') }}
+              </el-button>
+              <el-button
+                text
+                type="primary"
+                size="small"
+                :loading="reanalyzeRunning && reanalyzeTargetId === row.id"
+                @click.stop="handleReanalyze(row)"
+              >
+                {{ t('history.reanalyze') }}
               </el-button>
               <el-button text type="danger" size="small" @click.stop="confirmDelete(row)">
                 {{ t('history.delete') }}
@@ -144,6 +153,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { deleteAnalysis, fetchAnalysisList } from '@/api/analysis'
+import { useReanalyze } from '@/composables/useReanalyze'
 import type { AnalysisListItem, AnalysisScenario, AnalysisStatus } from '@/types/api'
 import { averageReportScore, formatRelativeTime } from '@/utils/analysisDisplay'
 
@@ -160,6 +170,8 @@ const filters = reactive({
 })
 
 const loading = ref(true)
+const { running: reanalyzeRunning, runReanalyze } = useReanalyze()
+const reanalyzeTargetId = ref<string | null>(null)
 const records = ref<AnalysisListItem[]>([])
 const total = ref(0)
 const page = ref(1)
@@ -221,6 +233,12 @@ async function loadRecords() {
   } finally {
     loading.value = false
   }
+}
+
+async function handleReanalyze(row: AnalysisListItem) {
+  reanalyzeTargetId.value = row.id
+  await runReanalyze(row.id)
+  reanalyzeTargetId.value = null
 }
 
 async function confirmDelete(row: AnalysisListItem) {

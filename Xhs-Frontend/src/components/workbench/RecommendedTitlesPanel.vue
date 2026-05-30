@@ -9,7 +9,7 @@
         text
         size="small"
         :loading="regenerating"
-        :disabled="!titles.length"
+        :disabled="!canRegenerate"
         @click="$emit('regenerate')"
       >
         <el-icon><RefreshRight /></el-icon>
@@ -39,16 +39,21 @@
             />
           </div>
         </div>
-        <el-tooltip :content="t('dashboard.copy')" placement="top">
-          <el-button
-            circle
-            size="small"
-            text
-            @click="copyTitle(item.title)"
-          >
-            <el-icon><CopyDocument /></el-icon>
+        <div class="title-actions">
+          <el-tooltip :content="t('dashboard.copy')" placement="top">
+            <el-button
+              circle
+              size="small"
+              text
+              @click="copyTitle(item.title)"
+            >
+              <el-icon><CopyDocument /></el-icon>
+            </el-button>
+          </el-tooltip>
+          <el-button size="small" type="primary" plain @click="applyTitle(item.title)">
+            {{ t('titles.applyToAnalysis') }}
           </el-button>
-        </el-tooltip>
+        </div>
       </div>
     </div>
 
@@ -67,10 +72,12 @@ import type { RecommendedTitle } from '@/types/workbench'
 defineProps<{
   titles: RecommendedTitle[]
   regenerating: boolean
+  canRegenerate: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   regenerate: []
+  apply: [title: string]
 }>()
 
 const { t } = useI18n()
@@ -82,6 +89,11 @@ async function copyTitle(title: string) {
   } catch {
     ElMessage.error(t('titles.copyFailed'))
   }
+}
+
+function applyTitle(title: string) {
+  emit('apply', title)
+  ElMessage.success(t('workbench.topicApplied'))
 }
 </script>
 
@@ -176,6 +188,14 @@ async function copyTitle(title: string) {
 .ctr-bar {
   flex: 1;
   max-width: 80px;
+}
+
+.title-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .empty-state {

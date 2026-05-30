@@ -21,12 +21,31 @@ export interface HotPoint {
   emotion: string
 }
 
-/** 敏感词检测结果 */
+/** 内容结构拆解（Hook / 情绪 / CTA） */
+export interface StructureBreakdown {
+  hook: string
+  emotionArc: string[]
+  savePoints: string[]
+  conversionPath: string
+  cta: { text: string; rating: number; comment: string }
+}
+
+/** 标题原句 → 优化句 */
+export interface TitleOptimizationPair {
+  original: string
+  optimized: string
+}
+
+import type { ComplianceWarning } from '@/types/api'
+
+/** 合规 / 敏感词风险等级 */
 export type SensitiveRiskLevel = 'low' | 'medium' | 'high'
 
+/** 工作台合规检测结果（与报告 complianceWarnings 同结构） */
 export interface SensitiveWordResult {
   words: string[]
   riskLevel: SensitiveRiskLevel
+  warnings: ComplianceWarning[]
 }
 
 /** AI 分析 loading 步骤 */
@@ -41,10 +60,14 @@ export type AnalysisLoadingStep =
 export interface AiOptimizationAdvice {
   issues: string[]
   suggestions: string[]
+  titleOptimizations?: TitleOptimizationPair[]
 }
 
 /** 工作台 AI 洞察完整结果 */
 export interface WorkbenchInsightResult {
+  contentType?: string
+  secondaryTags?: string[]
+  structure?: StructureBreakdown
   scores: ViralScoreCard
   recommendedTitles: RecommendedTitle[]
   hotPoints: HotPoint[]
@@ -57,4 +80,6 @@ export interface WorkbenchInsightResult {
 export interface WorkbenchAnalyzeParams {
   title: string
   body: string
+  persona?: string
+  analysisId?: string
 }

@@ -38,7 +38,7 @@ const userStore = useUserStore()
 const { t } = useI18n()
 
 async function handleLogout() {
-  userStore.logout()
+  await userStore.logout()
   await router.push({ name: 'login' })
 }
 </script>

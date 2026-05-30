@@ -100,7 +100,13 @@
     />
 
     <div v-else-if="!splitLayout && hasGenerated && !generation.loading.value && !generation.hasResult.value">
-      <el-empty :description="t('titles.empty')" />
+      <el-empty
+        :description="
+          generation.promptVersion.value === 'mock-pending'
+            ? t('titles.mockPending')
+            : t('titles.empty')
+        "
+      />
     </div>
   </div>
 </template>

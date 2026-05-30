@@ -24,12 +24,30 @@ export type TitleGenerateGoal =
   | 'offer'
   | 'info_gap'
 
+export interface PublishedMetrics {
+  noteUrl?: string
+  impressions?: number
+  likes?: number
+  collects?: number
+  comments?: number
+  dmInquiries?: number
+  publishedAt?: string
+}
+
+export interface CompetitorContext {
+  accountName?: string
+  noteUrl?: string
+  learningFocus?: string
+}
+
 export interface AnalysisCreateRequest {
   scenario: AnalysisScenario
   persona?: PersonaType
   title?: string
   body?: string
   coverImageUrl?: string
+  publishedMetrics?: PublishedMetrics
+  competitorContext?: CompetitorContext
 }
 
 export interface AnalysisDetail {
@@ -39,6 +57,9 @@ export interface AnalysisDetail {
   persona?: PersonaType
   title?: string
   body?: string
+  coverImageUrl?: string
+  publishedMetrics?: PublishedMetrics
+  competitorContext?: CompetitorContext
   createdAt: string
   updatedAt: string
   report?: AnalysisReport
@@ -89,6 +110,12 @@ export interface TitleGenerateResponse {
   analysisId?: string | null
 }
 
+export interface ComplianceWarning {
+  rule: string
+  matchedText: string
+  suggestion: string
+}
+
 export interface AnalysisReport {
   contentType: string
   secondaryTags?: string[]
@@ -118,5 +145,5 @@ export interface AnalysisReport {
     emotion: string[]
     cta: string[]
   }
-  complianceWarnings: Array<{ rule: string; matchedText: string; suggestion: string }>
+  complianceWarnings: ComplianceWarning[]
 }

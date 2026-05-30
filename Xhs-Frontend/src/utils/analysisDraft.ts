@@ -1,4 +1,5 @@
-import type { AnalysisScenario, PersonaType } from '@/types/api'
+import type { AnalysisScenario, CompetitorContext, PersonaType, PublishedMetrics } from '@/types/api'
+import { createEmptyCompetitorContext, createEmptyPublishedMetrics } from '@/utils/analysisPayload'
 
 const DRAFT_KEY = 'xhs_analysis_draft'
 
@@ -7,6 +8,20 @@ export interface AnalysisDraft {
   persona: PersonaType
   title: string
   body: string
+  coverImageUrl?: string
+  publishedMetrics?: PublishedMetrics
+  competitorContext?: CompetitorContext
+}
+
+export function createDefaultDraft(): AnalysisDraft {
+  return {
+    scenario: 'draft',
+    persona: 'agency',
+    title: '',
+    body: '',
+    publishedMetrics: createEmptyPublishedMetrics(),
+    competitorContext: createEmptyCompetitorContext(),
+  }
 }
 
 export function saveAnalysisDraft(draft: AnalysisDraft) {

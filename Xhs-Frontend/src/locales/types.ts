@@ -14,6 +14,7 @@ export interface LocaleMessages {
     on: string
     off: string
     requestFailed: string
+    cancel: string
   }
   language: {
     label: string
@@ -83,6 +84,9 @@ export interface LocaleMessages {
     welcomeDesc: string
     quotaTitle: string
     quotaHint: string
+    quotaExceededTitle: string
+    quotaExceededDesc: string
+    quotaExceededMessage: string
     quickAnalyze: string
     quickAnalyzeTag: string
     titlePlaceholder: string
@@ -144,6 +148,87 @@ export interface LocaleMessages {
     scenarioPublished: string
     scenarioCompetitor: string
   }
+  contentInput: {
+    cover: string
+    coverUpload: string
+    coverHint: string
+    coverRemove: string
+    coverInvalid: string
+    coverTooLarge: string
+    coverUploadSuccess: string
+    coverUploadFailed: string
+    publishedSection: string
+    publishedHint: string
+    competitorSection: string
+    competitorHint: string
+    noteUrl: string
+    noteUrlPlaceholder: string
+    impressions: string
+    likes: string
+    collects: string
+    comments: string
+    dmInquiries: string
+    publishedAt: string
+    publishedAtPlaceholder: string
+    competitorAccount: string
+    competitorAccountPlaceholder: string
+    competitorUrlPlaceholder: string
+    learningFocus: string
+    learningFocusPlaceholder: string
+  }
+  report: {
+    back: string
+    copyReport: string
+    copySuccess: string
+    delete: string
+    deleteConfirm: string
+    deleteSuccess: string
+    deleteFailed: string
+    analyzingHint: string
+    failedTitle: string
+    failedDefault: string
+    retry: string
+    backHome: string
+    notFound: string
+    reportMissingTitle: string
+    reportMissingDesc: string
+    moduleScore: string
+    moduleStructure: string
+    moduleIssues: string
+    moduleOptimization: string
+    moduleActions: string
+    originalContent: string
+    expand: string
+    collapse: string
+    createdAt: string
+    potentialHigh: string
+    potentialMedium: string
+    potentialLow: string
+    severityHigh: string
+    severityMedium: string
+    severityLow: string
+    categoryCompliance: string
+    noIssues: string
+    noOptimization: string
+    tabTitle: string
+    tabStructure: string
+    tabEmotion: string
+    tabCta: string
+    complianceAlert: string
+    generateOptimizedDraft: string
+    generateTitles: string
+    generateBody: string
+    generateBodyDisabled: string
+    optimizeDraftTitle: string
+    optimizeDraftLoading: string
+    optimizeDraftFailed: string
+    structureOutline: string
+    copyDraft: string
+    copyDraftSuccess: string
+    regenerateDraft: string
+    viewFullReport: string
+    analyzeInPlaceHint: string
+  }
   titles: {
     title: string
     desc: string
@@ -152,6 +237,7 @@ export interface LocaleMessages {
     goal: string
     count: string
     empty: string
+    mockPending: string
     resultsTitle: string
     resultsPlaceholder: string
     aiGenerating: string
@@ -203,6 +289,10 @@ export interface LocaleMessages {
     deleteConfirm: string
     deleteSuccess: string
     deleteFailed: string
+    reanalyze: string
+    reanalyzeStarted: string
+    reanalyzeFailed: string
+    reanalyzeBusy: string
     actions: string
     view: string
     persona: string
@@ -220,6 +310,9 @@ export interface LocaleMessages {
   settings: {
     title: string
     defaultPersona: string
+    save: string
+    saveSuccess: string
+    saveFailed: string
   }
   persona: {
     agency: string
@@ -248,6 +341,7 @@ export interface LocaleMessages {
     hotTopicsTitle: string
     hotTopicsEmpty: string
     sensitiveTitle: string
+    complianceFromReport: string
     sensitiveFound: string
     sensitiveSafe: string
     highlightPreview: string
@@ -261,5 +355,25 @@ export interface LocaleMessages {
     currentIssues: string
     optimizationSuggestions: string
     optimizationEmpty: string
+    contentTypeTitle: string
+    contentTypes: {
+      ANXIETY: string
+      OFFER: string
+      INFO_GAP: string
+      INTERVIEW: string
+      TIMELINE: string
+      COMEBACK: string
+    }
+    structureTitle: string
+    structureHook: string
+    structureEmotion: string
+    structureSavePoints: string
+    structureCta: string
+    structureEmpty: string
+    titleOptimization: string
+    originalSentence: string
+    optimizedSentence: string
+    refreshNeedAnalysis: string
+    regenerateNeedAnalysis: string
   }
 }

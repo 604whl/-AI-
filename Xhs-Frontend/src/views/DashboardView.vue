@@ -1,5 +1,15 @@
 <template>
   <div class="dashboard">
+    <el-alert
+      v-if="showQuotaExceededBanner"
+      class="quota-exceeded-banner"
+      :title="t('dashboard.quotaExceededTitle')"
+      :description="t('dashboard.quotaExceededDesc')"
+      type="warning"
+      show-icon
+      closable
+      @close="quotaBannerDismissed = true"
+    />
     <section class="welcome-row">
       <div class="welcome-text">
         <h1 class="welcome-title">{{ greeting }}</h1>
@@ -67,26 +77,71 @@
                 :placeholder="t('dashboard.bodyPlaceholder')"
               />
             </el-form-item>
+            <AnalysisContentFields
+              v-model:cover-image-url="form.coverImageUrl"
+              v-model:published-metrics="form.publishedMetrics"
+              v-model:competitor-context="form.competitorContext"
+              :scenario="form.scenario"
+            />
             <SensitiveWordDetector
               :result="workbench.sensitiveWords.value"
               :title="form.title"
               :body="form.body"
+              :from-analysis-report="workbench.isUsingReportCompliance(form.title, form.body)"
             />
             <div class="form-actions">
               <el-button
                 type="primary"
                 :loading="analyzing || workbench.loading.value"
+                :disabled="remainingQuota <= 0"
                 @click="handleQuickAnalyze"
               >
                 {{ t('dashboard.analyzeNow') }}
               </el-button>
+              <el-button
+                v-if="lastAnalysisId && workbench.hasResult.value"
+                type="success"
+                plain
+                @click="goToReportById(lastAnalysisId)"
+              >
+                {{ t('report.viewFullReport') }}
+              </el-button>
+              <el-button
+                v-if="lastAnalysisId && workbench.hasResult.value"
+                type="warning"
+                plain
+                :loading="draftLoading"
+                @click="openOptimizeDraft"
+              >
+                {{ t('report.generateOptimizedDraft') }}
+              </el-button>
               <el-button @click="openTitleDrawer">{{ t('dashboard.generateTitles') }}</el-button>
               <el-button text @click="fillSample">{{ t('dashboard.trySample') }}</el-button>
             </div>
+            <div
+              v-if="workbench.hasResult.value && workbench.fullReport.value"
+              class="report-extras"
+            >
+              <ReportIssuesPanel :issues="workbench.fullReport.value.issues" />
+              <ReportOptimizationTabs :report="workbench.fullReport.value" />
+            </div>
+            <el-alert
+              v-if="showInPlaceHint"
+              type="success"
+              :closable="true"
+              show-icon
+              class="in-place-hint"
+              @close="showInPlaceHint = false"
+            >
+              {{ t('report.analyzeInPlaceHint') }}
+            </el-alert>
           </el-form>
         </div>
         <div class="workbench-insight">
           <WorkbenchInsightPanel
+            :content-type="workbench.contentType.value"
+            :secondary-tags="workbench.secondaryTags.value"
+            :structure="workbench.structure.value"
             :scores="workbench.scores.value"
             :recommended-titles="workbench.recommendedTitles.value"
             :hot-points="workbench.hotPoints.value"
@@ -99,6 +154,7 @@
             @refresh="refreshInsight"
             @regenerate-titles="regenerateTitles"
             @select-topic="applyHotTopic"
+            @apply-title="applyRecommendedTitle"
           />
         </div>
       </div>
@@ -118,6 +174,46 @@
           </div>
         </div>
       </template>
+      <div class="recent-filters">
+        <el-input
+          v-model="recordFilters.keyword"
+          :placeholder="t('history.keywordPlaceholder')"
+          clearable
+          class="recent-filter-keyword"
+          @keyup.enter="handleRecentSearch"
+          @clear="handleRecentSearch"
+        />
+        <el-select
+          v-model="recordFilters.status"
+          :placeholder="t('history.filterStatus')"
+          clearable
+          class="recent-filter-select"
+          @change="handleRecentSearch"
+        >
+          <el-option :label="t('history.filterAll')" value="" />
+          <el-option
+            v-for="status in statusOptions"
+            :key="status"
+            :label="statusLabel(status)"
+            :value="status"
+          />
+        </el-select>
+        <el-select
+          v-model="recordFilters.scenario"
+          :placeholder="t('history.filterScenario')"
+          clearable
+          class="recent-filter-select"
+          @change="handleRecentSearch"
+        >
+          <el-option :label="t('history.filterAll')" value="" />
+          <el-option
+            v-for="scenario in scenarioOptions"
+            :key="scenario"
+            :label="scenarioLabel(scenario)"
+            :value="scenario"
+          />
+        </el-select>
+      </div>
       <el-skeleton v-if="recordsLoading && !recentRecords.length" :rows="4" animated />
       <el-empty v-else-if="!recentRecords.length" :description="t('dashboard.noRecords')">
         <el-button type="primary" @click="fillSample">{{ t('dashboard.trySample') }}</el-button>
@@ -157,6 +253,25 @@
         <el-table-column prop="createdAt" :label="t('dashboard.createdAt')" width="120">
           <template #default="{ row }">
             {{ formatRelativeTime(row.createdAt, locale) }}
+          </template>
+        </el-table-column>
+        <el-table-column :label="t('history.actions')" width="200" fixed="right">
+          <template #default="{ row }">
+            <el-button text type="primary" size="small" @click.stop="goToReport(row)">
+              {{ t('history.view') }}
+            </el-button>
+            <el-button
+              text
+              type="primary"
+              size="small"
+              :loading="reanalyzeRunning && reanalyzeTargetId === row.id"
+              @click.stop="handleReanalyze(row)"
+            >
+              {{ t('history.reanalyze') }}
+            </el-button>
+            <el-button text type="danger" size="small" @click.stop="confirmDeleteRecord(row)">
+              {{ t('history.delete') }}
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -202,6 +317,7 @@
         :initial-title="form.title"
         :initial-body="form.body"
         :initial-persona="form.persona"
+        :analysis-id="lastAnalysisId ?? undefined"
         @apply="applyGeneratedTitle"
       />
       <div class="drawer-footer">
@@ -210,6 +326,13 @@
         </el-button>
       </div>
     </el-drawer>
+
+    <OptimizeDraftDrawer
+      v-model:visible="draftDrawerVisible"
+      :loading="draftLoading"
+      :draft="draftResult"
+      @regenerate="loadOptimizeDraft"
+    />
   </div>
 </template>
 
@@ -217,18 +340,43 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { createAnalysis, fetchAnalysis, fetchAnalysisList } from '@/api/analysis'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import {
+  createAnalysis,
+  deleteAnalysis,
+  fetchAnalysis,
+  fetchAnalysisList,
+  optimizeDraft,
+  type OptimizeDraftResponse,
+} from '@/api/analysis'
+import { useReanalyze } from '@/composables/useReanalyze'
 import { fetchSystemInfo, type SystemInfo } from '@/api/system'
+import AnalysisContentFields from '@/components/analysis/AnalysisContentFields.vue'
 import SensitiveWordDetector from '@/components/workbench/SensitiveWordDetector.vue'
 import WorkbenchInsightPanel from '@/components/workbench/WorkbenchInsightPanel.vue'
 import TitleGeneratorPanel from '@/components/title/TitleGeneratorPanel.vue'
+import OptimizeDraftDrawer from '@/components/report/OptimizeDraftDrawer.vue'
+import ReportIssuesPanel from '@/components/report/ReportIssuesPanel.vue'
+import ReportOptimizationTabs from '@/components/report/ReportOptimizationTabs.vue'
 import { useAnalysisPoll } from '@/composables/useAnalysisPoll'
 import { useWorkbenchAnalysis } from '@/composables/useWorkbenchAnalysis'
+import { DEFAULT_DAILY_QUOTA, ERROR_QUOTA_EXCEEDED } from '@/constants/quota'
 import { useUserStore } from '@/stores/user'
-import type { AnalysisListItem, AnalysisScenario, AnalysisStatus, PersonaType } from '@/types/api'
+import type {
+  AnalysisListItem,
+  AnalysisScenario,
+  AnalysisStatus,
+  CompetitorContext,
+  PersonaType,
+  PublishedMetrics,
+} from '@/types/api'
 import { saveAnalysisDraft } from '@/utils/analysisDraft'
-import { averageReportScore, formatRelativeTime, isToday } from '@/utils/analysisDisplay'
+import {
+  buildAnalysisCreatePayload,
+  createEmptyCompetitorContext,
+  createEmptyPublishedMetrics,
+} from '@/utils/analysisPayload'
+import { averageReportScore, formatRelativeTime } from '@/utils/analysisDisplay'
 
 const { t, locale } = useI18n()
 const router = useRouter()
@@ -240,15 +388,33 @@ const form = reactive({
   persona: 'agency' as PersonaType,
   title: '',
   body: '',
+  coverImageUrl: undefined as string | undefined,
+  publishedMetrics: createEmptyPublishedMetrics() as PublishedMetrics,
+  competitorContext: createEmptyCompetitorContext() as CompetitorContext,
 })
 
 const analyzing = ref(false)
 const recordsLoading = ref(true)
 const systemLoading = ref(true)
 const titleDrawerVisible = ref(false)
+const draftDrawerVisible = ref(false)
+const draftLoading = ref(false)
+const draftResult = ref<OptimizeDraftResponse | null>(null)
 const recentRecords = ref<AnalysisListItem[]>([])
+const recordFilters = reactive({
+  keyword: '',
+  status: '' as AnalysisStatus | '',
+  scenario: '' as AnalysisScenario | '',
+})
+const statusOptions: AnalysisStatus[] = ['pending', 'processing', 'completed', 'failed']
+const scenarioOptions: AnalysisScenario[] = ['draft', 'published', 'competitor']
+const { running: reanalyzeRunning, runReanalyze } = useReanalyze()
+const reanalyzeTargetId = ref<string | null>(null)
 const systemInfo = ref<SystemInfo | null>(null)
 const pollingId = ref<string | null>(null)
+const lastAnalysisId = ref<string | null>(null)
+const showInPlaceHint = ref(false)
+const quotaBannerDismissed = ref(false)
 
 const poll = useAnalysisPoll(async () => {
   if (!pollingId.value) throw new Error('missing analysis id')
@@ -256,9 +422,16 @@ const poll = useAnalysisPoll(async () => {
   return res.data.data
 })
 
-const dailyQuota = computed(() => userStore.profile?.dailyQuota ?? 10)
-const usedToday = computed(() => recentRecords.value.filter((item) => isToday(item.createdAt)).length)
-const remainingQuota = computed(() => Math.max(dailyQuota.value - usedToday.value, 0))
+const dailyQuota = computed(
+  () => userStore.usage?.dailyQuota ?? userStore.profile?.dailyQuota ?? DEFAULT_DAILY_QUOTA,
+)
+const usedToday = computed(() => userStore.usage?.usedToday ?? 0)
+const remainingQuota = computed(
+  () => userStore.usage?.remaining ?? Math.max(dailyQuota.value - usedToday.value, 0),
+)
+const showQuotaExceededBanner = computed(
+  () => remainingQuota.value <= 0 && !quotaBannerDismissed.value,
+)
 const quotaPercent = computed(() =>
   dailyQuota.value ? Math.min(Math.round((usedToday.value / dailyQuota.value) * 100), 100) : 0,
 )
@@ -342,6 +515,8 @@ function getAnalyzeParams() {
   return {
     title: form.title.trim(),
     body: form.body.trim(),
+    persona: form.persona,
+    analysisId: pollingId.value ?? workbench.analysisId.value ?? undefined,
   }
 }
 
@@ -350,11 +525,27 @@ async function refreshInsight() {
     ElMessage.warning(t('dashboard.validationRequired'))
     return
   }
-  await workbench.refresh(getAnalyzeParams())
+  if (!workbench.analysisId.value && !pollingId.value) {
+    ElMessage.warning(t('workbench.refreshNeedAnalysis'))
+    return
+  }
+  try {
+    await workbench.refresh(getAnalyzeParams())
+  } catch {
+    ElMessage.warning(t('dashboard.validationRequired'))
+  }
 }
 
 async function regenerateTitles() {
+  if (!workbench.analysisId.value && !pollingId.value) {
+    ElMessage.warning(t('workbench.regenerateNeedAnalysis'))
+    return
+  }
   await workbench.regenerateTitles(getAnalyzeParams())
+}
+
+function applyRecommendedTitle(title: string) {
+  form.title = title
 }
 
 function openTitleDrawer() {
@@ -366,16 +557,69 @@ function applyGeneratedTitle(title: string) {
   titleDrawerVisible.value = false
 }
 
+async function openOptimizeDraft() {
+  if (!lastAnalysisId.value) return
+  draftDrawerVisible.value = true
+  await loadOptimizeDraft()
+}
+
+async function loadOptimizeDraft() {
+  if (!lastAnalysisId.value) return
+  draftLoading.value = true
+  draftResult.value = null
+  try {
+    const res = await optimizeDraft(lastAnalysisId.value)
+    draftResult.value = res.data.data
+  } catch {
+    ElMessage.error(t('report.optimizeDraftFailed'))
+    draftDrawerVisible.value = false
+  } finally {
+    draftLoading.value = false
+  }
+}
+
+function handleRecentSearch() {
+  loadRecentRecords()
+}
+
 async function loadRecentRecords() {
   recordsLoading.value = true
   try {
-    const res = await fetchAnalysisList({ page: 1, size: 8 })
+    const res = await fetchAnalysisList({
+      page: 1,
+      size: 8,
+      keyword: recordFilters.keyword.trim() || undefined,
+      status: recordFilters.status || undefined,
+      scenario: recordFilters.scenario || undefined,
+    })
     recentRecords.value = res.data.data.items
   } catch {
     recentRecords.value = []
   } finally {
     recordsLoading.value = false
   }
+}
+
+async function confirmDeleteRecord(row: AnalysisListItem) {
+  try {
+    await ElMessageBox.confirm(t('history.deleteConfirm'), t('history.delete'), {
+      type: 'warning',
+      confirmButtonText: t('history.delete'),
+    })
+    await deleteAnalysis(row.id)
+    ElMessage.success(t('history.deleteSuccess'))
+    await loadRecentRecords()
+  } catch (err) {
+    if (err !== 'cancel' && err !== 'close') {
+      ElMessage.error(t('history.deleteFailed'))
+    }
+  }
+}
+
+async function handleReanalyze(row: AnalysisListItem) {
+  reanalyzeTargetId.value = row.id
+  await runReanalyze(row.id)
+  reanalyzeTargetId.value = null
 }
 
 async function loadSystemInfo() {
@@ -392,44 +636,80 @@ function goToReport(row: AnalysisListItem) {
   router.push(`/analysis/${row.id}`)
 }
 
+function goToReportById(id: string) {
+  router.push(`/analysis/${id}`)
+}
+
+function isQuotaExceededError(err: unknown): boolean {
+  return (err as Error & { code?: number }).code === ERROR_QUOTA_EXCEEDED
+}
+
 async function handleQuickAnalyze() {
   if (!form.title.trim() && !form.body.trim()) {
     ElMessage.warning(t('dashboard.validationRequired'))
     return
   }
+  if (remainingQuota.value <= 0) {
+    quotaBannerDismissed.value = false
+    ElMessage.warning(t('dashboard.quotaExceededMessage'))
+    return
+  }
 
   analyzing.value = true
-  const insightPromise = workbench.analyze(getAnalyzeParams())
+  showInPlaceHint.value = false
+  workbench.reset()
+  let analysisCreated = false
   try {
-    const res = await createAnalysis({
-      scenario: form.scenario,
-      persona: form.persona,
-      title: form.title.trim() || undefined,
-      body: form.body.trim() || undefined,
-    })
+    const res = await createAnalysis(buildAnalysisCreatePayload(form))
+    analysisCreated = true
     const { id } = res.data.data
     pollingId.value = id
+    lastAnalysisId.value = id
+    workbench.setAnalysisId(id)
+
     const ok = await poll.start()
-    await insightPromise
     if (ok) {
+      await workbench.hydrateFromAnalysisId(id)
       ElMessage.success(t('dashboard.analyzeSuccess'))
-      await router.push(`/analysis/${id}`)
+      showInPlaceHint.value = true
+      await loadRecentRecords()
       return
     }
+
     ElMessage.error(poll.error.value || t('dashboard.analyzeFailed'))
     await router.push(`/analysis/${id}`)
-  } catch {
-    await insightPromise
-    saveAnalysisDraft({ ...form })
+  } catch (err) {
+    if (isQuotaExceededError(err)) {
+      quotaBannerDismissed.value = false
+      await userStore.fetchUsage()
+      ElMessage.warning(t('dashboard.quotaExceededMessage'))
+      return
+    }
+    if (analysisCreated) {
+      ElMessage.error(t('dashboard.analyzeFailed'))
+      return
+    }
+    saveAnalysisDraft({
+      scenario: form.scenario,
+      persona: form.persona,
+      title: form.title,
+      body: form.body,
+      coverImageUrl: form.coverImageUrl,
+      publishedMetrics: form.publishedMetrics,
+      competitorContext: form.competitorContext,
+    })
     ElMessage.info(t('dashboard.draftSaved'))
     await router.push({ name: 'analysis-new' })
   } finally {
+    if (analysisCreated) {
+      await userStore.fetchUsage()
+    }
     analyzing.value = false
   }
 }
 
 onMounted(async () => {
-  await Promise.all([loadRecentRecords(), loadSystemInfo()])
+  await Promise.all([userStore.fetchUsage(), loadRecentRecords(), loadSystemInfo()])
 })
 </script>
 
@@ -438,6 +718,10 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.quota-exceeded-banner {
+  margin-bottom: 0;
 }
 
 .welcome-row {
@@ -547,6 +831,34 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.in-place-hint {
+  margin-top: 12px;
+}
+
+.report-extras {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.recent-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.recent-filter-keyword {
+  width: 200px;
+}
+
+.recent-filter-select {
+  width: 130px;
 }
 
 .records-table {

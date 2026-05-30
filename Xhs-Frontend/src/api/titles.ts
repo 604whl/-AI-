@@ -1,10 +1,10 @@
 import { generateTitles, generateTitlesByAnalysisId } from '@/api/analysis'
-import { MOCK_SCORED_TITLES } from '@/mocks/titles'
 import type { GeneratedTitle, TitleGenerateRequest } from '@/types/api'
 import type { ScoredTitle, TitleGenerateParams, TitleGenerateResult, TitleTypeTag } from '@/types/title'
 import { extractHighlightSegments } from '@/utils/titleHighlight'
 
-const USE_MOCK = true
+/** 开发时可设 VITE_USE_TITLE_MOCK=true 走本地 Mock */
+const USE_MOCK = import.meta.env.VITE_USE_TITLE_MOCK === 'true'
 
 const TYPE_TAGS: TitleTypeTag[] = ['anxiety', 'info_gap', 'comeback', 'conflict']
 
@@ -34,10 +34,6 @@ function mapApiTitle(item: GeneratedTitle, index: number): ScoredTitle {
   }
 }
 
-function sliceMockTitles(count: number): ScoredTitle[] {
-  return MOCK_SCORED_TITLES.slice(0, Math.min(count, MOCK_SCORED_TITLES.length))
-}
-
 /** Mock / 真实接口统一的标题生成 */
 export async function fetchScoredTitles(
   params: TitleGenerateParams,
@@ -46,8 +42,8 @@ export async function fetchScoredTitles(
   if (USE_MOCK) {
     await delay(2400)
     return {
-      titles: sliceMockTitles(params.count),
-      promptVersion: 'mock-v2.1',
+      titles: [],
+      promptVersion: 'mock-pending',
     }
   }
 

@@ -1,0 +1,16 @@
+# 复制为 application-local.yml（已在 .gitignore 中），并填入真实 DashScope API Key
+#
+# Windows PowerShell:
+#   $env:DASHSCOPE_API_KEY="sk-xxx"
+# Linux / macOS:
+#   export DASHSCOPE_API_KEY=sk-xxx
+#
+# 或在下方直接填写（勿提交到 Git）:
+spring:
+  ai:
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY:}
+
+app:
+  ai:
+    mock-enabled: false

@@ -6,6 +6,7 @@ import type {
   AnalysisScenario,
   AnalysisStatus,
   ApiResponse,
+  ComplianceWarning,
   PaginatedData,
   TitleGenerateRequest,
   TitleGenerateResponse,
@@ -42,4 +43,25 @@ export function generateTitlesByAnalysisId(
   payload: Omit<TitleGenerateRequest, 'analysisId' | 'title' | 'body'>,
 ) {
   return http.post<ApiResponse<TitleGenerateResponse>>(`/analysis/${id}/titles`, payload)
+}
+
+export interface OptimizeDraftRequest {
+  includeTitle?: boolean
+  tone?: string
+  maxLength?: number
+}
+
+export interface OptimizeDraftResponse {
+  analysisId: string
+  optimizedTitle: string
+  optimizedBody: string
+  structureOutline: string[]
+  cta: string
+  complianceWarnings: ComplianceWarning[]
+  promptVersion: string
+  wordCount: number
+}
+
+export function optimizeDraft(id: string, payload?: OptimizeDraftRequest) {
+  return http.post<ApiResponse<OptimizeDraftResponse>>(`/analysis/${id}/optimize-draft`, payload ?? {})
 }

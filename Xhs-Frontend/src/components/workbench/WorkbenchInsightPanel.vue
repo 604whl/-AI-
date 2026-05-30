@@ -1,5 +1,9 @@
 <template>
   <div class="insight-panel">
+    <ContentTypeTags
+      :content-type="contentType"
+      :secondary-tags="secondaryTags"
+    />
     <ViralScoreCard
       :scores="scores"
       :loading="loading"
@@ -10,8 +14,11 @@
     <RecommendedTitlesPanel
       :titles="recommendedTitles"
       :regenerating="titlesRegenerating"
+      :can-regenerate="hasResult"
       @regenerate="$emit('regenerate-titles')"
+      @apply="$emit('apply-title', $event)"
     />
+    <StructureBreakdownPanel :structure="structure" />
     <HotPointsBreakdown :points="hotPoints" />
     <AiOptimizationPanel :advice="optimization" :has-data="hasResult" />
     <HotTopicsPanel :topics="hotTopics" @select="$emit('select-topic', $event)" />
@@ -20,19 +27,25 @@
 
 <script setup lang="ts">
 import ViralScoreCard from './ViralScoreCard.vue'
+import ContentTypeTags from './ContentTypeTags.vue'
 import RecommendedTitlesPanel from './RecommendedTitlesPanel.vue'
 import HotPointsBreakdown from './HotPointsBreakdown.vue'
 import HotTopicsPanel from './HotTopicsPanel.vue'
 import AiOptimizationPanel from './AiOptimizationPanel.vue'
+import StructureBreakdownPanel from './StructureBreakdownPanel.vue'
 import type {
   AiOptimizationAdvice,
   AnalysisLoadingStep,
   HotPoint,
   RecommendedTitle,
+  StructureBreakdown,
   ViralScoreCard as ViralScoreCardType,
 } from '@/types/workbench'
 
 defineProps<{
+  contentType: string | null
+  secondaryTags: string[]
+  structure: StructureBreakdown | null
   scores: ViralScoreCardType | null
   recommendedTitles: RecommendedTitle[]
   hotPoints: HotPoint[]
@@ -48,6 +61,7 @@ defineEmits<{
   refresh: []
   'regenerate-titles': []
   'select-topic': [topic: string]
+  'apply-title': [title: string]
 }>()
 </script>
 

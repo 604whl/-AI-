@@ -49,7 +49,10 @@
 | POST | `/analysis/{id}/optimize-draft` | 生成优化稿 |
 | POST | `/titles` | 独立标题生成（无分析 ID） |
 | GET | `/analysis` | 历史列表（分页） |
+| GET | `/auth/usage` | 今日分析用量（`usage_log` 统计） |
 | DELETE | `/analysis/{id}` | 删除记录 |
+| POST | `/files/cover` | 上传封面图（multipart `file`） |
+| GET | `/files/cover/{objectKey}` | 读取已上传封面（需登录） |
 
 ### 任务状态机
 

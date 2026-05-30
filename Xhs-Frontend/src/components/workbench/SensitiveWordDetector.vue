@@ -7,11 +7,20 @@
         <el-tag :type="riskTagType" size="small" effect="dark" round>
           {{ riskLabel }}
         </el-tag>
+        <el-tag v-if="fromAnalysisReport" size="small" type="info" effect="plain">
+          {{ t('workbench.complianceFromReport') }}
+        </el-tag>
       </div>
     </div>
 
-    <div v-if="result.words.length" class="risk-content">
-      <p class="risk-desc">{{ t('workbench.sensitiveFound', { count: result.words.length }) }}</p>
+    <div v-if="result.warnings.length" class="risk-content">
+      <p class="risk-desc">{{ t('workbench.sensitiveFound', { count: result.warnings.length }) }}</p>
+      <ul class="compliance-list">
+        <li v-for="(w, i) in result.warnings" :key="`${w.rule}-${i}`">
+          <strong>{{ w.matchedText }}</strong>
+          <span class="compliance-suggestion"> — {{ w.suggestion }}</span>
+        </li>
+      </ul>
       <div class="word-tags">
         <el-tag
           v-for="word in result.words"
@@ -47,6 +56,8 @@ const props = defineProps<{
   result: SensitiveWordResult
   title: string
   body: string
+  /** 展示分析报告中的 complianceWarnings（后端 ComplianceChecker 合并结果） */
+  fromAnalysisReport?: boolean
 }>()
 
 const { t } = useI18n()
@@ -135,6 +146,19 @@ function escapeHtml(text: string): string {
 .risk-desc {
   margin: 0 0 8px;
   font-size: 12px;
+  color: #b91c1c;
+}
+
+.compliance-list {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #991b1b;
+}
+
+.compliance-suggestion {
+  font-weight: 400;
   color: #b91c1c;
 }
 

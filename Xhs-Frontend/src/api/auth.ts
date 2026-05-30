@@ -1,6 +1,6 @@
 import http from './http'
 import type { ApiResponse } from '@/types/api'
-import type { AuthResponse, LoginRequest, RegisterRequest, UserProfile } from '@/types/auth'
+import type { AuthResponse, LoginRequest, RegisterRequest, UpdateProfileRequest, UserProfile, UserUsage } from '@/types/auth'
 
 export function login(data: LoginRequest) {
   return http.post<ApiResponse<AuthResponse>>('/auth/login', data)
@@ -19,4 +19,16 @@ export function refreshToken(refreshToken: string) {
 
 export function fetchCurrentUser() {
   return http.get<ApiResponse<UserProfile>>('/auth/me')
+}
+
+export function updateProfile(data: UpdateProfileRequest) {
+  return http.patch<ApiResponse<UserProfile>>('/auth/me', data)
+}
+
+export function logout(refreshToken?: string) {
+  return http.post<ApiResponse<null>>('/auth/logout', refreshToken ? { refreshToken } : {})
+}
+
+export function fetchUsage() {
+  return http.get<ApiResponse<UserUsage>>('/auth/usage')
 }

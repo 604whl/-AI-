@@ -46,6 +46,9 @@ router.beforeEach(async (to) => {
   if (!userStore.profile) {
     await userStore.fetchProfile()
   }
+  if (!userStore.usage) {
+    await userStore.fetchUsage()
+  }
 
   return true
 })
