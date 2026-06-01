@@ -1,0 +1,15 @@
+# 【可选】用环境变量覆盖 application-local.yml 中的配置（一般不需要）
+#
+# 默认做法：在 src/main/resources/application-local.yml 里直接写 api-key 与模型名即可。
+# 仅当不想把 Key 写在 yml 里时，再复制本文件为 local-ai-env.ps1 使用：
+#   Copy-Item scripts\local-ai-env.ps1.example scripts\local-ai-env.ps1
+#   . .\scripts\local-ai-env.ps1
+
+$env:DASHSCOPE_API_KEY = "sk-在此填写你的百炼APIKey"
+$env:DASHSCOPE_CHAT_MODEL = "qwen-turbo"
+$env:DASHSCOPE_VISION_MODEL = "qwen-vl-plus"
+$env:DASHSCOPE_EMBEDDING_MODEL = "text-embedding-v3"
+$env:AI_MOCK_ENABLED = "false"
+$env:AGENT_ENABLED = "true"
+
+Write-Host "DashScope env loaded (overrides yml if set)"

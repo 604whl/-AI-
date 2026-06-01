@@ -26,22 +26,9 @@ docker compose -f infra/docker-compose.yml up -d
 ## 启用真实 AI（DashScope）
 
 1. 在 [阿里云百炼 / DashScope](https://help.aliyun.com/zh/model-studio/) 创建 API Key。  
-2. 设置环境变量（推荐，勿把 Key 提交到 Git）：
-
-```powershell
-# Windows PowerShell
-$env:DASHSCOPE_API_KEY="sk-你的Key"
-$env:AI_MOCK_ENABLED="false"
-```
-
-```bash
-# Linux / macOS
-export DASHSCOPE_API_KEY=sk-你的Key
-export AI_MOCK_ENABLED=false
-```
-
-3. 或复制 `src/main/resources/application-local.yml.example` 为 `application-local.yml` 并填入 Key。  
-4. 启动后端，日志应出现：`Real AI enabled: DashScope model=qwen-plus, mock disabled`  
-5. 若 Key 未配置且 `AI_MOCK_ENABLED=false`，分析任务会失败并提示 `ai_not_configured`。
+2. **推荐（本地一次配置）**：编辑 `src/main/resources/application-local.yml`（已在 `.gitignore`），将 `spring.ai.dashscope.api-key` 改为你的 `sk-...`，并按控制台调整 `model` / `vision-model`。保存后直接 `mvn spring-boot:run`，**无需每次启动前设环境变量**。  
+3. 启动后端，日志应出现：`Real AI enabled: DashScope model=qwen-turbo, mock disabled`  
+4. 若 Key 未配置且 `AI_MOCK_ENABLED=false`，分析任务会失败并提示 `ai_not_configured`。  
+5. **可选**：用 `scripts/local-ai-env.ps1` 通过环境变量覆盖 yml（见 `local-ai-env.ps1.example`）。
 
 离线开发可设 `AI_MOCK_ENABLED=true` 使用样例报告，无需 Key。

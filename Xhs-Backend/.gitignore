@@ -13,6 +13,7 @@ target/
 
 # Sensitive config
 **/application-local.yml
+scripts/local-ai-env.ps1
 *.env
 *.env.*
 

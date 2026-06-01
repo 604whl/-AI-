@@ -4,6 +4,7 @@
       <div class="logo">{{ t('nav.logo') }}</div>
       <el-menu router :default-active="route.path">
         <el-menu-item index="/">{{ t('nav.dashboard') }}</el-menu-item>
+        <el-menu-item index="/chat">{{ t('nav.chat') }}</el-menu-item>
         <el-menu-item index="/analysis/new">{{ t('nav.analysisNew') }}</el-menu-item>
         <el-menu-item index="/titles">{{ t('nav.titles') }}</el-menu-item>
         <el-menu-item index="/history">{{ t('nav.history') }}</el-menu-item>

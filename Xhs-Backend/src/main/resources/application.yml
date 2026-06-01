@@ -78,6 +78,32 @@ app:
     analysis-enabled: false
     title-enabled: false
     top-k: 5
+  agent:
+    enabled: ${AGENT_ENABLED:false}
+    mock-enabled: ${AI_MOCK_ENABLED:false}
+    max-steps: 8
+    total-timeout-seconds: 120
+    session-ttl-hours: 24
+    max-context-messages: 20
+    daily-message-quota: 20
+    tools:
+      search-kb: true
+      analyze-content: true
+      generate-titles: true
+      scan-compliance: true
+      get-analysis-report: true
+      list-recent-analyses: true
+      analyze-cover: true
+      optimize-draft: true
+      web-search: false
+      fetch-url: false
+      get-hot-topics: true
+      get-industry-calendar: true
+      get-user-profile: true
+    web-search:
+      provider: tavily
+      api-key: ${WEB_SEARCH_API_KEY:}
+      daily-quota-per-user: 10
   kb:
     source-dir: ${KB_SOURCE_DIR:./data/kb-sources}
     default-doc-type: viral_case

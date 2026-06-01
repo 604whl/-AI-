@@ -4,12 +4,14 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.content.Media;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 
 @Component
+@ConditionalOnProperty(name = "app.ai.mock-enabled", havingValue = "false")
 public class DashScopeModelProvider implements ModelProvider {
 
     private final ChatClient chatClient;

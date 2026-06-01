@@ -14,6 +14,7 @@
 | [api-schema/](./api-schema/) | 已定稿 | JSON Schema + 错误码（`api-1.0.0`） |
 | [TECH-ARCHITECTURE.md](./TECH-ARCHITECTURE.md) | 已定稿 | 全栈技术架构（`arch-1.0.0`） |
 | [RAG-DESIGN.md](./RAG-DESIGN.md) | 已定稿 | PostgreSQL + pgvector RAG |
+| [AGENT-TOOL-CALLING.md](./AGENT-TOOL-CALLING.md) | 开发中 | Agent 工具调用、记忆、对话 API（`agent-1.0.0`） |
 | [../infra/README.md](../infra/README.md) | 已定稿 | 本地 Docker 环境 |
 
 ## 推荐阅读顺序
