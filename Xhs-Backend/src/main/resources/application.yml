@@ -24,6 +24,11 @@ spring:
       chat:
         options:
           model: ${DASHSCOPE_CHAT_MODEL:qwen-plus}
+      embedding:
+        enabled: true
+        options:
+          model: ${DASHSCOPE_EMBEDDING_MODEL:text-embedding-v3}
+          dimensions: 1024
     openai:
       api-key: ${OPENAI_API_KEY:}
       base-url: ${OPENAI_BASE_URL:https://api.openai.com}
@@ -73,6 +78,19 @@ app:
     analysis-enabled: false
     title-enabled: false
     top-k: 5
+  kb:
+    source-dir: ${KB_SOURCE_DIR:./data/kb-sources}
+    default-doc-type: viral_case
+    chunking:
+      chunk-size-tokens: 400
+      chunk-overlap-tokens: 50
+      min-chunk-size-chars: 100
+      min-chunk-length-to-embed: 10
+      max-num-chunks: 500
+      keep-separator: true
+    ingest:
+      embed-on-ingest: true
+      embedding-batch-size: 16
   storage:
     type: ${STORAGE_TYPE:local}
     minio:
