@@ -33,6 +33,17 @@ public class CoverAnalysisService {
 
     private volatile String coverVisionSystemPrompt;
 
+    public Map<String, Object> analyzeByContext(String coverImageUrl, String title, String body) {
+        if (coverImageUrl == null || coverImageUrl.isBlank()) {
+            return unavailable();
+        }
+        AnalysisTask task = new AnalysisTask();
+        task.setCoverImageUrl(coverImageUrl);
+        task.setTitle(title);
+        task.setBody(body);
+        return analyze(task);
+    }
+
     public Map<String, Object> analyze(AnalysisTask task) {
         if (task.getCoverImageUrl() == null || task.getCoverImageUrl().isBlank()) {
             return unavailable();

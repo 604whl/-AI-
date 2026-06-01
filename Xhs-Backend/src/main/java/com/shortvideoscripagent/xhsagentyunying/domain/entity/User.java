@@ -24,6 +24,8 @@ public class User {
 
     private Integer dailyQuota;
 
+    private String agentPreferences;
+
     private OffsetDateTime createdAt;
 
     private OffsetDateTime updatedAt;

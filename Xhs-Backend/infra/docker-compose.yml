@@ -13,7 +13,6 @@ services:
       - "5432:5432"
     volumes:
       - xhsagent_pg_data:/var/lib/postgresql/data
-      - ../db/migration/V1__init_schema.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U xhsagent -d xhsagent"]
       interval: 5s

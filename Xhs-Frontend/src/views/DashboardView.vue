@@ -14,6 +14,7 @@
       <div class="welcome-text">
         <h1 class="welcome-title">{{ greeting }}</h1>
         <p class="welcome-desc">{{ t('dashboard.welcomeDesc') }}</p>
+        <el-button type="primary" plain size="small" @click="goChat">{{ t('nav.chat') }}</el-button>
       </div>
       <el-card class="quota-card" shadow="never">
         <div class="quota-header">
@@ -645,6 +646,10 @@ async function loadSystemInfo() {
 
 function goToReport(row: AnalysisListItem) {
   router.push(`/analysis/${row.id}`)
+}
+
+function goChat() {
+  router.push({ name: 'chat' })
 }
 
 function goToReportById(id: string) {

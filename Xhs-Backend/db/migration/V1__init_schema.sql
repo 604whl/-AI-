@@ -6,6 +6,9 @@ CREATE EXTENSION IF NOT EXISTS vector;
 CREATE SCHEMA IF NOT EXISTS app;
 CREATE SCHEMA IF NOT EXISTS kb;
 
+-- pgvector 安装在 public；Flyway default-schema=app 会把 search_path 限为 app
+SET search_path TO app, kb, public;
+
 -- ========== app：业务 ==========
 
 CREATE TABLE app.users (

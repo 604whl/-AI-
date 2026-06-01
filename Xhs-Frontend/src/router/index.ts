@@ -19,6 +19,7 @@ const router = createRouter({
         { path: '', name: 'dashboard', component: () => import('@/views/DashboardView.vue') },
         { path: 'analysis/new', name: 'analysis-new', component: () => import('@/views/analysis/AnalysisNewView.vue') },
         { path: 'analysis/:id', name: 'analysis-report', component: () => import('@/views/analysis/AnalysisReportView.vue') },
+        { path: 'chat', name: 'chat', component: () => import('@/views/chat/ChatView.vue') },
         { path: 'titles', name: 'titles', component: () => import('@/views/titles/TitlesView.vue') },
         { path: 'history', name: 'history', component: () => import('@/views/history/HistoryView.vue') },
         { path: 'settings', name: 'settings', component: () => import('@/views/settings/SettingsView.vue') },

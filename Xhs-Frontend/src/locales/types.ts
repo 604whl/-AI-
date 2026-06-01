@@ -25,6 +25,7 @@ export interface LocaleMessages {
   nav: {
     logo: string
     dashboard: string
+    chat: string
     analysisNew: string
     titles: string
     history: string
@@ -388,5 +389,57 @@ export interface LocaleMessages {
     optimizedSentence: string
     refreshNeedAnalysis: string
     regenerateNeedAnalysis: string
+  }
+  chat: {
+    pageTitle: string
+    pageDesc: string
+    sessions: string
+    newSession: string
+    defaultSessionTitle: string
+    deleteSession: string
+    noSessions: string
+    emptyHint: string
+    you: string
+    toolTraces: string
+    draftAttachments: string
+    inputPlaceholder: string
+    send: string
+    sendHint: string
+    quickAnalyze: string
+    quickTitles: string
+    quickCompliance: string
+    quickHistory: string
+    quickAnalyzePrompt: string
+    quickTitlesPrompt: string
+    quickOptimize: string
+    quickOptimizePrompt: string
+    quickTopics: string
+    quickTopicsPrompt: string
+    quickSearch: string
+    quickSearchPrompt: string
+    quickCompliancePrompt: string
+    quickHistoryPrompt: string
+    uploadCover: string
+    removeCover: string
+    cardAnalysis: string
+    cardTitles: string
+    cardCompliance: string
+    cardCover: string
+    cardOptimizeDraft: string
+    cardWebSearch: string
+    cardFetchedUrl: string
+    cardHotTopics: string
+    cardIndustryCalendar: string
+    coverUnavailable: string
+    coverContrast: string
+    coverEmotion: string
+    searchQuery: string
+    viewFullReport: string
+    complianceClear: string
+    loadSessionsFailed: string
+    loadMessagesFailed: string
+    createSessionFailed: string
+    sendFailed: string
+    agentDisabled: string
   }
 }
