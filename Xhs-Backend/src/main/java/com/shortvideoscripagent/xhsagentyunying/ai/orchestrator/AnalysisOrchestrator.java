@@ -2,6 +2,7 @@ package com.shortvideoscripagent.xhsagentyunying.ai.orchestrator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shortvideoscripagent.xhsagentyunying.ai.AiRuntimePolicy;
+import com.shortvideoscripagent.xhsagentyunying.ai.cover.CoverAnalysisService;
 import com.shortvideoscripagent.xhsagentyunying.ai.fixture.SampleAnalysisReport;
 import com.shortvideoscripagent.xhsagentyunying.ai.model.ModelProvider;
 import com.shortvideoscripagent.xhsagentyunying.ai.model.ModelProviderRegistry;
@@ -45,6 +46,7 @@ public class AnalysisOrchestrator {
     private final ComplianceChecker complianceChecker;
     private final RagRetriever ragRetriever;
     private final RagContextBuilder ragContextBuilder;
+    private final CoverAnalysisService coverAnalysisService;
     private final AppAiProperties appProperties;
     private final AiRuntimeProperties aiRuntimeProperties;
     private final AiRuntimePolicy aiRuntimePolicy;
@@ -65,13 +67,17 @@ public class AnalysisOrchestrator {
             task.setUpdatedAt(OffsetDateTime.now());
             taskMapper.updateById(task);
 
-            Map<String, Object> report = runAnalysis(task);
-            String reportJson = objectMapper.writeValueAsString(report);
-            List<?> warnings = (List<?>) report.getOrDefault("complianceWarnings", List.of());
+            AnalysisResult result = runAnalysis(task);
+            String reportJson = objectMapper.writeValueAsString(result.report());
+            String coverAnalysisJson = result.coverAnalysis() == null
+                    ? null
+                    : objectMapper.writeValueAsString(result.coverAnalysis());
+            List<?> warnings = (List<?>) result.report().getOrDefault("complianceWarnings", List.of());
 
             AnalysisReport analysisReport = new AnalysisReport();
             analysisReport.setTaskId(taskId);
             analysisReport.setReportJson(reportJson);
+            analysisReport.setCoverAnalysis(coverAnalysisJson);
             analysisReport.setComplianceWarnings(objectMapper.writeValueAsString(warnings));
             analysisReport.setCreatedAt(OffsetDateTime.now());
             reportMapper.insertJsonb(analysisReport);
@@ -94,19 +100,37 @@ public class AnalysisOrchestrator {
         }
     }
 
-    private Map<String, Object> runAnalysis(AnalysisTask task) throws Exception {
+    private AnalysisResult runAnalysis(AnalysisTask task) throws Exception {
         if (aiRuntimePolicy.useMockResponses()) {
             log.info("Using mock analysis for task {}", task.getId());
             Thread.sleep(800);
-            return complianceChecker.mergeIntoReport(
-                    SampleAnalysisReport.build(task.getTitle(), task.getBody(), task.getPersona()),
+            Map<String, Object> report = complianceChecker.mergeIntoReport(
+                    SampleAnalysisReport.build(task),
                     task.getTitle(),
                     task.getBody()
             );
+            Map<String, Object> coverAnalysis = hasCover(task)
+                    ? SampleAnalysisReport.buildCoverAnalysis(task.getTitle(), task.getBody())
+                    : CoverAnalysisService.unavailable();
+            coverAnalysisService.mergeCtrInsight(report, coverAnalysis);
+            return new AnalysisResult(report, coverAnalysis);
         }
 
         aiRuntimePolicy.assertRealAiAvailable();
 
+        int timeoutSeconds = appProperties.getAi().getAnalysisTimeoutSeconds();
+
+        CompletableFuture<Map<String, Object>> reportFuture = CompletableFuture.supplyAsync(() -> runTextAnalysis(task));
+        CompletableFuture<Map<String, Object>> coverFuture = CompletableFuture.supplyAsync(() -> coverAnalysisService.analyze(task));
+
+        Map<String, Object> report = reportFuture.orTimeout(timeoutSeconds, TimeUnit.SECONDS).join();
+        Map<String, Object> coverAnalysis = coverFuture.orTimeout(timeoutSeconds, TimeUnit.SECONDS).join();
+
+        coverAnalysisService.mergeCtrInsight(report, coverAnalysis);
+        return new AnalysisResult(report, coverAnalysis);
+    }
+
+    private Map<String, Object> runTextAnalysis(AnalysisTask task) {
         String ragContext = buildRagContext(task);
         String systemPrompt = promptEngine.systemPrompt();
         String userPrompt = promptEngine.buildAnalysisUserPrompt(task, ragContext);
@@ -125,7 +149,7 @@ public class AnalysisOrchestrator {
                         .supplyAsync(() -> provider.chat(systemPrompt, userPrompt))
                         .orTimeout(timeoutSeconds, TimeUnit.SECONDS)
                         .join();
-                Map<String, Object> report = jsonReportParser.parseAnalysisReport(raw);
+                Map<String, Object> report = jsonReportParser.parseAnalysisReport(raw, task.getScenario());
                 return complianceChecker.mergeIntoReport(report, task.getTitle(), task.getBody());
             } catch (Exception ex) {
                 lastError = ex;
@@ -135,7 +159,11 @@ public class AnalysisOrchestrator {
         if (lastError instanceof BusinessException businessException) {
             throw businessException;
         }
-        throw lastError == null ? new BusinessException(50002, "ai_service_unavailable") : lastError;
+        throw lastError == null ? new BusinessException(50002, "ai_service_unavailable") : new RuntimeException(lastError);
+    }
+
+    private static boolean hasCover(AnalysisTask task) {
+        return task.getCoverImageUrl() != null && !task.getCoverImageUrl().isBlank();
     }
 
     private String buildRagContext(AnalysisTask task) {
@@ -171,5 +199,8 @@ public class AnalysisOrchestrator {
             case 50003 -> "ai_error";
             default -> "unknown";
         };
+    }
+
+    private record AnalysisResult(Map<String, Object> report, Map<String, Object> coverAnalysis) {
     }
 }

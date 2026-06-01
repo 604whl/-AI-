@@ -1,7 +1,7 @@
 import { ref, shallowRef } from 'vue'
 import { fetchAnalysis, generateTitlesByAnalysisId } from '@/api/analysis'
 import { detectSensitiveWords } from '@/api/workbench'
-import type { AnalysisReport, PersonaType } from '@/types/api'
+import type { AnalysisReport, CoverAnalysis, PersonaType } from '@/types/api'
 import type {
   AiOptimizationAdvice,
   AnalysisLoadingStep,
@@ -42,6 +42,9 @@ export function useWorkbenchAnalysis() {
   const optimization = shallowRef<AiOptimizationAdvice | null>(null)
   /** 分析详情中的完整 report JSON（侧栏摘要之外的 issues / optimizations / complianceWarnings） */
   const fullReport = shallowRef<AnalysisReport | null>(null)
+  const coverAnalysis = shallowRef<CoverAnalysis | null>(null)
+  const analysisScenario = ref<string | null>(null)
+  const coverImageUrl = ref<string | undefined>(undefined)
 
   const titlesRegenerating = ref(false)
 
@@ -101,6 +104,9 @@ export function useWorkbenchAnalysis() {
     await runWithLoading(async () => {
       const res = await fetchAnalysis(id)
       const detail = res.data.data
+      analysisScenario.value = detail.scenario
+      coverImageUrl.value = detail.coverImageUrl
+      coverAnalysis.value = detail.coverAnalysis ?? null
       if (detail.report) {
         hydrateFromReport(detail.report, {
           title: detail.title,
@@ -184,6 +190,9 @@ export function useWorkbenchAnalysis() {
     complianceScanSeq++
     optimization.value = null
     fullReport.value = null
+    coverAnalysis.value = null
+    analysisScenario.value = null
+    coverImageUrl.value = undefined
   }
 
   return {
@@ -201,6 +210,9 @@ export function useWorkbenchAnalysis() {
     sensitiveWords,
     optimization,
     fullReport,
+    coverAnalysis,
+    analysisScenario,
+    coverImageUrl,
     titlesRegenerating,
     isUsingReportCompliance,
     hydrateFromReport,

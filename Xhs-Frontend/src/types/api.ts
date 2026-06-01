@@ -50,6 +50,14 @@ export interface AnalysisCreateRequest {
   competitorContext?: CompetitorContext
 }
 
+export interface CoverAnalysis {
+  available: boolean
+  keywords?: string[]
+  contrastComment?: string
+  emotionMatch?: string
+  ctrImpact?: string
+}
+
 export interface AnalysisDetail {
   id: string
   status: AnalysisStatus
@@ -63,6 +71,7 @@ export interface AnalysisDetail {
   createdAt: string
   updatedAt: string
   report?: AnalysisReport
+  coverAnalysis?: CoverAnalysis
   failure?: {
     reason: string
     code: number
@@ -146,4 +155,7 @@ export interface AnalysisReport {
     cta: string[]
   }
   complianceWarnings: ComplianceWarning[]
+  /** 竞品学习场景（P0 基础） */
+  borrowPoints?: string[]
+  doNotCopy?: string[]
 }

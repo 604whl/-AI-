@@ -122,6 +122,15 @@
               v-if="workbench.hasResult.value && workbench.fullReport.value"
               class="report-extras"
             >
+              <ReportCoverPanel
+                :cover-image-url="workbench.coverImageUrl.value"
+                :cover-analysis="workbench.coverAnalysis.value"
+              />
+              <ReportCompetitorPanel
+                v-if="workbench.analysisScenario.value === 'competitor'"
+                :borrow-points="workbench.fullReport.value.borrowPoints"
+                :do-not-copy="workbench.fullReport.value.doNotCopy"
+              />
               <ReportIssuesPanel :issues="workbench.fullReport.value.issues" />
               <ReportOptimizationTabs :report="workbench.fullReport.value" />
             </div>
@@ -356,6 +365,8 @@ import SensitiveWordDetector from '@/components/workbench/SensitiveWordDetector.
 import WorkbenchInsightPanel from '@/components/workbench/WorkbenchInsightPanel.vue'
 import TitleGeneratorPanel from '@/components/title/TitleGeneratorPanel.vue'
 import OptimizeDraftDrawer from '@/components/report/OptimizeDraftDrawer.vue'
+import ReportCompetitorPanel from '@/components/report/ReportCompetitorPanel.vue'
+import ReportCoverPanel from '@/components/report/ReportCoverPanel.vue'
 import ReportIssuesPanel from '@/components/report/ReportIssuesPanel.vue'
 import ReportOptimizationTabs from '@/components/report/ReportOptimizationTabs.vue'
 import { useAnalysisPoll } from '@/composables/useAnalysisPoll'

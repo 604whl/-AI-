@@ -26,4 +26,5 @@ public class AnalysisDetailResponse {
     private OffsetDateTime updatedAt;
     private Map<String, Object> failure;
     private Map<String, Object> report;
+    private Map<String, Object> coverAnalysis;
 }

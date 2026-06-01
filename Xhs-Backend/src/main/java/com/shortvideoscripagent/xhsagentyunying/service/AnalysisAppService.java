@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shortvideoscripagent.xhsagentyunying.ai.AiRuntimePolicy;
 import com.shortvideoscripagent.xhsagentyunying.ai.model.ModelProvider;
 import com.shortvideoscripagent.xhsagentyunying.ai.model.ModelProviderRegistry;
+import com.shortvideoscripagent.xhsagentyunying.ai.cover.CoverAnalysisService;
 import com.shortvideoscripagent.xhsagentyunying.ai.orchestrator.AnalysisOrchestrator;
 import com.shortvideoscripagent.xhsagentyunying.ai.parser.JsonReportParser;
 import com.shortvideoscripagent.xhsagentyunying.ai.prompt.PromptEngine;
@@ -263,6 +264,7 @@ public class AnalysisAppService {
                 .updatedAt(task.getUpdatedAt())
                 .failure(failure)
                 .report(reportMap)
+                .coverAnalysis(resolveCoverAnalysis(task, report, reportMap))
                 .build();
     }
 
@@ -295,6 +297,23 @@ public class AnalysisAppService {
         } catch (Exception ex) {
             return null;
         }
+    }
+
+    private Map<String, Object> resolveCoverAnalysis(
+            AnalysisTask task,
+            AnalysisReport stored,
+            Map<String, Object> reportMap
+    ) {
+        if (stored != null && stored.getCoverAnalysis() != null && !stored.getCoverAnalysis().isBlank()) {
+            Map<String, Object> parsed = parseJsonMap(stored.getCoverAnalysis());
+            if (parsed != null) {
+                return parsed;
+            }
+        }
+        if (task.getCoverImageUrl() == null || task.getCoverImageUrl().isBlank()) {
+            return CoverAnalysisService.unavailable();
+        }
+        return CoverAnalysisService.unavailable();
     }
 
     private String failureMessage(String reason) {

@@ -1,5 +1,6 @@
 package com.shortvideoscripagent.xhsagentyunying.ai.fixture;
 
+import com.shortvideoscripagent.xhsagentyunying.domain.entity.AnalysisTask;
 import com.shortvideoscripagent.xhsagentyunying.dto.title.TitleGenerateResponse;
 
 import java.util.ArrayList;
@@ -12,7 +13,27 @@ public final class SampleAnalysisReport {
     private SampleAnalysisReport() {
     }
 
+    public static Map<String, Object> build(AnalysisTask task) {
+        return build(
+                task.getTitle(),
+                task.getBody(),
+                task.getPersona(),
+                task.getScenario(),
+                task.getCoverImageUrl() != null && !task.getCoverImageUrl().isBlank()
+        );
+    }
+
     public static Map<String, Object> build(String title, String body, String persona) {
+        return build(title, body, persona, "draft", false);
+    }
+
+    public static Map<String, Object> build(
+            String title,
+            String body,
+            String persona,
+            String scenario,
+            boolean hasCover
+    ) {
         String noteTitle = title == null || title.isBlank() ? "未命名笔记" : title;
         String hook = extractFirstLine(body);
 
@@ -30,8 +51,11 @@ public final class SampleAnalysisReport {
                         "comment", "CTA 与 " + persona + " 人设匹配度较好，建议保留评论区互动引导。"
                 )
         ));
+        String ctrReason = hasCover
+                ? "标题含数字与身份标签；封面关键词清晰，点击预期中等偏上。"
+                : "标题含数字与身份标签，点击预期中等偏上。";
         report.put("scores", Map.of(
-                "ctr", score(78, "标题含数字与身份标签，点击预期中等偏上。", "high"),
+                "ctr", score(78, ctrReason, "high"),
                 "emotion", score(82, "留学生秋招焦虑点覆盖完整，情绪递进清晰。", "high"),
                 "collect", score(85, "时间线结构适合收藏回看。", "high"),
                 "conversion", score(71, "CTA 位置合理，但可再强化稀缺性。", "medium"),
@@ -39,6 +63,7 @@ public final class SampleAnalysisReport {
         ));
         report.put("issues", List.of(
                 issue("medium", "ctr", "标题可再压缩至 20 字内，提升移动端展示完整度。", "尝试「26届｜英国秋招时间线」格式。"),
+                issue("low", "emotion", "中段可增加同届竞争场景，强化紧迫感。", "补充「身边同学已开始投递」类表述。"),
                 issue("low", "conversion", "CTA 略靠后，部分用户可能在中间段落流失。", "在第 3 段末尾增加一次轻量引导。")
         ));
         report.put("optimizations", Map.of(
@@ -51,7 +76,33 @@ public final class SampleAnalysisReport {
                 "cta", List.of("评论区扣关键词领取表格", "结尾增加限时感表述")
         ));
         report.put("complianceWarnings", List.of());
+
+        if ("competitor".equals(scenario)) {
+            report.put("borrowPoints", List.of(
+                    "Hook 用「误区+反常识」开场，适合垂类笔记冷启动",
+                    "中段清单/表格结构利于收藏，可复用到自家内容",
+                    "评论区领资料 CTA 降低转化门槛，可借鉴互动设计"
+            ));
+            report.put("doNotCopy", List.of(
+                    "勿照搬对方具体 offer/公司名与数据",
+                    "勿复制整段个人经历，仅借鉴框架与节奏"
+            ));
+        }
         return report;
+    }
+
+    public static Map<String, Object> buildCoverAnalysis(String title, String body) {
+        Map<String, Object> cover = new LinkedHashMap<>();
+        cover.put("available", true);
+        cover.put("keywords", List.of("数字标签", "高对比底色", "人物表情", "留子身份"));
+        cover.put("contrastComment", "主标题与背景对比度较好，移动端缩略图可读。");
+        cover.put("emotionMatch", "封面焦虑感与秋招/求职主题一致，利于垂类人群停留。");
+        cover.put("ctrImpact", "预计可提升 5–15% 点击率，建议保留大号数字元素。");
+        if (title != null && title.contains("Offer")) {
+            cover.put("keywords", List.of("Offer 喜报", "结果导向", "高饱和色"));
+            cover.put("emotionMatch", "喜悦与成就感明确，适合 Offer 型笔记。");
+        }
+        return cover;
     }
 
     private static Map<String, Object> score(int value, String reason, String level) {
@@ -81,14 +132,6 @@ public final class SampleAnalysisReport {
             case "senior" -> "学长整理了完整表格，评论区扣「时间线」发你。";
             default -> "评论「时间线」领取完整表格，或私信获取定制建议。";
         };
-    }
-
-    public static Map<String, Object> scoresOnly(Map<String, Object> report) {
-        Object scores = report.get("scores");
-        if (scores == null) {
-            return Map.of();
-        }
-        return Map.of("scores", scores);
     }
 
     public static List<TitleGenerateResponse.TitleItem> buildTitles(String goal, String title, String body, int count) {

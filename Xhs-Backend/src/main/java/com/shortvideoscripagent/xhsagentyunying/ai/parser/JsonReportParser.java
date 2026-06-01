@@ -32,6 +32,10 @@ public class JsonReportParser {
     private final ObjectMapper objectMapper;
 
     public Map<String, Object> parseAnalysisReport(String raw) {
+        return parseAnalysisReport(raw, null);
+    }
+
+    public Map<String, Object> parseAnalysisReport(String raw, String scenario) {
         String json = extractJson(raw);
         Map<String, Object> report;
         try {
@@ -43,7 +47,27 @@ public class JsonReportParser {
         validateAnalysisReport(report);
         enrichScores(report);
         ensureDefaults(report);
+        ensureCompetitorFields(report, scenario);
         return report;
+    }
+
+    public Map<String, Object> parseCoverAnalysis(String raw) {
+        String json = extractJson(raw);
+        Map<String, Object> parsed;
+        try {
+            parsed = objectMapper.readValue(json, new TypeReference<>() {
+            });
+        } catch (Exception ex) {
+            throw new BusinessException(CODE_AI_RESPONSE_INVALID, "ai_response_invalid");
+        }
+        parsed.put("available", true);
+        if (!(parsed.get("keywords") instanceof List<?>)) {
+            parsed.put("keywords", List.of());
+        }
+        parsed.putIfAbsent("contrastComment", "");
+        parsed.putIfAbsent("emotionMatch", "");
+        parsed.putIfAbsent("ctrImpact", "");
+        return parsed;
     }
 
     public Map<String, Object> parseOptimizeDraft(String raw) {
@@ -132,10 +156,60 @@ public class JsonReportParser {
         }
         requireObject(report, "structure");
         requireObject(report, "scores");
-        requireList(report, "issues");
+        requireMinListSize(report, "issues", 3);
         requireObject(report, "optimizations");
+        requireMinOptimizationSuggestions(report);
         if (!report.containsKey("complianceWarnings")) {
             report.put("complianceWarnings", new ArrayList<>());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void ensureCompetitorFields(Map<String, Object> report, String scenario) {
+        if (!"competitor".equals(scenario)) {
+            return;
+        }
+        if (!(report.get("borrowPoints") instanceof List<?> borrow) || borrow.size() < 3) {
+            report.put("borrowPoints", List.of(
+                    "开篇 Hook 用反常识结论切入，降低划走率",
+                    "中段用表格/清单承载收藏价值，适合截图保存",
+                    "结尾 CTA 用评论区关键词领取资料，降低私信门槛"
+            ));
+        }
+        if (!(report.get("doNotCopy") instanceof List<?> avoid) || avoid.isEmpty()) {
+            report.put("doNotCopy", List.of(
+                    "勿照搬对方具体数据与人名",
+                    "勿复制整段经历叙事，仅借鉴结构"
+            ));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void requireMinOptimizationSuggestions(Map<String, Object> report) {
+        Object optObj = report.get("optimizations");
+        if (!(optObj instanceof Map<?, ?> optimizations)) {
+            throw new BusinessException(CODE_AI_RESPONSE_INVALID, "ai_response_invalid");
+        }
+        int count = 0;
+        Object titleObj = optimizations.get("title");
+        if (titleObj instanceof List<?> titleList) {
+            count += titleList.size();
+        }
+        for (String key : List.of("structure", "emotion", "cta")) {
+            Object value = optimizations.get(key);
+            if (value instanceof List<?> list) {
+                count += list.size();
+            }
+        }
+        if (count < 3) {
+            throw new BusinessException(CODE_AI_RESPONSE_INVALID, "ai_response_invalid");
+        }
+    }
+
+    private void requireMinListSize(Map<String, Object> map, String key, int minSize) {
+        Object value = map.get(key);
+        if (!(value instanceof List<?> list) || list.size() < minSize) {
+            throw new BusinessException(CODE_AI_RESPONSE_INVALID, "ai_response_invalid");
         }
     }
 

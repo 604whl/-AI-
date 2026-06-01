@@ -81,10 +81,9 @@ public class PromptEngine {
             sb.append("【正文】\n").append(task.getBody().trim()).append('\n');
         }
         if (task.getCoverImageUrl() != null && !task.getCoverImageUrl().isBlank()) {
-            sb.append("【封面】已提供图片 URL（CTR 维度须评估封面；若无法看图则在 ctr.reason 注明「未含封面视觉分析」）\n");
-            sb.append(task.getCoverImageUrl()).append('\n');
+            sb.append("【封面】用户已上传封面图，系统将单独进行视觉分析；CTR 维度须结合标题与正文，并在 ctr.reason 中体现封面相关判断（无需输出 coverAnalysis 字段）。\n");
         } else {
-            sb.append("【封面】无，CTR 仅评标题，须在 ctr.reason 注明「未含封面」。\n");
+            sb.append("【封面】无，CTR 仅评标题与正文，须在 ctr.reason 注明「未含封面」。\n");
         }
         appendPublishedMetrics(sb, task);
         appendCompetitorContext(sb, task);

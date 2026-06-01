@@ -64,6 +64,8 @@ app:
     mock-enabled: ${AI_MOCK_ENABLED:false}
     analysis-timeout-seconds: 45
     analysis-max-retries: 1
+    dashscope:
+      vision-model: ${DASHSCOPE_VISION_MODEL:qwen-vl-plus}
     openai:
       enabled: false
   rag:

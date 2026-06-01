@@ -15,6 +15,8 @@ public class AnalysisReport {
 
     private String reportJson;
 
+    private String coverAnalysis;
+
     private String complianceWarnings;
 
     private OffsetDateTime createdAt;

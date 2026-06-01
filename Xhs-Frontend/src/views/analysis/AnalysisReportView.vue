@@ -71,6 +71,11 @@
       <main class="report-main">
         <ReportScoreOverview :report="detail.report" />
 
+        <ReportCoverPanel
+          :cover-image-url="detail.coverImageUrl"
+          :cover-analysis="detail.coverAnalysis"
+        />
+
         <el-card shadow="never" class="report-module">
           <template #header>
             <span class="module-title">{{ t('report.moduleStructure') }}</span>
@@ -84,6 +89,12 @@
             :structure="insight?.structure ?? null"
           />
         </el-card>
+
+        <ReportCompetitorPanel
+          v-if="detail.scenario === 'competitor'"
+          :borrow-points="detail.report.borrowPoints"
+          :do-not-copy="detail.report.doNotCopy"
+        />
 
         <ReportIssuesPanel :issues="detail.report.issues" />
         <ReportOptimizationTabs :report="detail.report" />
@@ -149,6 +160,8 @@ import StructureBreakdownPanel from '@/components/workbench/StructureBreakdownPa
 import TitleGeneratorPanel from '@/components/title/TitleGeneratorPanel.vue'
 import OptimizeDraftDrawer from '@/components/report/OptimizeDraftDrawer.vue'
 import ReportActionsPanel from '@/components/report/ReportActionsPanel.vue'
+import ReportCompetitorPanel from '@/components/report/ReportCompetitorPanel.vue'
+import ReportCoverPanel from '@/components/report/ReportCoverPanel.vue'
 import ReportIssuesPanel from '@/components/report/ReportIssuesPanel.vue'
 import ReportOptimizationTabs from '@/components/report/ReportOptimizationTabs.vue'
 import ReportScoreOverview from '@/components/report/ReportScoreOverview.vue'

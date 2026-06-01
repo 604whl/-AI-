@@ -228,6 +228,19 @@ export interface LocaleMessages {
     regenerateDraft: string
     viewFullReport: string
     analyzeInPlaceHint: string
+    moduleCover: string
+    coverMissingTitle: string
+    coverMissingDesc: string
+    coverUnavailableTitle: string
+    coverUnavailableDesc: string
+    coverKeywords: string
+    coverContrast: string
+    coverEmotion: string
+    coverCtrImpact: string
+    moduleCompetitor: string
+    borrowPoints: string
+    doNotCopy: string
+    publishedMetricsTitle: string
   }
   titles: {
     title: string

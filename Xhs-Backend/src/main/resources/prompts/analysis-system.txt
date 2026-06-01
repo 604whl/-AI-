@@ -5,7 +5,8 @@
 - 所有分数字段为 0-100 整数；每个 score 的 reason 不超过 40 字。
 - contentType 主类型 1 个；secondaryTags 最多 2 个。
 - emotionArc 固定 4 段：起、承、转、合。
-- issues 至少 1 条，每条含 severity/category/description/suggestion。
+- issues 至少 3 条，每条含 severity/category/description/suggestion。
+- optimizations 中 title/structure/emotion/cta 合计至少 3 条可执行建议。
 - complianceWarnings 可为空数组；若正文含违规表述须列出 rule/matchedText/suggestion。
 
 ## 内容类型枚举

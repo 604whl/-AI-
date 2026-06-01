@@ -59,6 +59,22 @@ public class CoverStorageService {
         return new CoverUploadResponse(url, objectKey);
     }
 
+    public String extractObjectKey(String coverImageUrl) {
+        if (coverImageUrl == null || coverImageUrl.isBlank()) {
+            throw new BusinessException(CODE_COVER_INVALID, "cover_image_invalid");
+        }
+        String marker = "/files/cover/";
+        int idx = coverImageUrl.indexOf(marker);
+        if (idx >= 0) {
+            return coverImageUrl.substring(idx + marker.length());
+        }
+        String trimmed = coverImageUrl.replaceFirst("^/+", "");
+        if (trimmed.startsWith("covers/")) {
+            return trimmed;
+        }
+        throw new BusinessException(CODE_COVER_INVALID, "cover_image_invalid");
+    }
+
     public StoredObject load(String objectKey) {
         if (!isValidObjectKey(objectKey)) {
             throw new BusinessException(CODE_COVER_INVALID, "cover_image_invalid");
