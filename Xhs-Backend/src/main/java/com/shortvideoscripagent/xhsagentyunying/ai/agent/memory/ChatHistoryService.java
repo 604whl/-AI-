@@ -80,7 +80,7 @@ public class ChatHistoryService {
         message.setSessionId(session.getId());
         message.setRole("user");
         message.setContent(request.content());
-        message.setMetadata(serializeJson(buildUserMetadata(request)));
+        applyMetadata(message, buildUserMetadata(request));
         message.setCreatedAt(OffsetDateTime.now());
         messageMapper.insert(message);
         touchSession(session);
@@ -110,7 +110,7 @@ public class ChatHistoryService {
         message.setSessionId(session.getId());
         message.setRole("assistant");
         message.setContent(content);
-        message.setMetadata(serializeJson(metadata));
+        applyMetadata(message, metadata);
         message.setCreatedAt(OffsetDateTime.now());
         messageMapper.insert(message);
         touchSession(session);
@@ -129,7 +129,6 @@ public class ChatHistoryService {
             assistantRecord.setRole("assistant");
             assistantRecord.setContent(assistantMessage.getText());
             assistantRecord.setToolCalls(serializeJson(toToolCallMaps(assistantMessage.getToolCalls())));
-            assistantRecord.setMetadata("{}");
             assistantRecord.setCreatedAt(OffsetDateTime.now());
             messageMapper.insert(assistantRecord);
         }
@@ -141,7 +140,6 @@ public class ChatHistoryService {
             toolRecord.setContent(response.responseData());
             toolRecord.setToolCallId(response.id());
             toolRecord.setToolName(response.name());
-            toolRecord.setMetadata("{}");
             toolRecord.setCreatedAt(OffsetDateTime.now());
             messageMapper.insert(toolRecord);
         }
@@ -357,6 +355,13 @@ public class ChatHistoryService {
         } catch (Exception ex) {
             return Map.of();
         }
+    }
+
+    private void applyMetadata(ChatMessage message, Map<String, Object> metadata) {
+        if (metadata == null || metadata.isEmpty()) {
+            return;
+        }
+        message.setMetadata(serializeJson(metadata));
     }
 
     private String serializeJson(Object value) {

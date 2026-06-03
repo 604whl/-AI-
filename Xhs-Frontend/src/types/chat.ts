@@ -27,6 +27,7 @@ export type ChatCardType =
   | 'fetched_url'
   | 'hot_topics'
   | 'industry_calendar'
+  | 'recent_analyses'
 
 export interface ChatAgentCard {
   type: ChatCardType

@@ -14,6 +14,7 @@
       <ChatFetchedUrlCard v-else-if="card.type === 'fetched_url'" :payload="card.payload" />
       <ChatHotTopicsCard v-else-if="card.type === 'hot_topics'" :payload="card.payload" />
       <ChatIndustryCalendarCard v-else-if="card.type === 'industry_calendar'" :payload="card.payload" />
+      <ChatRecentAnalysesCard v-else-if="card.type === 'recent_analyses'" :payload="card.payload" />
     </div>
   </div>
 </template>
@@ -29,6 +30,7 @@ import ChatWebSearchCard from '@/components/chat/ChatWebSearchCard.vue'
 import ChatFetchedUrlCard from '@/components/chat/ChatFetchedUrlCard.vue'
 import ChatHotTopicsCard from '@/components/chat/ChatHotTopicsCard.vue'
 import ChatIndustryCalendarCard from '@/components/chat/ChatIndustryCalendarCard.vue'
+import ChatRecentAnalysesCard from '@/components/chat/ChatRecentAnalysesCard.vue'
 
 defineProps<{
   cards: ChatAgentCard[]
