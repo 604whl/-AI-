@@ -18,6 +18,7 @@ public class AppAgentProperties {
     private int dailyMessageQuota = 20;
     private Tools tools = new Tools();
     private WebSearch webSearch = new WebSearch();
+    private Mcp mcp = new Mcp();
 
     @Data
     public static class Tools {
@@ -41,6 +42,45 @@ public class AppAgentProperties {
         private String provider = "tavily";
         private String apiKey = "";
         private int dailyQuotaPerUser = 10;
+    }
+
+    /**
+     * MCP（Model Context Protocol）Server 配置。
+     * <p>
+     * 启用后，外部 MCP 客户端（如 Cursor、Claude Desktop、Spring AI MCP Client）
+     * 可通过 HTTP Streamable 协议调用本应用暴露的 Agent 工具。
+     * </p>
+     */
+    @Data
+    public static class Mcp {
+        /** 是否启用 MCP Server 端点（默认关闭，需显式开启） */
+        private boolean enabled = false;
+        /**
+         * 可选的服务级 API Key，用于无 JWT 的 MCP 客户端。
+         * 与 {@code X-Mcp-User-Id} 请求头配合，仅建议在 local/dev 使用。
+         */
+        private String apiKey = "";
+        /**
+         * 通过 MCP 对外暴露的工具名列表（逗号分隔或 YAML 数组）。
+         * 默认暴露 search_kb 与 web_search（见 {@link #getExposedToolNames()}）。
+         */
+        private java.util.List<String> exposedTools = java.util.List.of("search_kb", "web_search");
+        /** MCP 虚拟会话 ID 前缀，用于 agent_tool_log 与配额追踪 */
+        private String sessionIdPrefix = "mcp_";
+    }
+
+    /**
+     * 返回经过去重、去空白后的 MCP 暴露工具名列表。
+     */
+    public java.util.List<String> getExposedToolNames() {
+        if (mcp.exposedTools == null || mcp.exposedTools.isEmpty()) {
+            return java.util.List.of("search_kb", "web_search");
+        }
+        return mcp.exposedTools.stream()
+                .map(String::trim)
+                .filter(name -> !name.isBlank())
+                .distinct()
+                .toList();
     }
 
     public boolean isToolEnabled(String toolName) {

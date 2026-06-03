@@ -74,7 +74,7 @@ XhsAgent 是一个面向小红书内容创作者的 AI 运营助手，专注于*
 
 - [ ] **知识库内容接入** — 将爆款案例文档放入 `data/kb-sources` 并执行 reindex；开启 `app.rag.enabled` 后用于分析/标题 RAG 检索
 - [x] **Agent 工具调用（Phase 1–3 工具）** — 12 个内置工具 + Chat API + 前端对话页
-- [ ] **Agent MCP 协议** — 标准化对外暴露工具（T-24）
+- [x] **Agent MCP 协议** — Streamable HTTP MCP Server，桥接 search_kb / web_search 等工具（见 [docs/MCP-SERVER.md](./docs/MCP-SERVER.md)）
 
 ---
 
