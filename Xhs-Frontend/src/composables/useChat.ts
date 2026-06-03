@@ -6,8 +6,8 @@ import {
   createChatSession,
   fetchChatMessages,
   fetchChatSessions,
-  sendChatMessage,
 } from '@/api/chat'
+import { streamChatMessage } from '@/api/chatStream'
 import type { PersonaType } from '@/types/api'
 import type { ChatAgentCard, ChatMessageItem, ChatToolTrace } from '@/types/chat'
 
@@ -20,6 +20,14 @@ export interface DisplayMessage {
   createdAt?: string
 }
 
+export interface ChatStreamingState {
+  content: string
+  step?: number
+  maxSteps?: number
+  activeTool?: string
+  completedTools: Array<{ tool: string; success: boolean; latencyMs: number }>
+}
+
 export function useChat() {
   const { t } = useI18n()
 
@@ -28,8 +36,10 @@ export function useChat() {
   const messages = ref<DisplayMessage[]>([])
   const persona = ref<PersonaType>('agency')
   const sending = ref(false)
+  const streaming = ref<ChatStreamingState | null>(null)
   const loadingSessions = ref(false)
   const loadingMessages = ref(false)
+  let streamAbort: AbortController | null = null
 
   const hasActiveSession = computed(() => !!activeSessionId.value)
 
@@ -111,21 +121,54 @@ export function useChat() {
     }
     messages.value.push(userMsg)
     sending.value = true
+    streaming.value = { content: '', completedTools: [] }
+    streamAbort?.abort()
+    streamAbort = new AbortController()
 
     try {
-      const res = await sendChatMessage(sessionId, { content: trimmed, attachments })
-      const data = res.data.data
-      if (!data) {
-        throw new Error(t('chat.sendFailed'))
-      }
-      messages.value.push({
-        id: String(data.messageId),
-        role: 'assistant',
-        content: data.content || '',
-        cards: data.cards ?? [],
-        toolTraces: data.toolTraces ?? [],
-        createdAt: new Date().toISOString(),
-      })
+      await streamChatMessage(
+        sessionId,
+        { content: trimmed, attachments },
+        {
+          onStepStart: (step, maxSteps) => {
+            if (!streaming.value) return
+            streaming.value = { ...streaming.value, step, maxSteps, activeTool: undefined }
+          },
+          onToolStart: (tool) => {
+            if (!streaming.value) return
+            streaming.value = { ...streaming.value, activeTool: tool }
+          },
+          onToolEnd: (tool, success, latencyMs) => {
+            if (!streaming.value) return
+            streaming.value = {
+              ...streaming.value,
+              activeTool: undefined,
+              completedTools: [...streaming.value.completedTools, { tool, success, latencyMs }],
+            }
+          },
+          onDelta: (chunk) => {
+            if (!streaming.value) return
+            streaming.value = {
+              ...streaming.value,
+              content: streaming.value.content + chunk,
+            }
+          },
+          onDone: (data) => {
+            messages.value.push({
+              id: String(data.messageId),
+              role: 'assistant',
+              content: data.content || streaming.value?.content || '',
+              cards: data.cards ?? [],
+              toolTraces: data.toolTraces ?? [],
+              createdAt: new Date().toISOString(),
+            })
+          },
+          onError: (_code, message) => {
+            throw new Error(message)
+          },
+        },
+        streamAbort.signal,
+      )
       await loadSessions()
       return true
     } catch (err) {
@@ -134,6 +177,8 @@ export function useChat() {
       return false
     } finally {
       sending.value = false
+      streaming.value = null
+      streamAbort = null
     }
   }
 
@@ -156,6 +201,7 @@ export function useChat() {
     messages,
     persona,
     sending,
+    streaming,
     loadingSessions,
     loadingMessages,
     hasActiveSession,

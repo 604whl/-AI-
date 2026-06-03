@@ -47,7 +47,7 @@
     <!-- 排队 / 分析中 -->
     <div v-else-if="isPending || polling" class="loading-state">
       <el-skeleton :rows="10" animated />
-      <p class="loading-hint">{{ t('report.analyzingHint') }}</p>
+      <p class="loading-hint">{{ progressMessage || t('report.analyzingHint') }}</p>
     </div>
 
     <!-- 失败态 -->
@@ -175,7 +175,7 @@ const router = useRouter()
 const { t } = useI18n()
 
 const analysisId = computed(() => String(route.params.id ?? ''))
-const { detail, loading, polling, isPending, isCompleted, isFailed, insight, reload } =
+const { detail, loading, polling, progressMessage, isPending, isCompleted, isFailed, insight, reload } =
   useAnalysisReport(analysisId)
 const { running: reanalyzeRunning, runReanalyze } = useReanalyze()
 

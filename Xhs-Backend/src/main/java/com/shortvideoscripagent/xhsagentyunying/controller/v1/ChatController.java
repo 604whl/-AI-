@@ -12,7 +12,9 @@ import com.shortvideoscripagent.xhsagentyunying.dto.chat.ChatSessionResponse;
 import com.shortvideoscripagent.xhsagentyunying.service.ChatAppService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -52,6 +54,18 @@ public class ChatController {
     ) {
         Long userId = requireUserId();
         return ApiResponse.ok(chatAppService.sendMessage(userId, sessionId, request));
+    }
+
+    /**
+     * SSE 流式对话：推送 Agent 步骤、工具调用进度与回复正文增量。
+     */
+    @PostMapping(value = "/sessions/{sessionId}/messages/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter sendMessageStream(
+            @PathVariable String sessionId,
+            @Valid @RequestBody ChatMessageSendRequest request
+    ) {
+        Long userId = requireUserId();
+        return chatAppService.sendMessageStream(userId, sessionId, request);
     }
 
     @GetMapping("/sessions/{sessionId}/messages")

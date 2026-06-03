@@ -52,6 +52,7 @@
         :messages="messages"
         :loading="loadingMessages"
         :sending="sending"
+        :streaming="streaming"
       />
 
       <footer class="chat-input">
@@ -160,6 +161,7 @@ const {
   messages,
   persona,
   sending,
+  streaming,
   loadingSessions,
   loadingMessages,
   loadSessions,

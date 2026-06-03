@@ -62,8 +62,8 @@ pending → processing → completed
 ```
 
 - `POST /analysis` 返回 `id` + `status: pending`  
-- 客户端轮询 `GET /analysis/{id}` 直至 `completed` 或 `failed`  
-- P1 可改为 SSE/WebSocket 推送
+- 推荐：`GET /analysis/{id}/stream`（SSE）接收 `progress` / `done` 事件  
+- 兼容：轮询 `GET /analysis/{id}` 直至 `completed` 或 `failed`
 
 ---
 

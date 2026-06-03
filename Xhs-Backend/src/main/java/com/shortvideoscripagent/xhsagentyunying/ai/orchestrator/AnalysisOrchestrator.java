@@ -20,6 +20,8 @@ import com.shortvideoscripagent.xhsagentyunying.domain.entity.AnalysisReport;
 import com.shortvideoscripagent.xhsagentyunying.domain.entity.AnalysisTask;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.AnalysisReportMapper;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.AnalysisTaskMapper;
+import com.shortvideoscripagent.xhsagentyunying.service.analysis.AnalysisProgressEvent;
+import com.shortvideoscripagent.xhsagentyunying.service.analysis.AnalysisStreamHub;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -50,6 +52,7 @@ public class AnalysisOrchestrator {
     private final AppAiProperties appProperties;
     private final AiRuntimeProperties aiRuntimeProperties;
     private final AiRuntimePolicy aiRuntimePolicy;
+    private final AnalysisStreamHub analysisStreamHub;
 
     @Async("analysisExecutor")
     public void analyzeAsync(String taskId) {
@@ -66,6 +69,7 @@ public class AnalysisOrchestrator {
             task.setStatus("processing");
             task.setUpdatedAt(OffsetDateTime.now());
             taskMapper.updateById(task);
+            publishProgress(task, "processing", "started", "分析任务已开始");
 
             AnalysisResult result = runAnalysis(task);
             String reportJson = objectMapper.writeValueAsString(result.report());
@@ -86,6 +90,7 @@ public class AnalysisOrchestrator {
             task.setProcessingMs((int) (System.currentTimeMillis() - startedAt));
             task.setUpdatedAt(OffsetDateTime.now());
             taskMapper.updateById(task);
+            publishProgress(task, "completed", "finished", "分析完成");
 
             log.info("Analysis task completed: {} in {}ms", taskId, task.getProcessingMs());
         } catch (Exception ex) {
@@ -103,7 +108,10 @@ public class AnalysisOrchestrator {
     private AnalysisResult runAnalysis(AnalysisTask task) throws Exception {
         if (aiRuntimePolicy.useMockResponses()) {
             log.info("Using mock analysis for task {}", task.getId());
-            Thread.sleep(800);
+            publishProgress(task, "processing", "text_analysis", "正在分析正文（Mock）");
+            Thread.sleep(400);
+            publishProgress(task, "processing", "cover_analysis", "正在分析封面（Mock）");
+            Thread.sleep(400);
             Map<String, Object> report = complianceChecker.mergeIntoReport(
                     SampleAnalysisReport.build(task),
                     task.getTitle(),
@@ -120,12 +128,19 @@ public class AnalysisOrchestrator {
 
         int timeoutSeconds = appProperties.getAi().getAnalysisTimeoutSeconds();
 
+        if (appProperties.getRag().isEnabled() && appProperties.getRag().isAnalysisEnabled()) {
+            publishProgress(task, "processing", "rag", "正在检索知识库案例");
+        }
+        publishProgress(task, "processing", "text_analysis", "正在分析正文");
+        publishProgress(task, "processing", "cover_analysis", "正在分析封面");
+
         CompletableFuture<Map<String, Object>> reportFuture = CompletableFuture.supplyAsync(() -> runTextAnalysis(task));
         CompletableFuture<Map<String, Object>> coverFuture = CompletableFuture.supplyAsync(() -> coverAnalysisService.analyze(task));
 
         Map<String, Object> report = reportFuture.orTimeout(timeoutSeconds, TimeUnit.SECONDS).join();
         Map<String, Object> coverAnalysis = coverFuture.orTimeout(timeoutSeconds, TimeUnit.SECONDS).join();
 
+        publishProgress(task, "processing", "saving", "正在生成报告");
         coverAnalysisService.mergeCtrInsight(report, coverAnalysis);
         return new AnalysisResult(report, coverAnalysis);
     }
@@ -191,6 +206,19 @@ public class AnalysisOrchestrator {
         task.setFailureCode(code);
         task.setUpdatedAt(OffsetDateTime.now());
         taskMapper.updateById(task);
+        publishProgress(task, "failed", "failed", "分析失败：" + reason);
+    }
+
+    private void publishProgress(AnalysisTask task, String status, String phase, String message) {
+        analysisStreamHub.publish(AnalysisProgressEvent.builder()
+                .taskId(task.getId())
+                .status(status)
+                .phase(phase)
+                .message(message)
+                .processingMs(task.getProcessingMs())
+                .failureCode(task.getFailureCode())
+                .failureReason(task.getFailureReason())
+                .build());
     }
 
     private String mapFailureReason(int code) {
