@@ -761,7 +761,7 @@ Mock 仍需写入 `chat_message` 和 `toolTraces`，保证前端联调路径一�
 - [ ] **T-21** `FetchUrlTool` + SSRF 防护
 - [ ] **T-22** `agent_tool_log` 审计
 - [ ] **T-23** `get_hot_topics` / `get_industry_calendar`
-- [ ] **T-24** MCP Server 暴露 `search_kb`、`web_search`
+- [ ] **T-24** MCP Server 暴露 `search_kb`、`web_search` — 已实现，见 [MCP-SERVER.md](./MCP-SERVER.md)
 - [ ] **T-25** 前端对话工作台
 
 ---

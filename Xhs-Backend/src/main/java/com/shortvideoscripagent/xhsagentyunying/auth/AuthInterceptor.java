@@ -38,7 +38,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         }
 
         String path = resolvePath(request);
-        if (isPublicPath(path) || isSwaggerPath(path)) {
+        if (isPublicPath(path) || isSwaggerPath(path) || isMcpPath(path)) {
             return true;
         }
 
@@ -84,6 +84,13 @@ public class AuthInterceptor implements HandlerInterceptor {
                 || path.startsWith("/v3/api-docs")
                 || path.startsWith("/doc.html")
                 || path.startsWith("/webjars/");
+    }
+
+    /**
+     * MCP 端点由 {@link com.shortvideoscripagent.xhsagentyunying.ai.mcp.McpAuthFilter} 独立鉴权。
+     */
+    private boolean isMcpPath(String path) {
+        return path.startsWith("/mcp");
     }
 
     private void writeUnauthorized(HttpServletResponse response) throws Exception {

@@ -42,6 +42,15 @@ app:
     tools:
       web-search: true
       fetch-url: true
+    mcp:
+      enabled: true
+      api-key: local-mcp-dev-key
+      exposed-tools:
+        - search_kb
+        - web_search
+        - fetch_url
+        - get_hot_topics
+        - get_industry_calendar
   rag:
     enabled: true
     analysis-enabled: true
