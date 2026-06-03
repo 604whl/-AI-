@@ -37,10 +37,22 @@
 
       <div v-if="sending" class="message-row assistant">
         <div class="avatar">AI</div>
-        <div class="bubble typing">
-          <span class="dot" />
-          <span class="dot" />
-          <span class="dot" />
+        <div class="bubble streaming-bubble">
+          <p v-if="streaming?.content" class="content">{{ streaming.content }}</p>
+          <div v-else class="typing">
+            <span class="dot" />
+            <span class="dot" />
+            <span class="dot" />
+          </div>
+          <div v-if="streamingStatus" class="stream-status">
+            {{ streamingStatus }}
+          </div>
+          <ul v-if="streaming?.completedTools.length" class="stream-tools">
+            <li v-for="item in streaming.completedTools" :key="item.tool">
+              <el-tag size="small" :type="item.success ? 'success' : 'danger'">{{ toolLabel(item.tool) }}</el-tag>
+              <span class="trace-ms">{{ item.latencyMs }}ms</span>
+            </li>
+          </ul>
         </div>
       </div>
     </template>
@@ -48,22 +60,56 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ChatAgentCards from '@/components/chat/ChatAgentCards.vue'
-import type { DisplayMessage } from '@/composables/useChat'
+import type { ChatStreamingState, DisplayMessage } from '@/composables/useChat'
 
 const props = defineProps<{
   messages: DisplayMessage[]
   loading?: boolean
   sending?: boolean
+  streaming?: ChatStreamingState | null
 }>()
 
 const { t } = useI18n()
 const containerRef = ref<HTMLElement | null>(null)
 
+const streamingStatus = computed(() => {
+  const s = props.streaming
+  if (!s) return ''
+  if (s.activeTool) {
+    return t('chat.streamingTool', { tool: toolLabel(s.activeTool) })
+  }
+  if (s.step && s.maxSteps) {
+    return t('chat.streamingStep', { step: s.step, max: s.maxSteps })
+  }
+  return t('chat.streamingThinking')
+})
+
+const TOOL_LABEL_KEYS: Record<string, string> = {
+  search_kb: 'chat.toolSearchKb',
+  analyze_content: 'chat.toolAnalyzeContent',
+  generate_titles: 'chat.toolGenerateTitles',
+  scan_compliance: 'chat.toolScanCompliance',
+  get_analysis_report: 'chat.toolGetAnalysisReport',
+  list_recent_analyses: 'chat.toolListRecentAnalyses',
+  analyze_cover: 'chat.toolAnalyzeCover',
+  optimize_draft: 'chat.toolOptimizeDraft',
+  web_search: 'chat.toolWebSearch',
+  fetch_url: 'chat.toolFetchUrl',
+  get_hot_topics: 'chat.toolGetHotTopics',
+  get_industry_calendar: 'chat.toolIndustryCalendar',
+  get_user_profile: 'chat.toolGetUserProfile',
+}
+
+function toolLabel(tool: string) {
+  const key = TOOL_LABEL_KEYS[tool]
+  return key ? t(key) : tool
+}
+
 watch(
-  () => [props.messages.length, props.sending],
+  () => [props.messages.length, props.sending, props.streaming?.content, props.streaming?.completedTools.length],
   async () => {
     await nextTick()
     const el = containerRef.value
@@ -179,6 +225,25 @@ watch(
 }
 .trace-error {
   color: #ef4444;
+}
+.streaming-bubble {
+  min-width: 200px;
+}
+.stream-status {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #6b7280;
+}
+.stream-tools {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.stream-tools li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 .typing {
   display: flex;

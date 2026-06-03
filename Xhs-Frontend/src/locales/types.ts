@@ -446,5 +446,21 @@ export interface LocaleMessages {
     createSessionFailed: string
     sendFailed: string
     agentDisabled: string
+    streamingThinking: string
+    streamingStep: string
+    streamingTool: string
+    toolSearchKb: string
+    toolAnalyzeContent: string
+    toolGenerateTitles: string
+    toolScanCompliance: string
+    toolGetAnalysisReport: string
+    toolListRecentAnalyses: string
+    toolAnalyzeCover: string
+    toolOptimizeDraft: string
+    toolWebSearch: string
+    toolFetchUrl: string
+    toolGetHotTopics: string
+    toolIndustryCalendar: string
+    toolGetUserProfile: string
   }
 }

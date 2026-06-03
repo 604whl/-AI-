@@ -25,9 +25,12 @@ import com.shortvideoscripagent.xhsagentyunying.dto.analysis.AnalysisListItemRes
 import com.shortvideoscripagent.xhsagentyunying.dto.analysis.OptimizeDraftRequest;
 import com.shortvideoscripagent.xhsagentyunying.dto.analysis.OptimizeDraftResponse;
 import com.shortvideoscripagent.xhsagentyunying.dto.analysis.PaginatedResponse;
+import com.shortvideoscripagent.xhsagentyunying.service.analysis.AnalysisProgressEvent;
+import com.shortvideoscripagent.xhsagentyunying.service.analysis.AnalysisStreamHub;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -57,6 +60,7 @@ public class AnalysisAppService {
     private final AppAiProperties appProperties;
     private final AiRuntimeProperties aiRuntimeProperties;
     private final AiRuntimePolicy aiRuntimePolicy;
+    private final AnalysisStreamHub analysisStreamHub;
 
     @Transactional
     public AnalysisCreateResponse create(Long userId, AnalysisCreateRequest request) {
@@ -81,6 +85,7 @@ public class AnalysisAppService {
         task.setCreatedAt(now);
         task.setUpdatedAt(now);
         taskMapper.insert(task);
+        analysisStreamHub.publish(toProgressEvent(task));
 
         userQuotaService.consumeAnalysisQuota(userId, task.getId());
         analysisOrchestrator.analyzeAsync(task.getId());
@@ -91,6 +96,13 @@ public class AnalysisAppService {
         AnalysisTask task = requireOwnedTask(userId, id);
         AnalysisReport report = reportMapper.selectById(id);
         return toDetail(task, report);
+    }
+
+    public SseEmitter streamProgress(Long userId, String id) {
+        AnalysisTask task = requireOwnedTask(userId, id);
+        long timeoutMs = (appProperties.getAi().getAnalysisTimeoutSeconds() + 120L) * 1000L;
+        analysisStreamHub.publish(toProgressEvent(task));
+        return analysisStreamHub.subscribe(id, timeoutMs);
     }
 
     public PaginatedResponse<AnalysisListItemResponse> list(
@@ -341,6 +353,30 @@ public class AnalysisAppService {
                     .toList();
         }
         return List.of();
+    }
+
+    private AnalysisProgressEvent toProgressEvent(AnalysisTask task) {
+        String phase = switch (task.getStatus() == null ? "pending" : task.getStatus()) {
+            case "processing" -> "processing";
+            case "completed" -> "finished";
+            case "failed" -> "failed";
+            default -> "pending";
+        };
+        String message = switch (task.getStatus() == null ? "pending" : task.getStatus()) {
+            case "completed" -> "分析完成";
+            case "failed" -> failureMessage(task.getFailureReason());
+            case "processing" -> "分析进行中";
+            default -> "等待分析";
+        };
+        return AnalysisProgressEvent.builder()
+                .taskId(task.getId())
+                .status(task.getStatus())
+                .phase(phase)
+                .message(message)
+                .processingMs(task.getProcessingMs())
+                .failureCode(task.getFailureCode())
+                .failureReason(task.getFailureReason())
+                .build();
     }
 
     private String generateTaskId() {

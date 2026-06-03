@@ -144,7 +144,7 @@ import AnalysisContentFields from '@/components/analysis/AnalysisContentFields.v
 import SensitiveWordDetector from '@/components/workbench/SensitiveWordDetector.vue'
 import HotTopicsPanel from '@/components/workbench/HotTopicsPanel.vue'
 import WorkbenchInsightPanel from '@/components/workbench/WorkbenchInsightPanel.vue'
-import { useAnalysisPoll } from '@/composables/useAnalysisPoll'
+import { useAnalysisWait } from '@/composables/useAnalysisWait'
 import { useWorkbenchAnalysis } from '@/composables/useWorkbenchAnalysis'
 import { ERROR_QUOTA_EXCEEDED } from '@/constants/quota'
 import { useUserStore } from '@/stores/user'
@@ -185,7 +185,7 @@ const pollingId = ref<string | null>(null)
 const lastAnalysisId = ref<string | null>(null)
 const showInPlaceHint = ref(false)
 
-const poll = useAnalysisPoll(async () => {
+const poll = useAnalysisWait(async () => {
   if (!pollingId.value) throw new Error('missing analysis id')
   const res = await fetchAnalysis(pollingId.value)
   return res.data.data
@@ -297,7 +297,7 @@ async function handleAnalyze() {
     lastAnalysisId.value = id
     workbench.setAnalysisId(id)
 
-    const ok = await poll.start()
+    const ok = await poll.start(id)
     if (ok) {
       await workbench.hydrateFromAnalysisId(id)
       ElMessage.success(t('dashboard.analyzeSuccess'))

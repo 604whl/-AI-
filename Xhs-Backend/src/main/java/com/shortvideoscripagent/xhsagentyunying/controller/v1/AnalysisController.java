@@ -16,7 +16,9 @@ import com.shortvideoscripagent.xhsagentyunying.service.AnalysisAppService;
 import com.shortvideoscripagent.xhsagentyunying.service.TitleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,6 +47,15 @@ public class AnalysisController {
     public ApiResponse<AnalysisDetailResponse> getById(@PathVariable String id) {
         Long userId = requireUserId();
         return ApiResponse.ok(analysisAppService.getById(userId, id));
+    }
+
+    /**
+     * SSE 推送分析任务进度（phase / status），完成后发送 {@code done} 事件。
+     */
+    @GetMapping(value = "/{id}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamProgress(@PathVariable String id) {
+        Long userId = requireUserId();
+        return analysisAppService.streamProgress(userId, id);
     }
 
     @GetMapping

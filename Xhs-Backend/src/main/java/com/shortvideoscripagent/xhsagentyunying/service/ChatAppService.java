@@ -20,12 +20,17 @@ import com.shortvideoscripagent.xhsagentyunying.dto.chat.ChatMessageSendRequest;
 import com.shortvideoscripagent.xhsagentyunying.dto.chat.ChatSessionCreateRequest;
 import com.shortvideoscripagent.xhsagentyunying.dto.chat.ChatSessionResponse;
 import com.shortvideoscripagent.xhsagentyunying.dto.chat.ChatToolTraceDto;
+import com.shortvideoscripagent.xhsagentyunying.common.api.RequestContext;
+import com.shortvideoscripagent.xhsagentyunying.service.chat.ChatSseWriter;
+import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +44,9 @@ public class ChatAppService {
     private final AgentOrchestrator agentOrchestrator;
     private final UserQuotaService userQuotaService;
     private final ObjectMapper objectMapper;
+
+    @Resource(name = "chatStreamExecutor")
+    private Executor chatStreamExecutor;
 
     @Transactional
     public ChatSessionResponse createSession(Long userId, ChatSessionCreateRequest request) {
@@ -87,6 +95,47 @@ public class ChatAppService {
 
         AgentResponse response = agentOrchestrator.run(session, agentRequest);
         return toMessageResponse(response);
+    }
+
+    public SseEmitter sendMessageStream(Long userId, String sessionId, ChatMessageSendRequest request) {
+        assertAgentEnabled();
+        userQuotaService.consumeAgentMessageQuota(userId, sessionId);
+
+        ChatSession session = chatHistoryService.requireOwnedSession(userId, sessionId);
+        AgentRequest agentRequest = AgentRequest.builder()
+                .userId(userId)
+                .sessionId(sessionId)
+                .content(request.getContent())
+                .attachments(request.getAttachments())
+                .build();
+
+        long timeoutMs = (agentRuntimePolicy.totalTimeoutSeconds() + 30L) * 1000L;
+        SseEmitter emitter = new SseEmitter(timeoutMs);
+
+        Long capturedUserId = userId;
+        String requestId = RequestContext.getRequestId();
+
+        chatStreamExecutor.execute(() -> {
+            ChatSseWriter writer = new ChatSseWriter(emitter, objectMapper, this::toMessageResponse);
+            try {
+                RequestContext.setUserId(capturedUserId);
+                if (requestId != null) {
+                    RequestContext.setRequestId(requestId);
+                }
+                agentOrchestrator.run(session, agentRequest, writer);
+                emitter.complete();
+            } catch (BusinessException ex) {
+                writer.sendBusinessError(ex);
+                emitter.complete();
+            } catch (Exception ex) {
+                writer.sendGenericError(ex.getMessage());
+                emitter.completeWithError(ex);
+            } finally {
+                RequestContext.clear();
+            }
+        });
+
+        return emitter;
     }
 
     public PaginatedResponse<ChatMessageItemResponse> listMessages(Long userId, String sessionId, int page, int size) {

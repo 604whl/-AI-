@@ -370,7 +370,7 @@ import ReportCompetitorPanel from '@/components/report/ReportCompetitorPanel.vue
 import ReportCoverPanel from '@/components/report/ReportCoverPanel.vue'
 import ReportIssuesPanel from '@/components/report/ReportIssuesPanel.vue'
 import ReportOptimizationTabs from '@/components/report/ReportOptimizationTabs.vue'
-import { useAnalysisPoll } from '@/composables/useAnalysisPoll'
+import { useAnalysisWait } from '@/composables/useAnalysisWait'
 import { useWorkbenchAnalysis } from '@/composables/useWorkbenchAnalysis'
 import { DEFAULT_DAILY_QUOTA, ERROR_QUOTA_EXCEEDED } from '@/constants/quota'
 import { useUserStore } from '@/stores/user'
@@ -428,7 +428,7 @@ const lastAnalysisId = ref<string | null>(null)
 const showInPlaceHint = ref(false)
 const quotaBannerDismissed = ref(false)
 
-const poll = useAnalysisPoll(async () => {
+const poll = useAnalysisWait(async () => {
   if (!pollingId.value) throw new Error('missing analysis id')
   const res = await fetchAnalysis(pollingId.value)
   return res.data.data
@@ -683,7 +683,7 @@ async function handleQuickAnalyze() {
     lastAnalysisId.value = id
     workbench.setAnalysisId(id)
 
-    const ok = await poll.start()
+    const ok = await poll.start(id)
     if (ok) {
       await workbench.hydrateFromAnalysisId(id)
       ElMessage.success(t('dashboard.analyzeSuccess'))
