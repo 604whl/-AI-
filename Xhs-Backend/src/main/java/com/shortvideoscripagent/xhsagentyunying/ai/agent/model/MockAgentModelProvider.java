@@ -159,7 +159,11 @@ public class MockAgentModelProvider implements AgentModelProvider {
     }
 
     private boolean shouldListHistory(String lastUser) {
-        return lastUser.contains("历史") || lastUser.contains("上周") || lastUser.contains("最近分析");
+        return lastUser.contains("历史")
+                || lastUser.contains("上周")
+                || lastUser.contains("最近分析")
+                || lastUser.contains("recently")
+                || lastUser.contains("recent analyses");
     }
 
     private boolean shouldOptimizeDraft(String lastUser) {

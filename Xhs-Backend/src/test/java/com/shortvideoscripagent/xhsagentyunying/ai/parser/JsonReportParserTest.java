@@ -38,16 +38,15 @@ class JsonReportParserTest {
                     "conversion": { "score": 60, "reason": "ok" },
                     "viral": { "score": 75, "reason": "ok" }
                   },
-                  "issues": [{
-                    "severity": "low",
-                    "category": "ctr",
-                    "description": "d",
-                    "suggestion": "s"
-                  }],
+                  "issues": [
+                    { "severity": "low", "category": "ctr", "description": "d1", "suggestion": "s1" },
+                    { "severity": "medium", "category": "emotion", "description": "d2", "suggestion": "s2" },
+                    { "severity": "high", "category": "cta", "description": "d3", "suggestion": "s3" }
+                  ],
                   "optimizations": {
-                    "title": [],
-                    "structure": [],
-                    "emotion": [],
+                    "title": [{ "text": "t1", "reason": "r1" }],
+                    "structure": [{ "text": "s1", "reason": "r2" }],
+                    "emotion": [{ "text": "e1", "reason": "r3" }],
                     "cta": []
                   },
                   "complianceWarnings": []

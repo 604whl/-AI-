@@ -141,15 +141,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import type { UploadFile } from 'element-plus'
 import ChatMessageList from '@/components/chat/ChatMessageList.vue'
 import { useChat } from '@/composables/useChat'
 import { uploadCoverImage, resolveCoverPreviewUrl } from '@/api/file'
+import { useUserStore } from '@/stores/user'
+import type { PersonaType } from '@/types/api'
 
 const { t } = useI18n()
+const userStore = useUserStore()
 
 const {
   sessions,
@@ -187,11 +190,21 @@ const quickActions = computed(() => [
 ])
 
 onMounted(async () => {
+  if (userStore.profile?.defaultPersona) {
+    persona.value = userStore.profile.defaultPersona as PersonaType
+  }
   await loadSessions()
   if (sessions.value.length) {
     await selectSession(sessions.value[0].sessionId)
   }
 })
+
+watch(
+  () => userStore.profile?.defaultPersona,
+  (value) => {
+    if (value) persona.value = value as PersonaType
+  },
+)
 
 async function handleNewSession() {
   await startNewSession()

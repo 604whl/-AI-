@@ -1,5 +1,6 @@
 package com.shortvideoscripagent.xhsagentyunying.ai.agent.tool.impl;
 
+import com.shortvideoscripagent.xhsagentyunying.ai.agent.AgentCard;
 import com.shortvideoscripagent.xhsagentyunying.ai.agent.tool.AgentTool;
 import com.shortvideoscripagent.xhsagentyunying.ai.agent.tool.ToolContext;
 import com.shortvideoscripagent.xhsagentyunying.ai.agent.tool.ToolResult;
@@ -67,7 +68,16 @@ public class ListRecentAnalysesTool implements AgentTool {
             items.add(row);
         }
 
-        return ToolResult.ok(Map.of("items", items, "total", page.getTotal()));
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("items", items);
+        payload.put("total", page.getTotal());
+
+        AgentCard card = AgentCard.builder()
+                .type("recent_analyses")
+                .payload(payload)
+                .build();
+
+        return ToolResult.ok(payload, List.of(card));
     }
 
     @SuppressWarnings("unchecked")

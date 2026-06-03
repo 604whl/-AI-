@@ -430,6 +430,11 @@ export interface LocaleMessages {
     cardFetchedUrl: string
     cardHotTopics: string
     cardIndustryCalendar: string
+    cardRecentAnalyses: string
+    recentAnalysesTotal: string
+    recentAnalysesEmpty: string
+    untitledAnalysis: string
+    viralScore: string
     coverUnavailable: string
     coverContrast: string
     coverEmotion: string
