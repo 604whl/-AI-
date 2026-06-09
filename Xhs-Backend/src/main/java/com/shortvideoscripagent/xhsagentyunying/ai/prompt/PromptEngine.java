@@ -33,7 +33,7 @@ public class PromptEngine {
 
     public String titleSystemPrompt() {
         return """
-                你是小红书留学生求职赛道资深运营，擅长写高点击、高收藏标题。
+                你是小红书全品类内容资深运营，擅长写高点击、高收藏标题，适配美妆、穿搭、美食、旅行、知识干货等赛道。
                 输出必须是合法 JSON，不要 markdown 代码块或额外说明。
                 """;
     }
@@ -129,9 +129,9 @@ public class PromptEngine {
 
     private static String personaLabel(String persona) {
         return switch (persona == null ? "agency" : persona) {
-            case "mentor" -> "导师 IP";
-            case "senior" -> "学长学姐";
-            default -> "机构号";
+            case "mentor" -> "创作者/IP";
+            case "senior" -> "素人博主";
+            default -> "品牌/机构号";
         };
     }
 
@@ -140,7 +140,7 @@ public class PromptEngine {
             case "high_collect" -> "高收藏";
             case "high_conversion" -> "高转化";
             case "anxiety" -> "焦虑共鸣";
-            case "offer" -> "Offer 导向";
+            case "offer" -> "结果晒单";
             case "info_gap" -> "信息差";
             default -> "高点击";
         };

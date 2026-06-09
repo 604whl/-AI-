@@ -83,15 +83,15 @@ public class WebSearchService {
     private List<Map<String, Object>> mockResults(String query, int limit) {
         List<Map<String, Object>> items = new ArrayList<>();
         items.add(Map.of(
-                "title", "2026届留学生秋招趋势解读（Mock）",
+                "title", "2026 小红书内容趋势解读（Mock）",
                 "url", "https://example.com/mock-1",
-                "snippet", "检索词「" + query + "」相关：秋招提前批 7 月起量，互联网与咨询并行开放。"
+                "snippet", "检索词「" + query + "」相关：本地生活、知识干货与穿搭赛道互动率持续走高。"
         ));
         if (limit > 1) {
             items.add(Map.of(
-                    "title", "英国留学生回国求职时间线（Mock）",
+                    "title", "小红书热门选题与流量节奏（Mock）",
                     "url", "https://example.com/mock-2",
-                    "snippet", "Mock 联网结果：春招与秋招双线并行，建议 6 月前完成简历与项目梳理。"
+                    "snippet", "Mock 联网结果：清单合集与结果前置结构在各品类中 CTR 表现稳定。"
             ));
         }
         return items.subList(0, Math.min(limit, items.size()));

@@ -28,7 +28,7 @@ public class WebSearchTool implements AgentTool {
 
     @Override
     public String description() {
-        return "联网搜索行业动态、秋招政策、热点话题等实时信息";
+        return "联网搜索行业动态、平台趋势、热点话题等实时信息";
     }
 
     @Override

@@ -193,7 +193,7 @@ public class AnalysisAppService {
 
     private OptimizeDraftResponse buildMockOptimizeDraft(AnalysisTask task, Map<String, Object> report) {
         String optimizedTitle = task.getTitle() == null || task.getTitle().isBlank()
-                ? "26届英国留学生｜秋招时间线一张图讲清"
+                ? "一张图讲清｜完整攻略（优化版）"
                 : task.getTitle() + "（优化版）";
         String optimizedBody = task.getBody() == null || task.getBody().isBlank()
                 ? "开篇用反常识结论抓住注意力…\n\n（此为 Mock 优化稿，配置真实 API Key 后可生成完整正文）"
@@ -202,8 +202,8 @@ public class AnalysisAppService {
                 .analysisId(task.getId())
                 .optimizedTitle(optimizedTitle)
                 .optimizedBody(optimizedBody)
-                .structureOutline(List.of("Hook：痛点反问", "放大：同届竞争焦虑", "经历：分阶段拆解", "结果：可执行清单", "CTA：评论区领表"))
-                .cta("评论「时间线」领取完整表格")
+                .structureOutline(List.of("Hook：痛点反问", "放大：情绪共鸣", "干货：分步拆解", "结果：可执行清单", "CTA：评论区领资料"))
+                .cta("评论「资料」领取完整清单")
                 .complianceWarnings(castWarningList(report.get("complianceWarnings")))
                 .promptVersion(PromptEngine.RUBRIC_VERSION)
                 .wordCount(optimizedBody.length())

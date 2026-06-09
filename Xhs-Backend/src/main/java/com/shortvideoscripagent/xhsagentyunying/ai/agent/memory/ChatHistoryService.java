@@ -238,7 +238,7 @@ public class ChatHistoryService {
                 ClassPathResource resource = new ClassPathResource("prompts/agent-system.st");
                 agentSystemPromptTemplate = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
             } catch (IOException ex) {
-                agentSystemPromptTemplate = "你是小红书留学生求职赛道的 AI 运营助手。";
+                agentSystemPromptTemplate = "你是小红书全平台内容的 AI 运营助手。";
             }
             return agentSystemPromptTemplate;
         }

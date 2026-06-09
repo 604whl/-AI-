@@ -2,7 +2,7 @@ import type { LocaleMessages } from './types'
 
 const en: LocaleMessages = {
   app: {
-    title: 'XHS Study-Abroad Job Search AI Assistant',
+    title: 'XHS All-Platform AI Ops Assistant',
   },
   common: {
     on: 'On',
@@ -24,17 +24,17 @@ const en: LocaleMessages = {
     titles: 'Title Generator',
     history: 'History',
     settings: 'Settings',
-    headerTitle: 'Study-Abroad Job Search · AI Ops Analysis',
+    headerTitle: 'XHS All-Platform · AI Ops Analysis',
     logout: 'Log out',
   },
   auth: {
     brandBadge: 'XHS Agent',
-    brandTitle: 'XHS Study-Abroad Job Search\nAI Ops Assistant',
+    brandTitle: 'XHS All-Platform\nAI Ops Assistant',
     brandDesc:
-      'Paste your draft notes to get five-dimension scores, structure breakdowns, and optimization tips tailored for study-abroad job search content.',
+      'Paste your draft notes to get five-dimension scores, structure breakdowns, and optimization tips for beauty, fashion, food, travel, and more.',
     feature1: 'Five-dimension scoring: CTR · Emotion · Saves · Conversion · Virality',
     feature2: 'One-click title generation and optimized drafts',
-    feature3: 'Multi-persona support: agency / mentor / senior student',
+    feature3: 'Multi-persona support: brand / creator IP / grassroots blogger',
     welcomeBack: 'Welcome back',
     createAccount: 'Create account',
     loginSubtitle: 'Sign in to continue your ops analysis',
@@ -85,7 +85,7 @@ const en: LocaleMessages = {
     quotaExceededMessage: 'You have used all analyses for today. Try again tomorrow.',
     quickAnalyze: 'Quick analyze',
     quickAnalyzeTag: 'From dashboard',
-    titlePlaceholder: 'Note title, e.g. "UK grad job search timeline"',
+    titlePlaceholder: 'Note title, e.g. "petite spring outfit formulas"',
     bodyPlaceholder: 'Paste note body — fill at least title or body…',
     analyzeNow: 'Analyze now',
     generateTitles: 'Generate titles',
@@ -110,9 +110,9 @@ const en: LocaleMessages = {
     analyzeFailed: 'Analysis failed, please try again',
     draftSaved: 'Draft saved — continue in the full form',
     titleApiPending: 'Title API is not ready yet, please try again later',
-    sampleTitle: 'Class of 2026 UK grads: when does autumn recruiting actually start?',
+    sampleTitle: 'Petite spring outfits: 3 formulas you can copy',
     sampleBody:
-      'A lot of juniors ask me about the UK grad job timeline. Here is the full picture:\n\n1️⃣ Jul–Aug: early batches open — banking & consulting first\n2️⃣ Sep–Oct: tech, Big Four peak hiring\n3️⃣ After Nov: backfill & last-chance roles\n\n⚠️ Common mistake: waiting until graduation — top firms lock half their HC by September.\n\nComment "timeline" if you want the full spreadsheet～',
+      'Many followers ask how petites can dress without looking shorter. Here is the cheat sheet:\n\n1️⃣ Short top + long bottom: raise the waistline\n2️⃣ Tone-on-tone layers: reduce visual breaks\n3️⃣ Pointed or loafers: extend the leg line\n\n⚠️ Common mistake: oversized everything — it often makes you look shorter.\n\nComment "formula" if you want the full color guide～',
     statuses: {
       pending: 'Queued',
       processing: 'Running',
@@ -124,13 +124,13 @@ const en: LocaleMessages = {
       high_collect: 'High saves',
       high_conversion: 'High conversion',
       anxiety: 'Anxiety hook',
-      offer: 'Offer celebration',
+      offer: 'Result showcase',
       info_gap: 'Info gap',
     },
     tips: [
-      'The first 15 characters drive CTR — numbers plus identity tags work well in study-abroad job content.',
+      'The first 15 characters drive CTR — numbers plus scene tags work across categories.',
       'The first 3 lines are your hook — open with a pain-point question or counter-intuitive claim.',
-      'Match CTA to persona: agencies lean toward consultation; senior students toward DMs.',
+      'Match CTA to persona: brands lean toward lead magnets; grassroots bloggers toward comments.',
     ],
   },
   analysis: {
@@ -174,7 +174,7 @@ const en: LocaleMessages = {
     publishedAt: 'Published at',
     publishedAtPlaceholder: 'Pick publish time (optional)',
     competitorAccount: 'Competitor account',
-    competitorAccountPlaceholder: 'e.g. @study-abroad-jobs',
+    competitorAccountPlaceholder: 'e.g. @fashion-blogger',
     competitorUrlPlaceholder: 'Competitor note URL (optional)',
     learningFocus: 'What to learn',
     learningFocusPlaceholder: 'e.g. title structure, emotion arc, CTA…',
@@ -335,9 +335,9 @@ const en: LocaleMessages = {
     saveFailed: 'Failed to save settings',
   },
   persona: {
-    agency: 'Agency account',
-    mentor: 'Mentor IP',
-    senior: 'Senior student',
+    agency: 'Brand / agency',
+    mentor: 'Creator IP',
+    senior: 'Grassroots blogger',
   },
   workbench: {
     aiAnalyzing: 'AI is analyzing deeply…',
@@ -377,10 +377,10 @@ const en: LocaleMessages = {
     optimizationEmpty: 'Optimization tips appear after analysis',
     contentTypeTitle: 'Content type',
     contentTypes: {
-      ANXIETY: 'Anxiety',
-      OFFER: 'Offer',
+      ANXIETY: 'Emotional hook',
+      OFFER: 'Result showcase',
       INFO_GAP: 'Info gap',
-      INTERVIEW: 'Interview',
+      INTERVIEW: 'Q&A list',
       TIMELINE: 'Timeline',
       COMEBACK: 'Comeback',
     },
@@ -422,7 +422,7 @@ const en: LocaleMessages = {
     quickTitlesPrompt: 'Give me 8 high-CTR title variants.',
     quickOptimizePrompt: 'Generate an optimized draft based on the last analysis.',
     quickTopicsPrompt: 'What hot topic directions are trending now?',
-    quickSearchPrompt: 'Search the web for 2026 grad recruiting trends for international students.',
+    quickSearchPrompt: 'Search the web for recent Xiaohongshu trending topic trends.',
     quickCompliancePrompt: 'Scan for compliance risks or absolute promises.',
     quickHistoryPrompt: 'What notes did I analyze recently?',
     uploadCover: 'Upload cover',
