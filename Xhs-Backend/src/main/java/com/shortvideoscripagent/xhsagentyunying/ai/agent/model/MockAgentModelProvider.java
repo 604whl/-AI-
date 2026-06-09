@@ -147,7 +147,7 @@ public class MockAgentModelProvider implements AgentModelProvider {
         if (containsToolResult(messages, "analyze_content")) {
             return "分析已完成。五维评分与主要问题已整理在报告卡片中；如需标题变体，可以直接说「给我 8 个高点击标题」。";
         }
-        return "我是小红书留学生求职运营助手。你可以粘贴标题和正文让我分析，或者说「生成标题」「扫描合规」。";
+        return "我是小红书全平台运营助手。你可以粘贴标题和正文让我分析，或者说「生成标题」「扫描合规」。";
     }
 
     private boolean shouldGenerateTitles(String lastUser) {
@@ -179,13 +179,13 @@ public class MockAgentModelProvider implements AgentModelProvider {
     }
 
     private String extractSearchQuery(String lastUser) {
-        if (lastUser.contains("秋招")) {
-            return "2026留学生秋招趋势";
+        if (lastUser.contains("穿搭")) {
+            return "2026 小红书春日穿搭趋势";
         }
-        if (lastUser.contains("H1B") || lastUser.contains("签证")) {
-            return "H1B 签证政策 2026";
+        if (lastUser.contains("护肤") || lastUser.contains("美妆")) {
+            return "小红书护肤成分趋势 2026";
         }
-        return "留学生求职 小红书 热点";
+        return "小红书 热门选题 趋势";
     }
 
     private boolean alreadyCalled(List<Message> messages, String toolName) {

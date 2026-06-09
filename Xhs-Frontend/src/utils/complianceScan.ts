@@ -7,8 +7,8 @@ import type { ComplianceWarning } from '@/types/api'
 const RULES: Array<{ id: string; pattern: RegExp; suggestion: string }> = [
   {
     id: 'absolute_promise',
-    pattern: /保\s*[oO][fF]{2}[eE][rR]|100%\s*上岸| garantee|保证录取|必上岸/,
-    suggestion: '避免绝对化承诺，改为「提升上岸概率」等可验证表述',
+    pattern: /100%\s*有效| garantee|国家级(?!产品)|(?:最好|第一)(?!手)|百分百|绝对有效|必上岸|保证录取/,
+    suggestion: '避免绝对化承诺与广告法禁用表述，改为可验证的客观描述',
   },
   {
     id: 'fake_authority',
@@ -17,13 +17,13 @@ const RULES: Array<{ id: string; pattern: RegExp; suggestion: string }> = [
   },
   {
     id: 'discrimination',
-    pattern: /水硕|野鸡大学|某国留学生都不行/,
-    suggestion: '避免院校/国籍歧视性表述',
+    pattern: /某省人都不行|某国人都不行|学历低的人都不行/,
+    suggestion: '避免地域、国籍、群体歧视性表述',
   },
   {
     id: 'excessive_fear',
-    pattern: /再不.*就完了|签证马上取消|政策已崩/,
-    suggestion: '避免制造不存在的政策恐慌，引用政策须注明来源',
+    pattern: /再不.*就完了|马上关停|政策已崩|立刻下架/,
+    suggestion: '避免制造不实恐慌，引用政策须注明来源',
   },
 ]
 

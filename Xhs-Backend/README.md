@@ -5,7 +5,7 @@
 [![Spring AI](https://img.shields.io/badge/Spring%20AI-1.1.2-blue)](https://spring.io/projects/spring-ai)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
-> 基于 Spring Boot 3.5.14 + Spring AI 的小红书内容运营 AI Agent，面向留学生求职赛道，提供笔记分析评分、标题生成、封面诊断、合规检测等智能化内容优化能力。
+> 基于 Spring Boot 3.5.14 + Spring AI 的小红书全平台内容运营 AI Agent，覆盖美妆、穿搭、美食、旅行等品类，提供笔记分析评分、标题生成、封面诊断、合规检测等智能化内容优化能力。
 
 ---
 
@@ -24,7 +24,7 @@
 
 ## 项目介绍
 
-XhsAgent 是一个面向小红书内容创作者的 AI 运营助手，专注于**留学生求职**垂直赛道。通过大语言模型对笔记内容进行多维度分析评分，帮助创作者提升内容质量和互动数据。
+XhsAgent 是一个面向小红书内容创作者的 AI 运营助手，支持**全平台全品类**内容分析。通过大语言模型对笔记内容进行多维度分析评分，帮助创作者提升内容质量和互动数据。
 
 核心价值：
 - **智能分析** — 从 CTR、情绪共鸣、收藏价值、转化引导、传播潜力五个维度对笔记进行 0-100 量化评分

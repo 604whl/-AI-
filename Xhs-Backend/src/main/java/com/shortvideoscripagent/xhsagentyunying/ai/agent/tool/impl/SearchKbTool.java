@@ -100,14 +100,14 @@ public class SearchKbTool implements AgentTool {
                 new RagChunk(
                         "MOCK-01",
                         "viral_case",
-                        "26届英国留学生｜秋招时间线一张图讲清\n要点: 结果前置; 六周时间线; CTA 私信领表",
+                        "敏感肌防晒避坑｜10款实测一张图讲清\n要点: 结果前置; 踩坑清单; CTA 评论领表",
                         0.91,
                         Map.of("contentType", "TIMELINE", "ctr", 90)
                 ),
                 new RagChunk(
                         "MOCK-02",
                         "title_pattern",
-                        "双非逆袭字节｜6周上岸时间线全公开",
+                        "人均50探店路线｜周末6站吃喝地图全公开",
                         0.86,
                         Map.of("contentType", "OFFER", "ctr", 88)
                 )

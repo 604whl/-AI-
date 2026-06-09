@@ -49,7 +49,7 @@ spring:
         type: SYNC
         protocol: STREAMABLE
         instructions: |
-          XhsAgent MCP Server — 小红书留学生求职运营工具集。
+          XhsAgent MCP Server — 小红书全平台内容运营工具集。
           调用前请携带 Bearer JWT；本地调试可使用 X-Mcp-Api-Key + X-Mcp-User-Id。
         tool-callback-converter: true
         capabilities:

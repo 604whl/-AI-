@@ -25,7 +25,7 @@ public class GetIndustryCalendarTool implements AgentTool {
 
     @Override
     public String description() {
-        return "获取秋招/春招/H1B 等行业节点与选题包建议";
+        return "获取节日营销、季节上新、大促节点等内容运营日历与选题包建议";
     }
 
     @Override

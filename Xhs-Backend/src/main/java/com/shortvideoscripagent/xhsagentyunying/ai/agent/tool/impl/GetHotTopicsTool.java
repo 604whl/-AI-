@@ -25,7 +25,7 @@ public class GetHotTopicsTool implements AgentTool {
 
     @Override
     public String description() {
-        return "获取留学生求职赛道当前热门选题方向与关键词建议";
+        return "获取小红书全平台当前热门选题方向与关键词建议";
     }
 
     @Override

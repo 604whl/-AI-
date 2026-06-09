@@ -41,9 +41,9 @@ public final class SampleAnalysisReport {
         report.put("contentType", "TIMELINE");
         report.put("secondaryTags", List.of("INFO_GAP", "ANXIETY"));
         report.put("structure", Map.of(
-                "hook", hook.isBlank() ? "开篇以留学生常见误区切入，制造信息差。" : hook,
-                "emotionArc", List.of("焦虑共鸣", "信息揭示", "方法落地", "行动号召"),
-                "savePoints", List.of("秋招时间线表格", "常见误区清单", "投递节奏建议"),
+                "hook", hook.isBlank() ? "开篇以常见误区或反常识结论切入，制造信息差。" : hook,
+                "emotionArc", List.of("痛点共鸣", "信息揭示", "方法落地", "行动号召"),
+                "savePoints", List.of("步骤清单", "常见误区汇总", "实操建议"),
                 "conversionPath", "痛点提问 → 分阶段拆解 → 评论区领取资料 → 私信咨询",
                 "cta", Map.of(
                         "text", ctaForPersona(persona),
@@ -56,35 +56,35 @@ public final class SampleAnalysisReport {
                 : "标题含数字与身份标签，点击预期中等偏上。";
         report.put("scores", Map.of(
                 "ctr", score(78, ctrReason, "high"),
-                "emotion", score(82, "留学生秋招焦虑点覆盖完整，情绪递进清晰。", "high"),
+                "emotion", score(82, "痛点与共鸣点覆盖完整，情绪递进清晰。", "high"),
                 "collect", score(85, "时间线结构适合收藏回看。", "high"),
                 "conversion", score(71, "CTA 位置合理，但可再强化稀缺性。", "medium"),
-                "viral", score(68, "话题垂直，传播半径有限但精准。", "medium")
+                "viral", score(68, "话题明确，传播半径适中，利于垂类人群扩散。", "medium")
         ));
         report.put("issues", List.of(
-                issue("medium", "ctr", "标题可再压缩至 20 字内，提升移动端展示完整度。", "尝试「26届｜英国秋招时间线」格式。"),
-                issue("low", "emotion", "中段可增加同届竞争场景，强化紧迫感。", "补充「身边同学已开始投递」类表述。"),
+                issue("medium", "ctr", "标题可再压缩至 20 字内，提升移动端展示完整度。", "尝试「数字+身份标签｜核心利益点」格式。"),
+                issue("low", "emotion", "中段可增加对比或反差场景，强化紧迫感。", "补充「身边人已经…」类共鸣表述。"),
                 issue("low", "conversion", "CTA 略靠后，部分用户可能在中间段落流失。", "在第 3 段末尾增加一次轻量引导。")
         ));
         report.put("optimizations", Map.of(
                 "title", List.of(Map.of(
                         "original", noteTitle,
-                        "optimized", "26届英国留学生｜秋招时间线一张图讲清"
+                        "optimized", "一张图讲清｜" + noteTitle + "完整攻略"
                 )),
                 "structure", List.of("首段增加反常识结论", "中段用 emoji 序号强化扫读性"),
-                "emotion", List.of("补充「同届竞争」场景增强紧迫感"),
-                "cta", List.of("评论区扣关键词领取表格", "结尾增加限时感表述")
+                "emotion", List.of("补充对比场景增强紧迫感"),
+                "cta", List.of("评论区扣关键词领取资料", "结尾增加限时感表述")
         ));
         report.put("complianceWarnings", List.of());
 
         if ("competitor".equals(scenario)) {
             report.put("borrowPoints", List.of(
-                    "Hook 用「误区+反常识」开场，适合垂类笔记冷启动",
+                    "Hook 用「误区+反常识」开场，适合各类笔记冷启动",
                     "中段清单/表格结构利于收藏，可复用到自家内容",
                     "评论区领资料 CTA 降低转化门槛，可借鉴互动设计"
             ));
             report.put("doNotCopy", List.of(
-                    "勿照搬对方具体 offer/公司名与数据",
+                    "勿照搬对方具体品牌/数据与个人经历细节",
                     "勿复制整段个人经历，仅借鉴框架与节奏"
             ));
         }
@@ -94,9 +94,9 @@ public final class SampleAnalysisReport {
     public static Map<String, Object> buildCoverAnalysis(String title, String body) {
         Map<String, Object> cover = new LinkedHashMap<>();
         cover.put("available", true);
-        cover.put("keywords", List.of("数字标签", "高对比底色", "人物表情", "留子身份"));
+        cover.put("keywords", List.of("数字标签", "高对比底色", "人物表情", "品类关键词"));
         cover.put("contrastComment", "主标题与背景对比度较好，移动端缩略图可读。");
-        cover.put("emotionMatch", "封面焦虑感与秋招/求职主题一致，利于垂类人群停留。");
+        cover.put("emotionMatch", "封面情绪与笔记主题一致，利于目标受众停留。");
         cover.put("ctrImpact", "预计可提升 5–15% 点击率，建议保留大号数字元素。");
         if (title != null && title.contains("Offer")) {
             cover.put("keywords", List.of("Offer 喜报", "结果导向", "高饱和色"));
@@ -128,74 +128,74 @@ public final class SampleAnalysisReport {
 
     private static String ctaForPersona(String persona) {
         return switch (persona == null ? "agency" : persona) {
-            case "mentor" -> "想要一对一求职规划的同学，私信「规划」领取诊断表。";
-            case "senior" -> "学长整理了完整表格，评论区扣「时间线」发你。";
-            default -> "评论「时间线」领取完整表格，或私信获取定制建议。";
+            case "mentor" -> "想要一对一指导的粉丝，私信「资料」领取清单。";
+            case "senior" -> "整理了完整清单，评论区扣「清单」发你。";
+            default -> "评论「清单」领取完整资料，或私信获取定制建议。";
         };
     }
 
     public static List<TitleGenerateResponse.TitleItem> buildTitles(String goal, String title, String body, int count) {
-        String topic = title == null || title.isBlank() ? "英国留学生秋招" : title.trim();
+        String topic = title == null || title.isBlank() ? "这篇笔记" : title.trim();
         String[] templates = switch (goal == null ? "high_ctr" : goal) {
             case "high_collect" -> new String[]{
-                    "建议收藏｜" + topic + "完整时间线",
-                    "留子必存！" + topic + "一张表搞定",
-                    "26届" + topic + "｜收藏这篇就够了",
-                    "回国求职党请收藏：" + topic,
+                    "建议收藏｜" + topic + "完整攻略",
+                    "必存！" + topic + "一张表搞定",
+                    topic + "｜收藏这篇就够了",
+                    "新手请收藏：" + topic,
                     topic + "避坑清单（建议收藏）",
-                    "秋招前必看｜" + topic + "全攻略",
-                    "收藏向｜" + topic + "投递节奏表",
-                    "留学生求职｜" + topic + "收藏版"
+                    "入门必看｜" + topic + "全攻略",
+                    "收藏向｜" + topic + "步骤清单",
+                    topic + "｜干货收藏版"
             };
             case "high_conversion" -> new String[]{
-                    "私信领表｜" + topic + "完整规划",
-                    topic + "｜评论「规划」领诊断",
-                    "26届留子求职｜" + topic + "1v1 咨询",
-                    topic + "：私信「时间线」领表格",
-                    "想进大厂？" + topic + "先看这篇",
-                    topic + "｜免费领求职节奏表",
-                    "留子求职别踩坑｜" + topic,
+                    "私信领资料｜" + topic + "完整版",
+                    topic + "｜评论「资料」免费领取",
+                    topic + "｜私信咨询一对一",
+                    topic + "：评论扣 1 领清单",
+                    "想少走弯路？" + topic + "先看这篇",
+                    topic + "｜免费领实操清单",
+                    "别踩坑｜" + topic + "完整指南",
                     topic + "｜评论扣 1 领资料"
             };
             case "anxiety" -> new String[]{
-                    "还没开始投？" + topic + "已经开始了",
-                    "26届留子别慌｜" + topic + "还来得及吗",
-                    "英国回国求职｜" + topic + "太真实了",
-                    "同届都在投，你的" + topic + "准备好了吗",
+                    "还没开始？" + topic + "别人已经开始了",
+                    "别慌｜" + topic + "还来得及吗",
+                    topic + "｜太真实了",
+                    "身边人都在做，你的" + topic + "准备好了吗",
                     topic + "｜再拖就真来不及了",
-                    "留子崩溃瞬间：" + topic,
-                    "别等毕业再投｜" + topic + "真相",
-                    topic + "｜90% 留子都搞错了"
+                    "崩溃瞬间：" + topic,
+                    "别等最后｜" + topic + "真相",
+                    topic + "｜90% 的人都搞错了"
             };
             case "offer" -> new String[]{
-                    "Offer 到手！我的" + topic + "复盘",
-                    "从 0 到 Offer｜" + topic + "经验分享",
-                    "26届留子上岸｜" + topic + "全记录",
-                    topic + "｜我就是这样拿到 Offer 的",
-                    "英国留子 Offer 喜报｜" + topic,
-                    topic + "成功上岸，经验全公开",
-                    "拿到 Dream Offer 后总结的" + topic,
-                    topic + "｜Offer 背后的时间线"
+                    "成功了！我的" + topic + "复盘",
+                    "从 0 到 1｜" + topic + "经验分享",
+                    topic + "｜全记录公开",
+                    topic + "｜我就是这样做到的",
+                    topic + "喜报｜结果前置",
+                    topic + "成功复盘，经验全公开",
+                    "拿到结果后总结的" + topic,
+                    topic + "｜背后的完整步骤"
             };
             case "info_gap" -> new String[]{
                     "很少有人告诉你的" + topic + "真相",
                     topic + "｜信息差太大了",
-                    "26届必看｜" + topic + "隐藏规则",
-                    "英国留子不知道的" + topic + "细节",
-                    topic + "｜大厂 HR 不会告诉你的事",
+                    "必看｜" + topic + "隐藏细节",
+                    "新手不知道的" + topic + "细节",
+                    topic + "｜内行人才知道的事",
                     "信息差警告：" + topic,
-                    topic + "｜内行人才知道的节奏",
-                    "留子求职信息差｜" + topic
+                    topic + "｜内行人才知道的技巧",
+                    topic + "｜信息差合集"
             };
             default -> new String[]{
-                    "26届" + topic + "｜一张图讲清楚",
-                    topic + "到底从几月开始？",
-                    "英国留子必看｜" + topic,
+                    topic + "｜一张图讲清楚",
+                    topic + "到底怎么做？",
+                    "新手必看｜" + topic,
                     topic + "｜90% 的人都搞错了",
-                    "留子求职｜" + topic + "全攻略",
-                    topic + "时间线（建议收藏）",
-                    "26届留子｜" + topic + "避坑指南",
-                    topic + "｜评论区领完整表格"
+                    topic + "全攻略（建议收藏）",
+                    topic + "步骤清单（建议收藏）",
+                    "新手｜" + topic + "避坑指南",
+                    topic + "｜评论区领完整资料"
             };
         };
 
