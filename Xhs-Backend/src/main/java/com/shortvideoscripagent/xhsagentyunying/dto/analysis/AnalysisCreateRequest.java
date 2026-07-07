@@ -2,6 +2,7 @@ package com.shortvideoscripagent.xhsagentyunying.dto.analysis;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -9,8 +10,10 @@ import lombok.Data;
 public class AnalysisCreateRequest {
 
     @NotBlank
+    @Pattern(regexp = "draft|published|competitor", message = "invalid_scenario")
     private String scenario;
 
+    @Pattern(regexp = "agency|mentor|senior", message = "invalid_persona")
     private String persona = "agency";
 
     @Size(max = 100)
@@ -19,6 +22,7 @@ public class AnalysisCreateRequest {
     @Size(max = 10000)
     private String body;
 
+    @Size(max = 512)
     private String coverImageUrl;
 
     @Valid

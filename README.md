@@ -187,7 +187,7 @@ http://localhost:8125/api/swagger-ui.html
 |------|------|------|
 | 认证 | `POST /v1/auth/register` | 用户注册 |
 | 认证 | `POST /v1/auth/login` | 用户登录 |
-| 分析 | `POST /v1/analysis/submit` | 提交笔记分析 |
+| 分析 | `POST /v1/analysis` | 提交笔记分析 |
 | 分析 | `GET /v1/analysis/{taskId}` | 查询分析结果 |
 | 标题 | `POST /v1/titles` | 生成标题变体 |
 | 合规 | `POST /v1/compliance/scan` | 合规检测 |
