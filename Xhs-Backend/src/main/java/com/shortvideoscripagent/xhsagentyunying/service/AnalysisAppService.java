@@ -28,6 +28,7 @@ import com.shortvideoscripagent.xhsagentyunying.dto.analysis.PaginatedResponse;
 import com.shortvideoscripagent.xhsagentyunying.service.analysis.AnalysisProgressEvent;
 import com.shortvideoscripagent.xhsagentyunying.service.analysis.AnalysisStreamHub;
 import lombok.RequiredArgsConstructor;
+import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -37,7 +38,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -61,6 +65,9 @@ public class AnalysisAppService {
     private final AiRuntimeProperties aiRuntimeProperties;
     private final AiRuntimePolicy aiRuntimePolicy;
     private final AnalysisStreamHub analysisStreamHub;
+
+    @Resource(name = "aiExecutor")
+    private Executor aiExecutor;
 
     @Transactional
     public AnalysisCreateResponse create(Long userId, AnalysisCreateRequest request) {
@@ -124,11 +131,9 @@ public class AnalysisAppService {
         List<AnalysisTask> tasks = taskMapper.selectList(wrapper);
         Long total = taskMapper.selectCount(buildListQuery(userId, status, scenario, keyword));
 
+        Map<String, AnalysisReport> reportsByTaskId = loadReportsByTaskId(tasks);
         List<AnalysisListItemResponse> items = tasks.stream()
-                .map(task -> {
-                    AnalysisReport report = reportMapper.selectById(task.getId());
-                    return toListItem(task, report);
-                })
+                .map(task -> toListItem(task, reportsByTaskId.get(task.getId())))
                 .toList();
 
         return new PaginatedResponse<>(items, total == null ? 0 : total, safePage, safeSize);
@@ -163,7 +168,7 @@ public class AnalysisAppService {
         String userPrompt = promptEngine.buildOptimizeDraftUserPrompt(task, report, tone, maxLength);
         ModelProvider provider = modelProviderRegistry.getDefault();
         String raw = CompletableFuture
-                .supplyAsync(() -> provider.chat(promptEngine.systemPrompt(), userPrompt))
+                .supplyAsync(() -> provider.chat(promptEngine.systemPrompt(), userPrompt), aiExecutor)
                 .orTimeout(appProperties.getAi().getAnalysisTimeoutSeconds(), TimeUnit.SECONDS)
                 .join();
         Map<String, Object> draft = jsonReportParser.parseOptimizeDraft(raw);
@@ -297,6 +302,15 @@ public class AnalysisAppService {
                 .updatedAt(task.getUpdatedAt())
                 .report(listReport)
                 .build();
+    }
+
+    private Map<String, AnalysisReport> loadReportsByTaskId(List<AnalysisTask> tasks) {
+        if (tasks == null || tasks.isEmpty()) {
+            return Map.of();
+        }
+        List<String> taskIds = tasks.stream().map(AnalysisTask::getId).toList();
+        return reportMapper.selectBatchIds(taskIds).stream()
+                .collect(Collectors.toMap(AnalysisReport::getTaskId, Function.identity(), (a, b) -> a));
     }
 
     private Map<String, Object> parseReport(AnalysisReport report) {

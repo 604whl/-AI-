@@ -1,7 +1,7 @@
 import type { ChatMessageResponse } from '@/types/chat'
 import type { SendChatMessageRequest } from '@/api/chat'
+import { authFetch } from '@/api/authFetch'
 import { consumeFetchSse } from '@/utils/sse'
-import { getAccessToken } from '@/utils/token'
 
 const baseURL = import.meta.env.VITE_API_BASE || '/api/v1'
 
@@ -20,16 +20,12 @@ export async function streamChatMessage(
   handlers: ChatStreamHandlers,
   signal?: AbortSignal,
 ): Promise<void> {
-  const token = getAccessToken()
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     Accept: 'text/event-stream',
   }
-  if (token) {
-    headers.Authorization = `Bearer ${token}`
-  }
 
-  const response = await fetch(`${baseURL}/chat/sessions/${sessionId}/messages/stream`, {
+  const response = await authFetch(`${baseURL}/chat/sessions/${sessionId}/messages/stream`, {
     method: 'POST',
     headers,
     body: JSON.stringify(payload),
@@ -37,37 +33,46 @@ export async function streamChatMessage(
   })
 
   await consumeFetchSse(response, (event, data) => {
+    let parsed: Record<string, unknown>
     try {
-      const parsed = JSON.parse(data) as Record<string, unknown>
-      switch (event) {
-        case 'step_start':
-          handlers.onStepStart?.(Number(parsed.step), Number(parsed.maxSteps))
-          break
-        case 'tool_start':
-          handlers.onToolStart?.(String(parsed.tool), Number(parsed.step))
-          break
-        case 'tool_end':
-          handlers.onToolEnd?.(
-            String(parsed.tool),
-            Boolean(parsed.success),
-            Number(parsed.latencyMs ?? 0),
-            parsed.error ? String(parsed.error) : undefined,
-          )
-          break
-        case 'delta':
-          handlers.onDelta?.(String(parsed.content ?? ''))
-          break
-        case 'done':
-          handlers.onDone?.(parsed as unknown as ChatMessageResponse)
-          break
-        case 'error':
-          handlers.onError?.(Number(parsed.code ?? 50000), String(parsed.message ?? 'error'))
-          break
-        default:
-          break
-      }
+      parsed = JSON.parse(data) as Record<string, unknown>
     } catch {
-      /* ignore malformed chunks */
+      return
+    }
+
+    switch (event) {
+      case 'step_start':
+        handlers.onStepStart?.(Number(parsed.step), Number(parsed.maxSteps))
+        break
+      case 'tool_start':
+        handlers.onToolStart?.(String(parsed.tool), Number(parsed.step))
+        break
+      case 'tool_end':
+        handlers.onToolEnd?.(
+          String(parsed.tool),
+          Boolean(parsed.success),
+          Number(parsed.latencyMs ?? 0),
+          parsed.error ? String(parsed.error) : undefined,
+        )
+        break
+      case 'delta':
+        handlers.onDelta?.(String(parsed.content ?? ''))
+        break
+      case 'done':
+        handlers.onDone?.(parsed as unknown as ChatMessageResponse)
+        break
+      case 'error': {
+        const code = Number(parsed.code ?? 50000)
+        const message = String(parsed.message ?? 'error')
+        if (handlers.onError) {
+          handlers.onError(code, message)
+        } else {
+          throw new Error(message)
+        }
+        break
+      }
+      default:
+        break
     }
   })
 }

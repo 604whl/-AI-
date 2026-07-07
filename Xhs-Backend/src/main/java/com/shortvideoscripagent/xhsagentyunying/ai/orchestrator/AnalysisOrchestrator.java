@@ -22,6 +22,7 @@ import com.shortvideoscripagent.xhsagentyunying.domain.mapper.AnalysisReportMapp
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.AnalysisTaskMapper;
 import com.shortvideoscripagent.xhsagentyunying.service.analysis.AnalysisProgressEvent;
 import com.shortvideoscripagent.xhsagentyunying.service.analysis.AnalysisStreamHub;
+import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -31,6 +32,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -53,6 +55,9 @@ public class AnalysisOrchestrator {
     private final AiRuntimeProperties aiRuntimeProperties;
     private final AiRuntimePolicy aiRuntimePolicy;
     private final AnalysisStreamHub analysisStreamHub;
+
+    @Resource(name = "aiExecutor")
+    private Executor aiExecutor;
 
     @Async("analysisExecutor")
     public void analyzeAsync(String taskId) {
@@ -134,8 +139,14 @@ public class AnalysisOrchestrator {
         publishProgress(task, "processing", "text_analysis", "正在分析正文");
         publishProgress(task, "processing", "cover_analysis", "正在分析封面");
 
-        CompletableFuture<Map<String, Object>> reportFuture = CompletableFuture.supplyAsync(() -> runTextAnalysis(task));
-        CompletableFuture<Map<String, Object>> coverFuture = CompletableFuture.supplyAsync(() -> coverAnalysisService.analyze(task));
+        CompletableFuture<Map<String, Object>> reportFuture = CompletableFuture.supplyAsync(
+                () -> runTextAnalysis(task),
+                aiExecutor
+        );
+        CompletableFuture<Map<String, Object>> coverFuture = CompletableFuture.supplyAsync(
+                () -> coverAnalysisService.analyze(task),
+                aiExecutor
+        );
 
         Map<String, Object> report = reportFuture.orTimeout(timeoutSeconds, TimeUnit.SECONDS).join();
         Map<String, Object> coverAnalysis = coverFuture.orTimeout(timeoutSeconds, TimeUnit.SECONDS).join();
@@ -161,7 +172,7 @@ public class AnalysisOrchestrator {
         for (int attempt = 0; attempt <= maxRetries; attempt++) {
             try {
                 String raw = CompletableFuture
-                        .supplyAsync(() -> provider.chat(systemPrompt, userPrompt))
+                        .supplyAsync(() -> provider.chat(systemPrompt, userPrompt), aiExecutor)
                         .orTimeout(timeoutSeconds, TimeUnit.SECONDS)
                         .join();
                 Map<String, Object> report = jsonReportParser.parseAnalysisReport(raw, task.getScenario());
