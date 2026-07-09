@@ -22,14 +22,14 @@ public class AiStartupValidator implements ApplicationRunner {
         }
         if (aiRuntimePolicy.hasRealApiKey()) {
             log.info(
-                    "Real AI enabled: DashScope model={}, mock disabled",
+                    "Real AI enabled: primary DashScope model={}, mock disabled; configured fallback providers may be used",
                     aiRuntimePolicy.dashscopeModel()
             );
             return;
         }
         log.error(
-                "Real AI requested (AI_MOCK_ENABLED=false) but DASHSCOPE_API_KEY is missing or placeholder. "
-                        + "Set DASHSCOPE_API_KEY in environment or application-local.yml, "
+                "Real AI requested (AI_MOCK_ENABLED=false) but no usable model API key is configured. "
+                        + "Set DASHSCOPE_API_KEY, DEEPSEEK_API_KEY, ZHIPU_API_KEY or OPENAI_API_KEY, "
                         + "or set AI_MOCK_ENABLED=true for offline development."
         );
     }

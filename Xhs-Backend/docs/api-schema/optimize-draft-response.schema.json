@@ -7,7 +7,7 @@
   "required": ["analysisId", "optimizedTitle", "optimizedBody", "promptVersion"],
   "properties": {
     "analysisId": { "type": "string" },
-    "optimizedTitle": { "type": "string", "maxLength": 100 },
+    "optimizedTitle": { "type": "string", "maxLength": 20 },
     "optimizedBody": { "type": "string" },
     "structureOutline": {
       "type": "array",

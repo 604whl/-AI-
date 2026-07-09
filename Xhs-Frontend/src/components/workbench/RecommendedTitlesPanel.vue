@@ -28,7 +28,7 @@
           <p class="title-text">{{ item.title }}</p>
           <div class="title-meta">
             <el-tag size="small" type="danger" effect="plain" round>
-              CTR {{ item.ctr }}%
+              {{ t('workbench.titleClickPotential', { score: item.ctr }) }}
             </el-tag>
             <el-progress
               :percentage="item.ctr"

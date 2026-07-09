@@ -23,7 +23,7 @@
     },
     "title": {
       "type": "string",
-      "maxLength": 100,
+      "maxLength": 20,
       "description": "独立生成时建议提供当前标题"
     },
     "body": {

@@ -7,6 +7,10 @@ public interface ModelProvider {
 
     String id();
 
+    default String modelName() {
+        return id();
+    }
+
     String chat(String systemPrompt, String userPrompt);
 
     /**

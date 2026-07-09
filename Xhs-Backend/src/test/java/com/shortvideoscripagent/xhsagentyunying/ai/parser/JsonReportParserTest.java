@@ -59,4 +59,46 @@ class JsonReportParserTest {
         assertEquals("high", ctr.get("level"));
         assertNotNull(report.get("contentType"));
     }
+
+    @Test
+    void parseBodyGenerate_acceptsObjectOutline() {
+        String raw = """
+                {
+                  "body": "围绕原文生成的正文",
+                  "structureOutline": [
+                    {"section": "hook", "summary": "开头"},
+                    {"section": "problem_amplification", "summary": "放大"},
+                    {"section": "real_experience", "summary": "经历"},
+                    {"section": "result_showcase", "summary": "结果"},
+                    {"section": "cta", "summary": "行动"}
+                  ],
+                  "cta": "评论领取资料",
+                  "complianceWarnings": []
+                }
+                """;
+
+        JsonReportParser.ParsedBodyGenerate parsed = parser.parseBodyGenerate(raw);
+
+        assertEquals("围绕原文生成的正文", parsed.body());
+        assertEquals(5, parsed.structureOutline().size());
+        assertEquals("hook", parsed.structureOutline().get(0).getSection());
+        assertEquals("评论领取资料", parsed.cta());
+    }
+
+    @Test
+    void parseBodyGenerate_acceptsStringOutlineAndUsesLastAsCta() {
+        String raw = """
+                {
+                  "body": "围绕原文生成的正文",
+                  "structureOutline": ["开头", "放大", "经历", "结果", "评论领取资料"],
+                  "complianceWarnings": []
+                }
+                """;
+
+        JsonReportParser.ParsedBodyGenerate parsed = parser.parseBodyGenerate(raw);
+
+        assertEquals(5, parsed.structureOutline().size());
+        assertEquals("problem_amplification", parsed.structureOutline().get(1).getSection());
+        assertEquals("评论领取资料", parsed.cta());
+    }
 }

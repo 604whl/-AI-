@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://xhs-agent.local/schemas/body-generate-request.schema.json",
+  "title": "BodyGenerateRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["goal"],
+  "properties": {
+    "goal": {
+      "type": "string",
+      "enum": ["high_ctr", "high_collect", "high_conversion", "anxiety", "offer", "info_gap"],
+      "description": "正文生成目标"
+    },
+    "tone": {
+      "type": "string",
+      "enum": ["default", "more_anxiety", "more_professional", "more_friendly"],
+      "default": "default"
+    },
+    "maxLength": {
+      "type": "integer",
+      "minimum": 500,
+      "maximum": 1500,
+      "default": 900,
+      "description": "正文建议字数上限"
+    },
+    "keywords": {
+      "type": "array",
+      "items": { "type": "string", "maxLength": 20 },
+      "maxItems": 5,
+      "description": "可选强制包含的垂类关键词"
+    }
+  }
+}

@@ -19,21 +19,17 @@ public class UrlFetchService {
     private static final int CODE_FETCH_FAILED = 50006;
     private static final Pattern TAG_PATTERN = Pattern.compile("<[^>]+>");
     private static final int MAX_BYTES = 512_000;
+    private static final int MAX_REDIRECTS = 3;
 
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
-            .followRedirects(HttpClient.Redirect.NORMAL)
+            .followRedirects(HttpClient.Redirect.NEVER)
             .build();
 
     public FetchResult fetch(String url) {
         URI uri = validateUrl(url);
         try {
-            HttpRequest request = HttpRequest.newBuilder(uri)
-                    .timeout(Duration.ofSeconds(10))
-                    .header("User-Agent", "XhsAgent/1.0")
-                    .GET()
-                    .build();
-            HttpResponse<byte[]> response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            HttpResponse<byte[]> response = fetchWithValidatedRedirects(uri);
             if (response.statusCode() >= 400) {
                 throw new BusinessException(CODE_FETCH_FAILED, "fetch_url_http_error");
             }
@@ -43,13 +39,42 @@ public class UrlFetchService {
             }
             String contentType = response.headers().firstValue("content-type").orElse("");
             String text = extractText(body, contentType);
-            return new FetchResult(uri.toString(), truncate(text, 4000), contentType);
+            return new FetchResult(response.uri().toString(), truncate(text, 4000), contentType);
         } catch (BusinessException ex) {
             throw ex;
         } catch (Exception ex) {
             log.warn("URL fetch failed for {}: {}", url, ex.getMessage());
             throw new BusinessException(CODE_FETCH_FAILED, "fetch_url_failed");
         }
+    }
+
+    private HttpResponse<byte[]> fetchWithValidatedRedirects(URI initialUri) throws Exception {
+        URI current = initialUri;
+        for (int redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount++) {
+            HttpRequest request = HttpRequest.newBuilder(current)
+                    .timeout(Duration.ofSeconds(10))
+                    .header("User-Agent", "XhsAgent/1.0")
+                    .GET()
+                    .build();
+            HttpResponse<byte[]> response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            if (!isRedirect(response.statusCode())) {
+                return response;
+            }
+            String location = response.headers().firstValue("location").orElse("");
+            if (location.isBlank()) {
+                throw new BusinessException(CODE_FETCH_FAILED, "fetch_url_redirect_invalid");
+            }
+            current = validateUrl(current.resolve(location).toString());
+        }
+        throw new BusinessException(CODE_FETCH_FAILED, "fetch_url_too_many_redirects");
+    }
+
+    private boolean isRedirect(int statusCode) {
+        return statusCode == 301
+                || statusCode == 302
+                || statusCode == 303
+                || statusCode == 307
+                || statusCode == 308;
     }
 
     private URI validateUrl(String url) {

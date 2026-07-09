@@ -2,7 +2,6 @@ package com.shortvideoscripagent.xhsagentyunying.service;
 
 import com.shortvideoscripagent.xhsagentyunying.ai.AiRuntimePolicy;
 import com.shortvideoscripagent.xhsagentyunying.ai.fixture.SampleAnalysisReport;
-import com.shortvideoscripagent.xhsagentyunying.ai.model.ModelProvider;
 import com.shortvideoscripagent.xhsagentyunying.ai.model.ModelProviderRegistry;
 import com.shortvideoscripagent.xhsagentyunying.ai.parser.JsonReportParser;
 import com.shortvideoscripagent.xhsagentyunying.ai.prompt.PromptEngine;
@@ -66,11 +65,10 @@ public class TitleService {
     private List<TitleGenerateResponse.TitleItem> generateWithLlm(TitleGenerateRequest request, int count) {
         aiRuntimePolicy.assertRealAiAvailable();
         String userPrompt = promptEngine.buildTitleGenerateUserPrompt(request, count);
-        ModelProvider provider = modelProviderRegistry.getDefault();
         int timeoutSeconds = appProperties.getAi().getAnalysisTimeoutSeconds();
 
         String raw = CompletableFuture
-                .supplyAsync(() -> provider.chat(promptEngine.titleSystemPrompt(), userPrompt))
+                .supplyAsync(() -> modelProviderRegistry.chatWithFallback(promptEngine.titleSystemPrompt(), userPrompt).content())
                 .orTimeout(timeoutSeconds, TimeUnit.SECONDS)
                 .join();
         return jsonReportParser.parseTitleGenerate(raw, count, count);

@@ -3,6 +3,7 @@ package com.shortvideoscripagent.xhsagentyunying.ai.parser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shortvideoscripagent.xhsagentyunying.common.exception.BusinessException;
+import com.shortvideoscripagent.xhsagentyunying.dto.analysis.BodyGenerateResponse;
 import com.shortvideoscripagent.xhsagentyunying.dto.title.TitleGenerateResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -26,6 +27,10 @@ public class JsonReportParser {
     );
 
     private static final Set<String> ESTIMATED_CTR = Set.of("low", "medium", "high");
+
+    private static final Set<String> BODY_SECTIONS = Set.of(
+            "hook", "problem_amplification", "real_experience", "result_showcase", "cta"
+    );
 
     private static final Pattern JSON_BLOCK = Pattern.compile("```(?:json)?\\s*([\\s\\S]*?)```", Pattern.CASE_INSENSITIVE);
 
@@ -91,6 +96,67 @@ public class JsonReportParser {
     }
 
     @SuppressWarnings("unchecked")
+    public ParsedBodyGenerate parseBodyGenerate(String raw) {
+        String json = extractJson(raw);
+        Map<String, Object> parsed;
+        try {
+            parsed = objectMapper.readValue(json, new TypeReference<>() {
+            });
+        } catch (Exception ex) {
+            throw new BusinessException(CODE_AI_RESPONSE_INVALID, "ai_response_invalid");
+        }
+        requireNonBlank(parsed, "body");
+        Object outlineObj = parsed.get("structureOutline");
+        if (!(outlineObj instanceof List<?> outlineList) || outlineList.size() != 5) {
+            throw new BusinessException(CODE_AI_RESPONSE_INVALID, "ai_response_invalid");
+        }
+
+        List<BodyGenerateResponse.StructureSection> outline = new ArrayList<>();
+        List<String> sectionOrder = List.of("hook", "problem_amplification", "real_experience", "result_showcase", "cta");
+        for (int i = 0; i < outlineList.size(); i++) {
+            Object item = outlineList.get(i);
+            String section;
+            String summary;
+            if (item instanceof Map<?, ?> map) {
+                Object sectionObj = map.get("section");
+                Object summaryObj = map.get("summary");
+                String rawSection = sectionObj == null ? "" : String.valueOf(sectionObj).trim();
+                section = BODY_SECTIONS.contains(rawSection) ? rawSection : sectionOrder.get(i);
+                summary = summaryObj == null ? "" : String.valueOf(summaryObj).trim();
+            } else {
+                section = sectionOrder.get(i);
+                summary = item == null ? "" : String.valueOf(item).trim();
+            }
+            if (summary.isBlank()) {
+                throw new BusinessException(CODE_AI_RESPONSE_INVALID, "ai_response_invalid");
+            }
+            outline.add(new BodyGenerateResponse.StructureSection(section, summary));
+        }
+
+        String cta = valueOrBlank(parsed.get("cta"));
+        if (cta.isBlank()) {
+            cta = outline.get(4).getSummary();
+        }
+
+        List<Map<String, Object>> warnings = new ArrayList<>();
+        Object warningsObj = parsed.get("complianceWarnings");
+        if (warningsObj instanceof List<?> warningList) {
+            for (Object item : warningList) {
+                if (item instanceof Map<?, ?> map) {
+                    warnings.add((Map<String, Object>) map);
+                }
+            }
+        }
+
+        return new ParsedBodyGenerate(
+                String.valueOf(parsed.get("body")).trim(),
+                outline,
+                cta,
+                warnings
+        );
+    }
+
+    @SuppressWarnings("unchecked")
     public List<TitleGenerateResponse.TitleItem> parseTitleGenerate(String raw, int minCount, int maxCount) {
         String json = extractJson(raw);
         Map<String, Object> parsed;
@@ -116,8 +182,8 @@ public class JsonReportParser {
                 continue;
             }
             String text = String.valueOf(textObj).trim();
-            if (text.length() > 100) {
-                text = text.substring(0, 100);
+            if (text.length() > 20) {
+                text = text.substring(0, 20);
             }
             List<String> highlights = new ArrayList<>();
             Object highlightsObj = titleMap.get("highlights");
@@ -274,16 +340,21 @@ public class JsonReportParser {
         }
     }
 
+    private String valueOrBlank(Object value) {
+        return value == null ? "" : String.valueOf(value).trim();
+    }
+
     private void requireObject(Map<String, Object> map, String key) {
         if (!(map.get(key) instanceof Map<?, ?>)) {
             throw new BusinessException(CODE_AI_RESPONSE_INVALID, "ai_response_invalid");
         }
     }
 
-    private void requireList(Map<String, Object> map, String key) {
-        Object value = map.get(key);
-        if (!(value instanceof List<?> list) || list.isEmpty()) {
-            throw new BusinessException(CODE_AI_RESPONSE_INVALID, "ai_response_invalid");
-        }
+    public record ParsedBodyGenerate(
+            String body,
+            List<BodyGenerateResponse.StructureSection> structureOutline,
+            String cta,
+            List<Map<String, Object>> complianceWarnings
+    ) {
     }
 }

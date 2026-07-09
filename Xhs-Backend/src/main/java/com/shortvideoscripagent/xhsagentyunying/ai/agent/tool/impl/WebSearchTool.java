@@ -49,15 +49,21 @@ public class WebSearchTool implements AgentTool {
         if (query.isBlank()) {
             return ToolResult.fail("query_required");
         }
+        if (!webSearchService.isConfigured()) {
+            return ToolResult.fail("web_search_not_configured");
+        }
+        if (userQuotaService.remainingWebSearchQuota(context.userId()) <= 0) {
+            return ToolResult.fail("web_search_quota_exceeded");
+        }
 
+        int maxResults = SearchKbTool.intArg(arguments, "maxResults", 5);
+        List<Map<String, Object>> results;
         try {
+            results = webSearchService.search(query, maxResults);
             userQuotaService.consumeWebSearchQuota(context.userId(), context.sessionId());
         } catch (BusinessException ex) {
             return ToolResult.fail(ex.getMessage());
         }
-
-        int maxResults = SearchKbTool.intArg(arguments, "maxResults", 5);
-        List<Map<String, Object>> results = webSearchService.search(query, maxResults);
 
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("query", query);

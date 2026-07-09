@@ -23,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class FileController {
 
     private static final int CODE_UNAUTHORIZED = 40101;
+    private static final int CODE_FORBIDDEN = 40301;
 
     private final CoverStorageService coverStorageService;
 
@@ -34,8 +35,11 @@ public class FileController {
 
     @GetMapping("/cover/{*objectKey}")
     public ResponseEntity<byte[]> getCover(@PathVariable String objectKey) {
-        requireUserId();
+        Long userId = requireUserId();
         String normalized = objectKey.startsWith("/") ? objectKey.substring(1) : objectKey;
+        if (!normalized.startsWith("covers/" + userId + "/")) {
+            throw new BusinessException(CODE_FORBIDDEN, "forbidden");
+        }
         CoverStorageService.StoredObject stored = coverStorageService.load(normalized);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CACHE_CONTROL, "private, max-age=3600")

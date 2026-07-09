@@ -62,7 +62,7 @@
               <el-form-item :label="t('analysis.title')">
                 <el-input
                   v-model="draft.title"
-                  maxlength="100"
+                  maxlength="20"
                   show-word-limit
                   :placeholder="t('dashboard.titlePlaceholder')"
                 />

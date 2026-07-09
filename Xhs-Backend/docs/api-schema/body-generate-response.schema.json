@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://xhs-agent.local/schemas/body-generate-response.schema.json",
+  "title": "BodyGenerateResponse",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["goal", "body", "structureOutline", "cta", "promptVersion", "wordCount"],
+  "properties": {
+    "analysisId": { "type": ["string", "null"] },
+    "goal": {
+      "type": "string",
+      "enum": ["high_ctr", "high_collect", "high_conversion", "anxiety", "offer", "info_gap"]
+    },
+    "body": {
+      "type": "string",
+      "description": "可编辑的小红书正文初稿"
+    },
+    "structureOutline": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["section", "summary"],
+        "properties": {
+          "section": {
+            "type": "string",
+            "enum": ["hook", "problem_amplification", "real_experience", "result_showcase", "cta"]
+          },
+          "summary": { "type": "string" }
+        }
+      },
+      "minItems": 5,
+      "maxItems": 5,
+      "description": "五段结构：Hook/问题放大/真实经历/结果展示/CTA"
+    },
+    "cta": { "type": "string" },
+    "complianceWarnings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["rule", "matchedText", "suggestion"],
+        "properties": {
+          "rule": { "type": "string" },
+          "matchedText": { "type": "string" },
+          "suggestion": { "type": "string" }
+        }
+      },
+      "default": []
+    },
+    "promptVersion": { "type": "string" },
+    "wordCount": { "type": "integer", "minimum": 0 }
+  }
+}

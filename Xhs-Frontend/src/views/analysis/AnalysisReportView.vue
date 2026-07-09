@@ -102,6 +102,7 @@
           :compliance-warnings="detail.report.complianceWarnings"
           @optimize-draft="openOptimizeDraft"
           @generate-titles="openTitleDrawer"
+          @generate-body="openBodyDrawer"
         />
       </main>
 
@@ -145,6 +146,13 @@
         :analysis-id="detail.id"
       />
     </el-drawer>
+
+    <BodyGenerateDrawer
+      v-model:visible="bodyDrawerVisible"
+      :loading="bodyLoading"
+      :body="bodyResult"
+      @generate="loadGenerateBody"
+    />
   </div>
 </template>
 
@@ -154,8 +162,16 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft } from '@element-plus/icons-vue'
-import { deleteAnalysis, optimizeDraft, type OptimizeDraftResponse } from '@/api/analysis'
+import {
+  deleteAnalysis,
+  generateBody,
+  optimizeDraft,
+  type BodyGenerateRequest,
+  type BodyGenerateResponse,
+  type OptimizeDraftResponse,
+} from '@/api/analysis'
 import ContentTypeTags from '@/components/workbench/ContentTypeTags.vue'
+import BodyGenerateDrawer from '@/components/report/BodyGenerateDrawer.vue'
 import StructureBreakdownPanel from '@/components/workbench/StructureBreakdownPanel.vue'
 import TitleGeneratorPanel from '@/components/title/TitleGeneratorPanel.vue'
 import OptimizeDraftDrawer from '@/components/report/OptimizeDraftDrawer.vue'
@@ -183,6 +199,9 @@ const draftDrawerVisible = ref(false)
 const draftLoading = ref(false)
 const draftResult = ref<OptimizeDraftResponse | null>(null)
 const titleDrawerVisible = ref(false)
+const bodyDrawerVisible = ref(false)
+const bodyLoading = ref(false)
+const bodyResult = ref<BodyGenerateResponse | null>(null)
 
 const failureMessage = computed(() => {
   const failure = detail.value?.failure
@@ -267,9 +286,39 @@ function openTitleDrawer() {
   titleDrawerVisible.value = true
 }
 
+async function openBodyDrawer() {
+  bodyDrawerVisible.value = true
+  if (!bodyResult.value) {
+    await loadGenerateBody({ goal: 'high_conversion', tone: 'default', maxLength: 900 })
+  }
+}
+
+async function loadGenerateBody(payload: BodyGenerateRequest) {
+  if (!detail.value) return
+  bodyLoading.value = true
+  bodyResult.value = null
+  try {
+    const res = await generateBody(detail.value.id, payload)
+    bodyResult.value = res.data.data
+  } catch (err) {
+    ElMessage.error(resolveErrorMessage(err, t('report.bodyGenerateFailed')))
+    bodyDrawerVisible.value = false
+  } finally {
+    bodyLoading.value = false
+  }
+}
+
 async function handleReanalyze() {
   if (!analysisId.value) return
   await runReanalyze(analysisId.value)
+}
+
+function resolveErrorMessage(err: unknown, fallback: string) {
+  if (err instanceof Error && 'code' in err && err.code === 42905) {
+    return t('report.bodyQuotaExceeded')
+  }
+  if (err instanceof Error && err.message) return err.message
+  return fallback
 }
 </script>
 

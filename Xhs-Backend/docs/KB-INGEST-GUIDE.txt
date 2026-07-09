@@ -1,0 +1,11 @@
+# 知识库源文档目录
+
+将待入库的 .md 放在 data/kb-sources/ 目录。
+
+首批 30 条测试清单见：docs/KB-SEED-30.md
+
+入库（local 环境）：POST /api/v1/admin/kb/reindex
+
+文档格式：Markdown + Front Matter（doc_id, doc_type, content_type, title, tags, persona）
+
+预览切片：GET /api/v1/admin/kb/preview?docId=CASE-01

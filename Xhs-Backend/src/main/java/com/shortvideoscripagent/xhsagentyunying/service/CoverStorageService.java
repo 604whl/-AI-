@@ -30,6 +30,7 @@ public class CoverStorageService {
 
     private static final int CODE_COVER_INVALID = 40004;
     private static final int CODE_STORAGE_ERROR = 50004;
+    private static final int CODE_STORAGE_UNSUPPORTED = 50005;
     private static final long MAX_BYTES = 5L * 1024 * 1024;
 
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
@@ -51,12 +52,16 @@ public class CoverStorageService {
                 String url = storageProperties.getLocal().getPublicBaseUrl() + "/" + objectKey;
                 return new CoverUploadResponse(url, objectKey);
             } catch (Exception ex) {
-                log.warn("MinIO upload failed, falling back to local storage: {}", ex.getMessage());
+                log.warn("MinIO upload failed for {}: {}", objectKey, ex.getMessage());
+                throw new BusinessException(CODE_STORAGE_ERROR, "storage_error");
             }
         }
-        uploadToLocal(objectKey, file);
-        String url = storageProperties.getLocal().getPublicBaseUrl() + "/" + objectKey;
-        return new CoverUploadResponse(url, objectKey);
+        if ("local".equalsIgnoreCase(storageProperties.getType())) {
+            uploadToLocal(objectKey, file);
+            String url = storageProperties.getLocal().getPublicBaseUrl() + "/" + objectKey;
+            return new CoverUploadResponse(url, objectKey);
+        }
+        throw new BusinessException(CODE_STORAGE_UNSUPPORTED, "storage_type_unsupported");
     }
 
     public String extractObjectKey(String coverImageUrl) {
@@ -84,9 +89,13 @@ public class CoverStorageService {
                 return loadFromMinio(objectKey);
             } catch (Exception ex) {
                 log.debug("MinIO read failed for {}: {}", objectKey, ex.getMessage());
+                throw new BusinessException(CODE_STORAGE_ERROR, "storage_error");
             }
         }
-        return loadFromLocal(objectKey);
+        if ("local".equalsIgnoreCase(storageProperties.getType())) {
+            return loadFromLocal(objectKey);
+        }
+        throw new BusinessException(CODE_STORAGE_UNSUPPORTED, "storage_type_unsupported");
     }
 
     private void validateFile(MultipartFile file) {

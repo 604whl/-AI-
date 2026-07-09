@@ -20,10 +20,12 @@ public class UserQuotaService {
     public static final String ACTION_ANALYSIS = "analysis";
     public static final String ACTION_AGENT_MESSAGE = "agent_message";
     public static final String ACTION_WEB_SEARCH = "web_search";
+    public static final String ACTION_BODY_GENERATION = "body_generation";
 
     private static final int CODE_QUOTA_EXCEEDED = 42901;
     private static final int CODE_AGENT_QUOTA_EXCEEDED = 42904;
     private static final int CODE_WEB_SEARCH_QUOTA_EXCEEDED = 42903;
+    private static final int CODE_BODY_QUOTA_EXCEEDED = 42905;
 
     private final UserMapper userMapper;
     private final UsageLogMapper usageLogMapper;
@@ -83,6 +85,26 @@ public class UserQuotaService {
         int dailyQuota = appAgentProperties.getWebSearch().getDailyQuotaPerUser();
         int usedToday = usageLogMapper.countTodayByUserAndAction(userId, ACTION_WEB_SEARCH);
         return Math.max(dailyQuota - usedToday, 0);
+    }
+
+    public int remainingBodyGenerationQuota(Long userId) {
+        User user = requireUser(userId);
+        int dailyQuota = user.getDailyQuota();
+        int usedToday = usageLogMapper.countTodayByUserAndAction(userId, ACTION_BODY_GENERATION);
+        return Math.max(dailyQuota - usedToday, 0);
+    }
+
+    @Transactional
+    public void consumeBodyGenerationQuota(Long userId, String taskId) {
+        if (remainingBodyGenerationQuota(userId) <= 0) {
+            throw new BusinessException(CODE_BODY_QUOTA_EXCEEDED, "body_quota_exceeded");
+        }
+        UsageLog log = new UsageLog();
+        log.setUserId(userId);
+        log.setAction(ACTION_BODY_GENERATION);
+        log.setTaskId(taskId);
+        log.setCreatedAt(OffsetDateTime.now());
+        usageLogMapper.insert(log);
     }
 
     @Transactional

@@ -26,11 +26,9 @@
       <el-button size="large" @click="$emit('generate-titles')">
         {{ t('report.generateTitles') }}
       </el-button>
-      <el-tooltip :content="t('report.generateBodyDisabled')" placement="top">
-        <el-button size="large" disabled>
-          {{ t('report.generateBody') }}
-        </el-button>
-      </el-tooltip>
+      <el-button size="large" @click="$emit('generate-body')">
+        {{ t('report.generateBody') }}
+      </el-button>
     </div>
   </el-card>
 </template>
@@ -46,6 +44,7 @@ defineProps<{
 defineEmits<{
   'optimize-draft': []
   'generate-titles': []
+  'generate-body': []
 }>()
 
 const { t } = useI18n()

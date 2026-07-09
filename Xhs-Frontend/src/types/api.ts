@@ -52,6 +52,7 @@ export interface AnalysisCreateRequest {
 
 export interface CoverAnalysis {
   available: boolean
+  reason?: string
   keywords?: string[]
   contrastComment?: string
   emotionMatch?: string
