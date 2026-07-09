@@ -1,0 +1,123 @@
+spring:
+  application:
+    name: xhs-agent-yunying
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/xhsagent?currentSchema=app}
+    username: ${SPRING_DATASOURCE_USERNAME:xhsagent}
+    password: ${SPRING_DATASOURCE_PASSWORD:xhsagent_dev}
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    schemas: app,kb
+    create-schemas: true
+    default-schema: app
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  ai:
+    dashscope:
+      api-key: test-dashscope-key
+      chat:
+        options:
+          model: qwen-turbo
+      embedding:
+        enabled: true
+        options:
+          model: text-embedding-v3
+          dimensions: 1024
+
+server:
+  servlet:
+    context-path: /api
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+app:
+  auth:
+    jwt-secret: xhs-agent-test-jwt-secret-change-in-production-32b
+    access-token-expire-seconds: 7200
+    refresh-token-expire-seconds: 604800
+  ai:
+    default-provider: dashscope
+    mock-enabled: true
+    analysis-timeout-seconds: 45
+    analysis-max-retries: 1
+    dashscope:
+      vision-model: qwen-vl-plus
+    openai:
+      enabled: false
+  rag:
+    enabled: false
+    analysis-enabled: false
+    title-enabled: false
+    top-k: 5
+  agent:
+    enabled: false
+    mock-enabled: true
+    max-steps: 8
+    total-timeout-seconds: 120
+    session-ttl-hours: 24
+    max-context-messages: 20
+    daily-message-quota: 20
+    tools:
+      search-kb: true
+      analyze-content: true
+      generate-titles: true
+      scan-compliance: true
+      get-analysis-report: true
+      list-recent-analyses: true
+      analyze-cover: true
+      optimize-draft: true
+      web-search: false
+      fetch-url: false
+      get-hot-topics: true
+      get-industry-calendar: true
+      get-user-profile: true
+    web-search:
+      provider: tavily
+      api-key: ${WEB_SEARCH_API_KEY:}
+      daily-quota-per-user: 10
+    mcp:
+      enabled: false
+      api-key: ${MCP_API_KEY:}
+      exposed-tools:
+        - search_kb
+        - web_search
+        - fetch_url
+        - get_hot_topics
+        - get_industry_calendar
+      session-id-prefix: mcp_
+  kb:
+    source-dir: ${KB_SOURCE_DIR:./data/kb-sources}
+    default-doc-type: viral_case
+    chunking:
+      chunk-size-tokens: 400
+      chunk-overlap-tokens: 50
+      min-chunk-size-chars: 100
+      min-chunk-length-to-embed: 10
+      max-num-chunks: 500
+      keep-separator: true
+    ingest:
+      embed-on-ingest: true
+      embedding-batch-size: 16
+  storage:
+    type: local
+    minio:
+      endpoint: http://localhost:9000
+      access-key: minioadmin
+      secret-key: minioadmin
+      bucket: xhs-agent
+    local:
+      base-dir: ./data/uploads
+      public-base-url: /api/v1/files/cover
+  cors:
+    allowed-origins: http://localhost:5173,http://127.0.0.1:5173

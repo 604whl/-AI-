@@ -68,13 +68,22 @@ public class ComplianceChecker {
     private List<Map<String, Object>> dedupe(List<Map<String, Object>> warnings) {
         List<Map<String, Object>> result = new ArrayList<>();
         for (Map<String, Object> warning : warnings) {
+            String key = warningKey(warning);
             boolean duplicate = result.stream().anyMatch(w ->
-                    warning.get("rule").equals(w.get("rule"))
-                            && warning.get("matchedText").equals(w.get("matchedText")));
+                    key.equals(warningKey(w)));
             if (!duplicate) {
                 result.add(warning);
             }
         }
         return result;
+    }
+
+    private String warningKey(Map<String, Object> warning) {
+        Object rule = warning.get("rule");
+        Object matchedText = warning.get("matchedText");
+        if (rule != null || matchedText != null) {
+            return String.valueOf(rule) + "|" + String.valueOf(matchedText);
+        }
+        return warning.toString();
     }
 }

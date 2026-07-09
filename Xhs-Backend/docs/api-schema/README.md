@@ -16,6 +16,8 @@
 | [title-generate-response.schema.json](./title-generate-response.schema.json) | 标题生成响应 |
 | [optimize-draft-request.schema.json](./optimize-draft-request.schema.json) | 生成优化稿请求 |
 | [optimize-draft-response.schema.json](./optimize-draft-response.schema.json) | 优化稿响应 |
+| [body-generate-request.schema.json](./body-generate-request.schema.json) | 生成正文请求 |
+| [body-generate-response.schema.json](./body-generate-response.schema.json) | 生成正文响应 |
 | [error-codes.md](./error-codes.md) | 业务错误码 |
 
 ---
@@ -47,6 +49,7 @@
 | GET | `/analysis/{id}` | 获取任务状态与报告 |
 | POST | `/analysis/{id}/titles` | 基于分析上下文生成标题 |
 | POST | `/analysis/{id}/optimize-draft` | 生成优化稿 |
+| POST | `/analysis/{id}/body` | 基于分析上下文生成正文（P1） |
 | POST | `/titles` | 独立标题生成（无分析 ID） |
 | GET | `/analysis` | 历史列表（分页） |
 | GET | `/auth/usage` | 今日分析用量（`usage_log` 统计） |
@@ -90,6 +93,10 @@ pending → processing → completed
 `ANXIETY` | `OFFER` | `INFO_GAP` | `INTERVIEW` | `TIMELINE` | `COMEBACK`
 
 ### TitleGenerateGoal
+
+`high_ctr` | `high_collect` | `high_conversion` | `anxiety` | `offer` | `info_gap`
+
+### BodyGenerateGoal
 
 `high_ctr` | `high_collect` | `high_conversion` | `anxiety` | `offer` | `info_gap`
 

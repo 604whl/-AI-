@@ -8,6 +8,7 @@ import type {
   ApiResponse,
   ComplianceWarning,
   PaginatedData,
+  TitleGenerateGoal,
   TitleGenerateRequest,
   TitleGenerateResponse,
 } from '@/types/api'
@@ -64,4 +65,33 @@ export interface OptimizeDraftResponse {
 
 export function optimizeDraft(id: string, payload?: OptimizeDraftRequest) {
   return http.post<ApiResponse<OptimizeDraftResponse>>(`/analysis/${id}/optimize-draft`, payload ?? {})
+}
+
+export type BodyTone = 'default' | 'more_anxiety' | 'more_professional' | 'more_friendly'
+
+export interface BodyGenerateRequest {
+  goal: TitleGenerateGoal
+  tone?: BodyTone
+  maxLength?: number
+  keywords?: string[]
+}
+
+export interface BodyStructureSection {
+  section: 'hook' | 'problem_amplification' | 'real_experience' | 'result_showcase' | 'cta'
+  summary: string
+}
+
+export interface BodyGenerateResponse {
+  analysisId: string
+  goal: TitleGenerateGoal
+  body: string
+  structureOutline: BodyStructureSection[]
+  cta: string
+  complianceWarnings: ComplianceWarning[]
+  promptVersion: string
+  wordCount: number
+}
+
+export function generateBody(id: string, payload: BodyGenerateRequest) {
+  return http.post<ApiResponse<BodyGenerateResponse>>(`/analysis/${id}/body`, payload)
 }

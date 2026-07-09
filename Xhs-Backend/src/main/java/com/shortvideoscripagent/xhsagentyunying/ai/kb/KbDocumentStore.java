@@ -6,14 +6,31 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import java.sql.Array;
-import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.Types;
 import java.util.List;
 import java.util.Map;
 
 @Repository
 @RequiredArgsConstructor
 public class KbDocumentStore {
+
+    private static final String UPSERT_SQL = """
+            INSERT INTO kb.kb_document (
+                doc_id, doc_type, content_type, persona, tags, title,
+                chunk_type, content, metadata, embedding, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            ON CONFLICT (doc_id, chunk_type) DO UPDATE SET
+                doc_type = EXCLUDED.doc_type,
+                content_type = EXCLUDED.content_type,
+                persona = EXCLUDED.persona,
+                tags = EXCLUDED.tags,
+                title = EXCLUDED.title,
+                content = EXCLUDED.content,
+                metadata = EXCLUDED.metadata,
+                embedding = EXCLUDED.embedding,
+                updated_at = NOW()
+            """;
 
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
@@ -25,34 +42,25 @@ public class KbDocumentStore {
     public void upsertChunk(KbChunkDraft chunk, float[] embedding) {
         String metadataJson = toJson(chunk.metadata());
         String embeddingLiteral = toPgVectorLiteral(embedding);
+        String[] persona = toArray(chunk.persona());
+        String[] tags = toArray(chunk.tags());
 
-        jdbcTemplate.update("""
-                INSERT INTO kb.kb_document (
-                    doc_id, doc_type, content_type, persona, tags, title,
-                    chunk_type, content, metadata, embedding, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?::vector, NOW())
-                ON CONFLICT (doc_id, chunk_type) DO UPDATE SET
-                    doc_type = EXCLUDED.doc_type,
-                    content_type = EXCLUDED.content_type,
-                    persona = EXCLUDED.persona,
-                    tags = EXCLUDED.tags,
-                    title = EXCLUDED.title,
-                    content = EXCLUDED.content,
-                    metadata = EXCLUDED.metadata,
-                    embedding = EXCLUDED.embedding,
-                    updated_at = NOW()
-                """,
-                chunk.docId(),
-                chunk.docType(),
-                chunk.contentType(),
-                toTextArray(chunk.persona()),
-                toTextArray(chunk.tags()),
-                chunk.title(),
-                chunk.chunkType(),
-                chunk.content(),
-                metadataJson,
-                embeddingLiteral
-        );
+        jdbcTemplate.update(UPSERT_SQL, (PreparedStatement ps) -> {
+            ps.setString(1, chunk.docId());
+            ps.setString(2, chunk.docType());
+            ps.setString(3, chunk.contentType());
+            ps.setArray(4, ps.getConnection().createArrayOf("text", persona));
+            ps.setArray(5, ps.getConnection().createArrayOf("text", tags));
+            ps.setString(6, chunk.title());
+            ps.setString(7, chunk.chunkType());
+            ps.setString(8, chunk.content());
+            ps.setObject(9, metadataJson, Types.OTHER);
+            if (embeddingLiteral == null) {
+                ps.setNull(10, Types.OTHER);
+            } else {
+                ps.setObject(10, embeddingLiteral, Types.OTHER);
+            }
+        });
     }
 
     private String toJson(Map<String, Object> metadata) {
@@ -61,6 +69,10 @@ public class KbDocumentStore {
         } catch (JsonProcessingException ex) {
             throw new IllegalStateException("kb metadata json error", ex);
         }
+    }
+
+    private static String[] toArray(List<String> values) {
+        return values == null ? new String[0] : values.toArray(String[]::new);
     }
 
     private static String toPgVectorLiteral(float[] embedding) {
@@ -77,11 +89,5 @@ public class KbDocumentStore {
         }
         sb.append(']');
         return sb.toString();
-    }
-
-    private Array toTextArray(List<String> values) {
-        String[] array = values == null ? new String[0] : values.toArray(String[]::new);
-        return jdbcTemplate.execute((Connection connection) ->
-                connection.createArrayOf("text", array));
     }
 }

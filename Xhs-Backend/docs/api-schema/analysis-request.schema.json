@@ -19,7 +19,7 @@
     },
     "title": {
       "type": "string",
-      "maxLength": 100,
+      "maxLength": 20,
       "description": "笔记标题"
     },
     "body": {

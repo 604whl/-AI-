@@ -1,5 +1,6 @@
 package com.shortvideoscripagent.xhsagentyunying.ai.model;
 
+import com.shortvideoscripagent.xhsagentyunying.config.AiRuntimeProperties;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.content.Media;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,22 +13,31 @@ import org.springframework.util.MimeTypeUtils;
 
 @Component
 @ConditionalOnProperty(name = "app.ai.mock-enabled", havingValue = "false")
+@ConditionalOnProperty(name = "app.ai.dashscope.enabled", havingValue = "true", matchIfMissing = true)
 public class DashScopeModelProvider implements ModelProvider {
 
     private final ChatClient chatClient;
     private final ChatClient visionChatClient;
+    private final AiRuntimeProperties aiRuntimeProperties;
 
     public DashScopeModelProvider(
             ChatClient chatClient,
-            @Autowired(required = false) @Qualifier("visionChatClient") ChatClient visionChatClient
+            @Autowired(required = false) @Qualifier("visionChatClient") ChatClient visionChatClient,
+            AiRuntimeProperties aiRuntimeProperties
     ) {
         this.chatClient = chatClient;
         this.visionChatClient = visionChatClient;
+        this.aiRuntimeProperties = aiRuntimeProperties;
     }
 
     @Override
     public String id() {
         return "dashscope";
+    }
+
+    @Override
+    public String modelName() {
+        return aiRuntimeProperties.getDashscopeChatModel();
     }
 
     @Override

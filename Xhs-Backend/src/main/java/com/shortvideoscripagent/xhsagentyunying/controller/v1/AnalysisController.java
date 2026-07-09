@@ -7,6 +7,8 @@ import com.shortvideoscripagent.xhsagentyunying.dto.analysis.AnalysisCreateReque
 import com.shortvideoscripagent.xhsagentyunying.dto.analysis.AnalysisCreateResponse;
 import com.shortvideoscripagent.xhsagentyunying.dto.analysis.AnalysisDetailResponse;
 import com.shortvideoscripagent.xhsagentyunying.dto.analysis.AnalysisListItemResponse;
+import com.shortvideoscripagent.xhsagentyunying.dto.analysis.BodyGenerateRequest;
+import com.shortvideoscripagent.xhsagentyunying.dto.analysis.BodyGenerateResponse;
 import com.shortvideoscripagent.xhsagentyunying.dto.analysis.OptimizeDraftRequest;
 import com.shortvideoscripagent.xhsagentyunying.dto.analysis.OptimizeDraftResponse;
 import com.shortvideoscripagent.xhsagentyunying.dto.analysis.PaginatedResponse;
@@ -95,6 +97,15 @@ public class AnalysisController {
         Long userId = requireUserId();
         request.setAnalysisId(id);
         return ApiResponse.ok(titleService.generate(userId, request));
+    }
+
+    @PostMapping("/{id}/body")
+    public ApiResponse<BodyGenerateResponse> generateBody(
+            @PathVariable String id,
+            @Valid @RequestBody BodyGenerateRequest request
+    ) {
+        Long userId = requireUserId();
+        return ApiResponse.ok(analysisAppService.generateBody(userId, id, request));
     }
 
     private Long requireUserId() {

@@ -13,4 +13,7 @@ public class AiRuntimeProperties {
 
     @Value("${spring.ai.dashscope.chat.options.model:qwen-plus}")
     private String dashscopeChatModel;
+
+    @Value("${spring.ai.openai.api-key:}")
+    private String openaiApiKey;
 }

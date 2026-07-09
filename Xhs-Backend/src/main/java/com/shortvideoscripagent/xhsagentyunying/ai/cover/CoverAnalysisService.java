@@ -35,7 +35,7 @@ public class CoverAnalysisService {
 
     public Map<String, Object> analyzeByContext(String coverImageUrl, String title, String body) {
         if (coverImageUrl == null || coverImageUrl.isBlank()) {
-            return unavailable();
+            return unavailable("not_provided");
         }
         AnalysisTask task = new AnalysisTask();
         task.setCoverImageUrl(coverImageUrl);
@@ -46,7 +46,7 @@ public class CoverAnalysisService {
 
     public Map<String, Object> analyze(AnalysisTask task) {
         if (task.getCoverImageUrl() == null || task.getCoverImageUrl().isBlank()) {
-            return unavailable();
+            return unavailable("not_provided");
         }
         if (aiRuntimePolicy.useMockResponses()) {
             return SampleAnalysisReport.buildCoverAnalysis(task.getTitle(), task.getBody());
@@ -56,7 +56,7 @@ public class CoverAnalysisService {
         ModelProvider provider = modelProviderRegistry.getDefault();
         if (!provider.supportsVision()) {
             log.warn("Model provider {} does not support vision, skipping cover analysis", provider.id());
-            return unavailable();
+            return unavailable("vision_not_supported");
         }
 
         try {
@@ -71,7 +71,7 @@ public class CoverAnalysisService {
             return jsonReportParser.parseCoverAnalysis(raw);
         } catch (Exception ex) {
             log.warn("Cover vision analysis failed for task {}: {}", task.getId(), ex.getMessage());
-            return unavailable();
+            return unavailable("vision_analysis_failed");
         }
     }
 
@@ -147,8 +147,13 @@ public class CoverAnalysisService {
     }
 
     public static Map<String, Object> unavailable() {
+        return unavailable("unavailable");
+    }
+
+    public static Map<String, Object> unavailable(String reason) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("available", false);
+        result.put("reason", reason);
         result.put("keywords", java.util.List.of());
         result.put("contrastComment", "");
         result.put("emotionMatch", "");

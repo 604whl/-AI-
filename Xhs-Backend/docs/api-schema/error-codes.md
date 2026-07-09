@@ -30,7 +30,9 @@
 | 40902 | 409 | analysis_already_processing | 重复提交分析 |
 | 42901 | 429 | quota_exceeded | 每日分析次数用尽 |
 | 42902 | 429 | title_quota_exceeded | 标题生成次数用尽 |
+| 42903 | 429 | web_search_quota_exceeded | 联网搜索次数用尽 |
 | 42904 | 429 | agent_quota_exceeded | Agent 对话次数用尽 |
+| 42905 | 429 | body_quota_exceeded | 正文生成次数用尽 |
 
 ### validation_failed 示例
 
@@ -40,7 +42,7 @@
   "message": "validation_failed",
   "data": {
     "errors": [
-      { "field": "title", "message": "maxLength 100" }
+      { "field": "title", "message": "maxLength 20" }
     ]
   },
   "requestId": "req_xxx"
@@ -60,6 +62,7 @@
 | 50005 | 500 | tool_execution_failed | Agent 工具执行失败 |
 | 50401 | 504 | analysis_timeout | 分析超时（>45s） |
 | 50402 | 504 | agent_timeout | Agent 循环总超时 |
+| 50403 | 504 | body_generation_timeout | 正文生成超时（>30s） |
 
 ---
 
@@ -69,7 +72,7 @@
 |------|------|
 | 40002 | 表单字段高亮 |
 | 40901 | 轮询等待或禁用按钮 |
-| 42901/42902 | 升级引导弹窗 |
+| 42901/42902/42905 | 升级引导弹窗 |
 | 50002/50401 | 重试 + 联系支持 |
 | 50003 | 自动重试 1 次，仍失败提示稍后再试 |
 

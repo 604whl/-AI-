@@ -20,7 +20,7 @@
         "type": "object",
         "required": ["text", "highlights"],
         "properties": {
-          "text": { "type": "string", "maxLength": 100 },
+          "text": { "type": "string", "maxLength": 20 },
           "highlights": {
             "type": "array",
             "items": { "type": "string" },

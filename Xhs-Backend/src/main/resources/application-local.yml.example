@@ -34,8 +34,23 @@ logging:
 app:
   ai:
     mock-enabled: false
+    default-provider: dashscope
+    fallback-providers:
+      - deepseek
+      - zhipu
     dashscope:
+      enabled: true
       vision-model: qwen-vl-plus
+    deepseek:
+      enabled: false
+      api-key: sk-在此填写你的DeepSeekAPIKey
+      base-url: https://api.deepseek.com
+      model: deepseek-chat
+    zhipu:
+      enabled: false
+      api-key: 在此填写你的智谱APIKey
+      base-url: https://open.bigmodel.cn/api/paas/v4
+      model: glm-4-flash
   agent:
     enabled: true
     mock-enabled: false

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shortvideoscripagent.xhsagentyunying.ai.AiRuntimePolicy;
 import com.shortvideoscripagent.xhsagentyunying.ai.cover.CoverAnalysisService;
 import com.shortvideoscripagent.xhsagentyunying.ai.fixture.SampleAnalysisReport;
-import com.shortvideoscripagent.xhsagentyunying.ai.model.ModelProvider;
 import com.shortvideoscripagent.xhsagentyunying.ai.model.ModelProviderRegistry;
 import com.shortvideoscripagent.xhsagentyunying.ai.parser.JsonReportParser;
 import com.shortvideoscripagent.xhsagentyunying.ai.prompt.PromptEngine;
@@ -13,7 +12,6 @@ import com.shortvideoscripagent.xhsagentyunying.ai.rag.RagContextBuilder;
 import com.shortvideoscripagent.xhsagentyunying.ai.rag.RagQuery;
 import com.shortvideoscripagent.xhsagentyunying.ai.rag.RagRetriever;
 import com.shortvideoscripagent.xhsagentyunying.common.exception.BusinessException;
-import com.shortvideoscripagent.xhsagentyunying.config.AiRuntimeProperties;
 import com.shortvideoscripagent.xhsagentyunying.config.AppAiProperties;
 import com.shortvideoscripagent.xhsagentyunying.domain.compliance.ComplianceChecker;
 import com.shortvideoscripagent.xhsagentyunying.domain.entity.AnalysisReport;
@@ -52,7 +50,6 @@ public class AnalysisOrchestrator {
     private final RagContextBuilder ragContextBuilder;
     private final CoverAnalysisService coverAnalysisService;
     private final AppAiProperties appProperties;
-    private final AiRuntimeProperties aiRuntimeProperties;
     private final AiRuntimePolicy aiRuntimePolicy;
     private final AnalysisStreamHub analysisStreamHub;
 
@@ -160,22 +157,21 @@ public class AnalysisOrchestrator {
         String ragContext = buildRagContext(task);
         String systemPrompt = promptEngine.systemPrompt();
         String userPrompt = promptEngine.buildAnalysisUserPrompt(task, ragContext);
-        ModelProvider provider = modelProviderRegistry.getDefault();
         int timeoutSeconds = appProperties.getAi().getAnalysisTimeoutSeconds();
         int maxRetries = appProperties.getAi().getAnalysisMaxRetries();
-
-        task.setModelProvider(provider.id());
-        task.setModelName(aiRuntimeProperties.getDashscopeChatModel());
-        taskMapper.updateById(task);
 
         Exception lastError = null;
         for (int attempt = 0; attempt <= maxRetries; attempt++) {
             try {
-                String raw = CompletableFuture
-                        .supplyAsync(() -> provider.chat(systemPrompt, userPrompt), aiExecutor)
+                ModelProviderRegistry.ChatResult llm = CompletableFuture
+                        .supplyAsync(() -> modelProviderRegistry.chatWithFallback(systemPrompt, userPrompt), aiExecutor)
                         .orTimeout(timeoutSeconds, TimeUnit.SECONDS)
                         .join();
+                String raw = llm.content();
                 Map<String, Object> report = jsonReportParser.parseAnalysisReport(raw, task.getScenario());
+                task.setModelProvider(llm.providerId());
+                task.setModelName(llm.modelName());
+                taskMapper.updateById(task);
                 return complianceChecker.mergeIntoReport(report, task.getTitle(), task.getBody());
             } catch (Exception ex) {
                 lastError = ex;

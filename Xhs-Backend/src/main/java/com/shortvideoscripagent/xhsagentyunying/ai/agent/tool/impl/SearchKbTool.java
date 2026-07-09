@@ -3,7 +3,6 @@ package com.shortvideoscripagent.xhsagentyunying.ai.agent.tool.impl;
 import com.shortvideoscripagent.xhsagentyunying.ai.agent.tool.AgentTool;
 import com.shortvideoscripagent.xhsagentyunying.ai.agent.tool.ToolContext;
 import com.shortvideoscripagent.xhsagentyunying.ai.agent.tool.ToolResult;
-import com.shortvideoscripagent.xhsagentyunying.ai.fixture.SampleAnalysisReport;
 import com.shortvideoscripagent.xhsagentyunying.ai.rag.RagChunk;
 import com.shortvideoscripagent.xhsagentyunying.ai.rag.RagContextBuilder;
 import com.shortvideoscripagent.xhsagentyunying.ai.rag.RagQuery;
@@ -58,6 +57,9 @@ public class SearchKbTool implements AgentTool {
         if (query.isBlank()) {
             return ToolResult.fail("query_required");
         }
+        if (!appAiProperties.getRag().isEnabled()) {
+            return ToolResult.fail("rag_not_enabled");
+        }
 
         List<String> docTypes = listArg(arguments, "docTypes");
         if (docTypes.isEmpty()) {
@@ -74,10 +76,6 @@ public class SearchKbTool implements AgentTool {
                 topK
         ));
 
-        if (chunks.isEmpty() && !appAiProperties.getRag().isEnabled()) {
-            chunks = mockChunks();
-        }
-
         List<Map<String, Object>> chunkMaps = new ArrayList<>();
         for (RagChunk chunk : chunks) {
             Map<String, Object> item = new LinkedHashMap<>();
@@ -93,25 +91,6 @@ public class SearchKbTool implements AgentTool {
         payload.put("chunks", chunkMaps);
         payload.put("formatted", ragContextBuilder.build(chunks));
         return ToolResult.ok(payload);
-    }
-
-    private List<RagChunk> mockChunks() {
-        return List.of(
-                new RagChunk(
-                        "MOCK-01",
-                        "viral_case",
-                        "敏感肌防晒避坑｜10款实测一张图讲清\n要点: 结果前置; 踩坑清单; CTA 评论领表",
-                        0.91,
-                        Map.of("contentType", "TIMELINE", "ctr", 90)
-                ),
-                new RagChunk(
-                        "MOCK-02",
-                        "title_pattern",
-                        "人均50探店路线｜周末6站吃喝地图全公开",
-                        0.86,
-                        Map.of("contentType", "OFFER", "ctr", 88)
-                )
-        );
     }
 
     static String stringArg(Map<String, Object> args, String key) {

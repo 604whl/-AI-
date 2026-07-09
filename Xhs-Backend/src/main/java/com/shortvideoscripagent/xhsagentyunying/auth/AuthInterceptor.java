@@ -73,10 +73,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     }
 
     private boolean isPublicPath(String path) {
-        if (PUBLIC_PATHS.contains(path)) {
-            return true;
-        }
-        return path.startsWith("/v1/system/");
+        return PUBLIC_PATHS.contains(path);
     }
 
     private boolean isSwaggerPath(String path) {

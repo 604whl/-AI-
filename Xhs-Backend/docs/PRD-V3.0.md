@@ -173,6 +173,8 @@
 
 五段结构：Hook → 问题放大 → 真实经历 → 结果展示 → CTA。
 
+详细需求见 [BODY-GENERATION-PRD.md](./BODY-GENERATION-PRD.md)。
+
 ### 6.6 模板库（P1）
 
 Offer 晒单、焦虑型、信息差型、面经型、时间线型；一键套模板 + AI 填参。

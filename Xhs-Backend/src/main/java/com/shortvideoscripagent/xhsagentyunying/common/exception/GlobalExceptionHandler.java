@@ -36,6 +36,12 @@ public class GlobalExceptionHandler {
         if (code >= 42900 && code < 43000) {
             return HttpStatus.TOO_MANY_REQUESTS;
         }
+        if (code >= 50400 && code < 50500) {
+            return HttpStatus.GATEWAY_TIMEOUT;
+        }
+        if (code >= 50000 && code < 60000) {
+            return HttpStatus.INTERNAL_SERVER_ERROR;
+        }
         return HttpStatus.BAD_REQUEST;
     }
 

@@ -4,7 +4,9 @@ import com.shortvideoscripagent.xhsagentyunying.ai.agent.AgentCard;
 import com.shortvideoscripagent.xhsagentyunying.ai.agent.tool.AgentTool;
 import com.shortvideoscripagent.xhsagentyunying.ai.agent.tool.ToolContext;
 import com.shortvideoscripagent.xhsagentyunying.ai.agent.tool.ToolResult;
-import com.shortvideoscripagent.xhsagentyunying.ai.agent.data.AgentTopicDataService;
+import com.shortvideoscripagent.xhsagentyunying.ai.agent.web.WebSearchService;
+import com.shortvideoscripagent.xhsagentyunying.common.exception.BusinessException;
+import com.shortvideoscripagent.xhsagentyunying.service.UserQuotaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -16,7 +18,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class GetHotTopicsTool implements AgentTool {
 
-    private final AgentTopicDataService agentTopicDataService;
+    private final WebSearchService webSearchService;
+    private final UserQuotaService userQuotaService;
 
     @Override
     public String name() {
@@ -40,12 +43,26 @@ public class GetHotTopicsTool implements AgentTool {
 
     @Override
     public ToolResult execute(ToolContext context, Map<String, Object> arguments) {
+        if (!webSearchService.isConfigured()) {
+            return ToolResult.fail("web_search_not_configured");
+        }
+        if (userQuotaService.remainingWebSearchQuota(context.userId()) <= 0) {
+            return ToolResult.fail("web_search_quota_exceeded");
+        }
         int limit = Math.min(Math.max(SearchKbTool.intArg(arguments, "limit", 5), 1), 10);
-        List<Map<String, Object>> topics = agentTopicDataService.hotTopics();
-        List<Map<String, Object>> slice = topics.size() <= limit ? topics : topics.subList(0, limit);
+        List<Map<String, Object>> slice;
+        try {
+            slice = webSearchService.search("小红书 当前热门选题 趋势 内容运营", limit).stream()
+                    .map(this::toTopic)
+                    .toList();
+            userQuotaService.consumeWebSearchQuota(context.userId(), context.sessionId());
+        } catch (BusinessException ex) {
+            return ToolResult.fail(ex.getMessage());
+        }
 
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("topics", slice);
+        payload.put("source", "web_search");
 
         AgentCard card = AgentCard.builder()
                 .type("hot_topics")
@@ -53,5 +70,14 @@ public class GetHotTopicsTool implements AgentTool {
                 .build();
 
         return ToolResult.ok(payload, List.of(card));
+    }
+
+    private Map<String, Object> toTopic(Map<String, Object> item) {
+        Map<String, Object> topic = new LinkedHashMap<>();
+        topic.put("tag", item.getOrDefault("title", ""));
+        topic.put("direction", item.getOrDefault("snippet", ""));
+        topic.put("keywords", List.of());
+        topic.put("url", item.getOrDefault("url", ""));
+        return topic;
     }
 }

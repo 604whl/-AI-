@@ -219,10 +219,30 @@ export interface LocaleMessages {
     generateOptimizedDraft: string
     generateTitles: string
     generateBody: string
-    generateBodyDisabled: string
     optimizeDraftTitle: string
     optimizeDraftLoading: string
     optimizeDraftFailed: string
+    bodyDrawerTitle: string
+    bodyGoal: string
+    bodyTone: string
+    bodyToneDefault: string
+    bodyToneAnxiety: string
+    bodyToneProfessional: string
+    bodyToneFriendly: string
+    bodyLength: string
+    bodyGenerateLoading: string
+    bodyGenerateFailed: string
+    bodyQuotaExceeded: string
+    bodyEmpty: string
+    copyBody: string
+    copyBodySuccess: string
+    regenerateBody: string
+    bodyWordCount: string
+    bodySectionHook: string
+    bodySectionProblem: string
+    bodySectionExperience: string
+    bodySectionResult: string
+    bodySectionCta: string
     structureOutline: string
     copyDraft: string
     copyDraftSuccess: string
@@ -346,6 +366,7 @@ export interface LocaleMessages {
     conversionScore: string
     viralScoreEmpty: string
     recommendedTitles: string
+    titleClickPotential: string
     regenerate: string
     titlesEmpty: string
     hotPointsTitle: string

@@ -16,7 +16,7 @@ public class AnalysisCreateRequest {
     @Pattern(regexp = "agency|mentor|senior", message = "invalid_persona")
     private String persona = "agency";
 
-    @Size(max = 100)
+    @Size(max = 20)
     private String title;
 
     @Size(max = 10000)

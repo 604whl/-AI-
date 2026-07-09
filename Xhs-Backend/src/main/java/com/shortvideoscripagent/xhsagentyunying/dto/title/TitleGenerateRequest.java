@@ -20,7 +20,7 @@ public class TitleGenerateRequest {
     @Max(10)
     private Integer count = 8;
 
-    @Size(max = 100)
+    @Size(max = 20)
     private String title;
 
     @Size(max = 10000)

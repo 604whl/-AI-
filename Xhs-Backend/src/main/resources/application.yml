@@ -83,14 +83,26 @@ app:
     access-token-expire-seconds: 7200
     refresh-token-expire-seconds: 604800
   ai:
-    default-provider: dashscope
+    default-provider: ${AI_DEFAULT_PROVIDER:dashscope}
+    fallback-providers: ${AI_FALLBACK_PROVIDERS:deepseek,zhipu}
     mock-enabled: ${AI_MOCK_ENABLED:false}
     analysis-timeout-seconds: 45
     analysis-max-retries: 1
     dashscope:
+      enabled: ${DASHSCOPE_ENABLED:true}
       vision-model: ${DASHSCOPE_VISION_MODEL:qwen-vl-plus}
     openai:
-      enabled: false
+      enabled: ${OPENAI_ENABLED:false}
+    deepseek:
+      enabled: ${DEEPSEEK_ENABLED:false}
+      api-key: ${DEEPSEEK_API_KEY:}
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      model: ${DEEPSEEK_CHAT_MODEL:deepseek-chat}
+    zhipu:
+      enabled: ${ZHIPU_ENABLED:false}
+      api-key: ${ZHIPU_API_KEY:}
+      base-url: ${ZHIPU_BASE_URL:https://open.bigmodel.cn/api/paas/v4}
+      model: ${ZHIPU_CHAT_MODEL:glm-4-flash}
   rag:
     enabled: false
     analysis-enabled: false

@@ -205,11 +205,19 @@ public final class SampleAnalysisReport {
         List<TitleGenerateResponse.TitleItem> items = new ArrayList<>();
         for (int i = 0; i < size; i++) {
             items.add(new TitleGenerateResponse.TitleItem(
-                    templates[i % templates.length],
+                    truncateTitle(templates[i % templates.length]),
                     List.of(highlights[i % highlights.length], goal == null ? "高点击" : goal),
                     ctrLevels[i % ctrLevels.length]
             ));
         }
         return items;
+    }
+
+    private static String truncateTitle(String value) {
+        if (value == null) {
+            return "";
+        }
+        String trimmed = value.trim();
+        return trimmed.length() > 20 ? trimmed.substring(0, 20) : trimmed;
     }
 }
