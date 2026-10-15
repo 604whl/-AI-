@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Primary;
 
 @Configuration
 @ConditionalOnProperty(name = "app.ai.mock-enabled", havingValue = "false")
+@ConditionalOnProperty(name = "app.ai.dashscope.enabled", havingValue = "true", matchIfMissing = true)
 public class VisionChatClientConfig {
 
     @Bean

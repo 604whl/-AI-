@@ -1,18 +1,20 @@
 # 复制为 application-local.yml（已在 .gitignore）
-# 在下方填写百炼 Key 与模型名，保存后直接 mvn spring-boot:run，无需每次设环境变量
+# 在下方填写 OpenAI Key 与模型名，保存后直接 mvn spring-boot:run，无需每次设环境变量
 
 spring:
   ai:
     dashscope:
-      api-key: sk-在此填写你的百炼APIKey
+      api-key: ${DASHSCOPE_API_KEY:}
+      chat:
+        enabled: false
+      embedding:
+        enabled: false
+    openai:
+      api-key: sk-在此填写你的OpenAI-API-Key
+      base-url: https://api.openai.com
       chat:
         options:
-          model: qwen-turbo
-      embedding:
-        enabled: true
-        options:
-          model: text-embedding-v3
-          dimensions: 1024
+          model: gpt-4o-mini
   datasource:
     url: jdbc:postgresql://localhost:5432/xhsagent?currentSchema=app
     username: xhsagent
@@ -34,13 +36,12 @@ logging:
 app:
   ai:
     mock-enabled: false
-    default-provider: dashscope
-    fallback-providers:
-      - deepseek
-      - zhipu
-    dashscope:
+    default-provider: openai
+    fallback-providers: []
+    openai:
       enabled: true
-      vision-model: qwen-vl-plus
+    dashscope:
+      enabled: false
     deepseek:
       enabled: false
       api-key: sk-在此填写你的DeepSeekAPIKey
@@ -67,6 +68,6 @@ app:
         - get_hot_topics
         - get_industry_calendar
   rag:
-    enabled: true
-    analysis-enabled: true
-    title-enabled: true
+    enabled: false
+    analysis-enabled: false
+    title-enabled: false

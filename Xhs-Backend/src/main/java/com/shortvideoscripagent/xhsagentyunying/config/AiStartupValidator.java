@@ -22,8 +22,8 @@ public class AiStartupValidator implements ApplicationRunner {
         }
         if (aiRuntimePolicy.hasRealApiKey()) {
             log.info(
-                    "Real AI enabled: primary DashScope model={}, mock disabled; configured fallback providers may be used",
-                    aiRuntimePolicy.dashscopeModel()
+                    "Real AI enabled: primary model={}, mock disabled; configured fallback providers may be used",
+                    aiRuntimePolicy.primaryChatModel()
             );
             return;
         }

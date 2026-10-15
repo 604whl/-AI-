@@ -94,7 +94,7 @@ public class AnalysisAppService {
         task.setStatus("pending");
         task.setPromptVersion(PromptEngine.RUBRIC_VERSION);
         task.setModelProvider(appProperties.getAi().getDefaultProvider());
-        task.setModelName(aiRuntimeProperties.getDashscopeChatModel());
+        task.setModelName(aiRuntimePolicy.primaryChatModel());
         task.setCreatedAt(now);
         task.setUpdatedAt(now);
         taskMapper.insert(task);

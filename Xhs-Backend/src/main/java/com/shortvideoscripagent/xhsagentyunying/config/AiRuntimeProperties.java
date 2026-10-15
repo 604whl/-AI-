@@ -16,4 +16,7 @@ public class AiRuntimeProperties {
 
     @Value("${spring.ai.openai.api-key:}")
     private String openaiApiKey;
+
+    @Value("${spring.ai.openai.chat.options.model:gpt-4o-mini}")
+    private String openaiChatModel;
 }

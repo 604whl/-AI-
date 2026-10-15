@@ -83,12 +83,19 @@ public class AiRuntimePolicy {
         if (!hasRealApiKey()) {
             throw new BusinessException(
                     CODE_AI_UNAVAILABLE,
-                    "ai_not_configured: set DASHSCOPE_API_KEY, DEEPSEEK_API_KEY, ZHIPU_API_KEY, or AI_MOCK_ENABLED=true"
+                    "ai_not_configured: set OPENAI_API_KEY, DASHSCOPE_API_KEY, DEEPSEEK_API_KEY, ZHIPU_API_KEY, or AI_MOCK_ENABLED=true"
             );
         }
     }
 
     public String dashscopeModel() {
+        return aiRuntimeProperties.getDashscopeChatModel();
+    }
+
+    public String primaryChatModel() {
+        if ("openai".equalsIgnoreCase(appProperties.getAi().getDefaultProvider())) {
+            return aiRuntimeProperties.getOpenaiChatModel();
+        }
         return aiRuntimeProperties.getDashscopeChatModel();
     }
 }
