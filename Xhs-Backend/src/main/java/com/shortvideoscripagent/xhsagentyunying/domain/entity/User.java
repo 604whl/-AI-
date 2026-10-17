@@ -53,7 +53,4 @@ public class User {
 
     /** 用户确认注销的时间 */
     private OffsetDateTime deletionConfirmedAt;
-
-    /** 用户发起注销请求时的 IP */
-    private String deletionRequestIp;
 }

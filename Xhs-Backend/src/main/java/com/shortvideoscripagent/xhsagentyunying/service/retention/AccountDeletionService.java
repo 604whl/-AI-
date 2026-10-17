@@ -50,11 +50,10 @@ public class AccountDeletionService {
      *
      * @param userId       用户 ID
      * @param confirmPhrase 确认短语（必须为 "DELETE"）
-     * @param requestIp    请求 IP（记录到 deletion_request_ip）
      * @return 注销状态
      */
     @Transactional
-    public DeletionStatusResponse requestDeletion(Long userId, String confirmPhrase, String requestIp) {
+    public DeletionStatusResponse requestDeletion(Long userId, String confirmPhrase) {
         validateConfirmPhrase(confirmPhrase);
 
         User user = requireUser(userId);
@@ -68,7 +67,6 @@ public class AccountDeletionService {
         user.setDeletionStatus("scheduled");
         user.setScheduledDeletionAt(now.plusDays(DELETION_GRACE_DAYS));
         user.setDeletionConfirmedAt(now);
-        user.setDeletionRequestIp(requestIp);
         user.setUpdatedAt(now);
         userMapper.updateById(user);
 

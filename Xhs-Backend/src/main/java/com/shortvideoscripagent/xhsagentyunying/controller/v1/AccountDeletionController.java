@@ -52,8 +52,7 @@ public class AccountDeletionController {
         if (phrase == null || phrase.isBlank()) {
             throw new BusinessException(CODE_BAD_REQUEST, "confirm_or_confirmPhrase_required");
         }
-        String ip = RequestContext.getRequestIp();
-        DeletionStatusResponse resp = accountDeletionService.requestDeletion(userId, phrase, ip);
+        DeletionStatusResponse resp = accountDeletionService.requestDeletion(userId, phrase);
         log.info("User {} requested account deletion, status={}", userId, resp.getDeletionStatus());
         return ApiResponse.ok(resp);
     }
