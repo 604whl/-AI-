@@ -51,7 +51,7 @@
               v-for="v in tpl.variables.slice(0, 4)"
               :key="v"
               class="var-chip"
-            >{{ '{{' }}{{ v }}}}{{ '}}' }}</span>
+            >{{ '&lbrace;&lbrace;' }}{{ v }}{{ '&rbrace;&rbrace;' }}</span>
           </div>
         </div>
       </div>

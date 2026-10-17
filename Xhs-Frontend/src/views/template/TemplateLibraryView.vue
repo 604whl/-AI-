@@ -74,7 +74,7 @@
               v-for="v in tpl.variables.slice(0, 3)"
               :key="v"
               class="variable-tag"
-            >{{ '{{' }}{{ v }}}}{{ '}}' }}</span>
+            >{{ '&lbrace;&lbrace;' }}{{ v }}{{ '&rbrace;&rbrace;' }}</span>
             <span v-if="tpl.variables.length > 3" class="variable-more">
               +{{ tpl.variables.length - 3 }}
             </span>

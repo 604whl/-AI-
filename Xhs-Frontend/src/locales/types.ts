@@ -33,6 +33,7 @@ export interface LocaleMessages {
     settings: string
     headerTitle: string
     logout: string
+    review: string
   }
   workspace: {
     select: string
@@ -380,11 +381,104 @@ export interface LocaleMessages {
     save: string
     saveSuccess: string
     saveFailed: string
+    accountInfo: string
+    email: string
+    displayName: string
+    memberSince: string
   }
   persona: {
     agency: string
     mentor: string
     senior: string
+  }
+  admin?: {
+    retryFromDlq: string
+    retryFromDlqSuccess: string
+    retryFromDlqFailed: string
+  }
+  retention?: {
+    dangerZone?: string
+    deleteAccount?: string
+    deleteAccountDesc?: string
+    deleteWarning?: string
+    requestDelete?: string
+    confirmDelete?: string
+    confirmDeleteMessage?: string
+    confirmDeleteBtn?: string
+    countdownWarning?: string
+    deletionScheduled?: string
+    deletionInProgress?: string
+    deletionInProgressDesc?: string
+    scheduledAt?: string
+    cancelDeletion?: string
+    deletionCancelled?: string
+    exportTitle?: string
+    exportDesc?: string
+    requestExport?: string
+    exportHistory?: string
+    exportType?: string
+    personalData?: string
+    workspaceData?: string
+    exportQueued?: string
+    download?: string
+    retentionPolicy?: string
+    retentionPolicyDesc?: string
+    configurePolicy?: string
+    policySettings?: string
+    assetRetention?: string
+    logRetention?: string
+    mediaRetention?: string
+    chatRetention?: string
+    days?: string
+    assetRetentionHint?: string
+    logRetentionHint?: string
+    mediaRetentionHint?: string
+    chatRetentionHint?: string
+    policySaved?: string
+    policyInfoTitle?: string
+    policyInfo1?: string
+    policyInfo2?: string
+    policyInfo3?: string
+    destroyWorkspace?: string
+    destroyWorkspaceDesc?: string
+    destroyWarning?: string
+    requestDestroy?: string
+    confirmDestroy?: string
+    confirmDestroyMessage?: string
+    confirmDestroyBtn?: string
+    destroyRequested?: string
+    destroyPending?: string
+    destroyPendingDesc?: string
+    confirmDestroyNow?: string
+    destroyConfirmed?: string
+    destroyConfirmedDesc?: string
+    destroyConfirmedSuccess?: string
+    finalConfirm?: string
+    finalConfirmMessage?: string
+    finalConfirmBtn?: string
+    cancelDestroy?: string
+    destroyCancelled?: string
+    actions?: string
+    status?: string
+    createdAt?: string
+    status_pending?: string
+    status_processing?: string
+    status_ready?: string
+    status_failed?: string
+    status_expired?: string
+    workspaceExportDesc?: string
+    requestWorkspaceExport?: string
+    info?: string
+    common?: {
+      on?: string
+      off?: string
+      requestFailed?: string
+      cancel?: string
+      save?: string
+      reset?: string
+      back?: string
+      confirm?: string
+    }
   }
   workbench: {
     aiAnalyzing: string
@@ -592,5 +686,239 @@ export interface LocaleMessages {
     pleaseSelect: string
     loadMore: string
     apply: string
+  }
+  quota?: {
+    title: string
+    editQuota: string
+    updated: string
+    dailyQuota: string
+    usedToday: string
+    remaining: string
+    resetAt: string
+    ledgerTitle: string
+    filterAction: string
+    action: string
+    delta: string
+    status: string
+    reason: string
+    createdAt: string
+  }
+  asset?: {
+    title: string
+    subtitle: string
+    newAsset: string
+    editorTitle: string
+    metaTitle: string
+    mediaTitle: string
+    titlePlaceholder: string
+    bodyPlaceholder: string
+    platformPlaceholder: string
+    accountPlaceholder: string
+    keywordPlaceholder: string
+    filterStatus: string
+    filterAll: string
+    total: string
+    noRecords: string
+    noMedia: string
+    noDiff: string
+    versionSelect: string
+    compare: string
+    diffTitle: string
+    versionHistory: string
+    versionCol: string
+    statusCol: string
+    platformCol: string
+    titleCol: string
+    createdAt: string
+    updatedAt: string
+    editReason: string
+    view: string
+    rollback: string
+    rollbackConfirm: string
+    rollbackSuccess: string
+    submitReview: string
+    submitReviewSuccess: string
+    submitReviewFailed: string
+    savedAt: string
+    saveFailed: string
+    titleRequired: string
+    deleteConfirm: string
+    confirmRemoveMedia: string
+    statuses: Record<string, string>
+  }
+  export?: {
+    exportBtn: string
+    formatMd: string
+    formatDocx: string
+    formatZip: string
+    formatCsv: string
+    exportingTitle: string
+    readyTitle: string
+    readySubtitle: string
+    failedTitle: string
+    expiredTitle: string
+    expiredSubtitle: string
+    retryBtn: string
+    generating: string
+    downloadBtn: string
+    downloadStarted: string
+    done: string
+    exportHistory: string
+    noExports: string
+    colFormat: string
+    colStatus: string
+    colFileSize: string
+    colExpiresAt: string
+    colCreatedAt: string
+    colActions: string
+    enqueueFailed: string
+    csvDownloadStarted: string
+    csvFailed: string
+    statusCheckFailed: string
+    status_pending: string
+    status_processing: string
+    status_ready: string
+    status_failed: string
+    status_expired: string
+  }
+  accountDelete?: {
+    title: string
+    description: string
+    warning1: string
+    warning2: string
+    warning3: string
+    confirmPlaceholder: string
+    requestBtn: string
+    requested: string
+    scheduledAt: string
+    daysRemaining: string
+    hint: string
+    cancelBtn: string
+    exportBtn: string
+    cancelConfirmTitle: string
+    cancelConfirmText: string
+    confirmTitle: string
+    confirmText: string
+    cancelled: string
+  }
+  personalExport?: {
+    title: string
+    description: string
+    requestBtn: string
+    requested: string
+    history: string
+  }
+  workspaceDestroy?: {
+    title: string
+    description: string
+    warning1: string
+    warning2: string
+    warning3: string
+    warning4: string
+    confirmPlaceholder: string
+    requestBtn: string
+    confirmBtn: string
+    confirmText: string
+    confirmText2: string
+    confirmTitle: string
+    pendingHint: string
+    requested: string
+    confirmed: string
+    status_pending: string
+    status_confirmed: string
+    status_cancelled: string
+    executeAt: string
+    daysRemaining: string
+    cancelBtn: string
+    cancelConfirmTitle: string
+    cancelConfirmText: string
+    cancelled: string
+    cancelledHint: string
+  }
+  retentionPolicy?: {
+    title: string
+    description: string
+    editBtn: string
+    editTitle: string
+    saved: string
+    assetRetentionDays: string
+    logRetentionDays: string
+    mediaRetentionDays: string
+    chatRetentionDays: string
+    days: string
+    updatedAt: string
+  }
+  adminRetention?: {
+    title: string
+    runSweeper: string
+    sweeperTriggered: string
+    scheduledDeletions: string
+    pendingDestructions: string
+    colScheduledAt: string
+    colExecuteAt: string
+    colRequestedAt: string
+  }
+  review?: {
+    queueTitle: string
+    queueSubtitle: string
+    queueEmpty: string
+    mySubmissionsTitle: string
+    mySubmissionsSubtitle: string
+    submissionsEmpty: string
+    detailTitle: string
+    detailNotFound: string
+    submittedBy: string
+    highRisk: string
+    lowRisk: string
+    highRiskAlert: string
+    highRiskDesc: string
+    riskScore: string
+    riskTags: string
+    assetContent: string
+    assetNotFound: string
+    bodyEmpty: string
+    reviewDecision: string
+    decision: string
+    approve: string
+    reject: string
+    cancel: string
+    cancelSubmission: string
+    approvePlaceholder: string
+    rejectPlaceholder: string
+    approveSuccess: string
+    rejectSuccess: string
+    cancelSuccess: string
+    rejectCommentRequired: string
+    approveFailed: string
+    rejectFailed: string
+    cancelFailed: string
+    comments: string
+    commentsEmpty: string
+    addComment: string
+    addCommentSuccess: string
+    addCommentFailed: string
+    commentPlaceholder: string
+    noComments: string
+    unknownUser: string
+    approveConfirmTitle: string
+    approveCommentPlaceholder: string
+    confirmApprove: string
+    rejectConfirmTitle: string
+    rejectCommentPlaceholder: string
+    confirmReject: string
+    loadFailed: string
+    colRisk: string
+    colTitle: string
+    colStatus: string
+    colVersion: string
+    colSubmitter: string
+    colCreated: string
+    colUpdated: string
+    colRiskScore: string
+    viewDetail: string
+    filterStatus: string
+    filterAll: string
+    statuses: Record<string, string>
+    commentType: Record<string, string>
   }
 }

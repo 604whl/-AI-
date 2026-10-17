@@ -64,7 +64,7 @@
         <el-table-column prop="editReason" :label="t('asset.editReason')" min-width="120" />
         <el-table-column prop="createdAt" :label="t('asset.createdAt')" width="160">
           <template #default="{ row }">
-            {{ formatDateTime(row.createdAt, locale) }}
+            {{ formatDateTime(row.createdAt) }}
           </template>
         </el-table-column>
         <el-table-column :label="t('history.actions')" width="180" fixed="right">
@@ -92,7 +92,7 @@ import { fetchAssetVersions, rollbackAsset, diffAssetVersions } from '@/api/asse
 import { formatDateTime } from '@/utils/analysisDisplay'
 import type { AssetVersion, DiffLine } from '@/api/asset'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const assetId = route.params.id as string

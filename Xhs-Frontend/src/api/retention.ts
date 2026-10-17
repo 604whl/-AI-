@@ -3,12 +3,12 @@
  * P0-9: Account Deletion, Workspace Destruction, Personal Data Export
  */
 import http from './http'
-import type { ApiResponse } from './http'
+import type { ApiResponse } from '@/types/api'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export interface DeletionStatusResponse {
-  deletionStatus: 'active' | 'scheduled' | 'cancelled' | 'deleted'
+  deletionStatus: 'active' | 'scheduled' | 'cancelled' | 'deleted' | 'pending_deletion'
   scheduledDeletionAt: string | null
   daysRemaining: number | null
   deletionConfirmedAt: string | null
@@ -177,6 +177,16 @@ export function updateRetentionPolicy(workspaceId: string, policy: RetentionPoli
 // Aliases for backward compatibility
 export const getRetentionPolicy = fetchRetentionPolicy
 export const getDestructionStatus = fetchDestructionStatus
+export const getDeletionStatus = fetchDeletionStatus
+
+/**
+ * GET /v1/auth/me/exports
+ * 查询导出历史 (stub — backend API pending)
+ */
+export function listMyExports(): Promise<{ data: { code: number; message: string; data: ExportRequestResponse[] } }> {
+  // stub
+  return Promise.resolve({ data: { code: 0, message: '', data: [] } } as any)
+}
 
 /**
  * GET /v1/workspaces/{id}/export

@@ -26,7 +26,7 @@
         <el-button @click="goToVersions">{{ t('asset.viewVersions') }}</el-button>
         <ExportMenu
           :asset-id="assetId"
-          :workspace-id="workspaceStore.activeWorkspaceId || ''"
+          :workspace-id="userStore.activeWorkspaceId || ''"
         />
       </div>
     </div>
@@ -109,10 +109,10 @@
                 <el-input v-model="form.accountId" size="small" :placeholder="t('asset.accountPlaceholder')" />
               </el-descriptions-item>
               <el-descriptions-item :label="t('asset.createdAt')">
-                {{ formatDateTime(asset.createdAt, locale) }}
+                {{ formatDateTime(asset.createdAt) }}
               </el-descriptions-item>
               <el-descriptions-item :label="t('asset.updatedAt')">
-                {{ formatDateTime(asset.updatedAt, locale) }}
+                {{ formatDateTime(asset.updatedAt) }}
               </el-descriptions-item>
             </el-descriptions>
 
@@ -177,12 +177,12 @@ import AssetStatusBadge from '@/components/asset/AssetStatusBadge.vue'
 import { formatDateTime } from '@/utils/analysisDisplay'
 import type { ContentAsset, AssetUpdateRequest } from '@/api/asset'
 import ExportMenu from '@/components/ExportMenu.vue'
-import { useWorkspace } from '@/stores/workspace'
+import { useUserStore } from '@/stores/user'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
-const workspaceStore = useWorkspace()
+const userStore = useUserStore()
 const assetId = route.params.id as string
 
 const loading = ref(true)

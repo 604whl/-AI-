@@ -150,8 +150,8 @@
               >
                 {{ t(`review.statuses.${task.status}`) }}
               </el-tag>
-              <p class="decision-comment">{{ task.comment }}</p>
-              <span class="decision-time">{{ formatRelativeTime(task.decidedAt, locale) }}</span>
+              <p class="decision-comment">{{ task.comment || '' }}</p>
+              <span class="decision-time">{{ formatRelativeTime(task.decidedAt ?? '', locale) }}</span>
             </div>
           </el-card>
         </div>

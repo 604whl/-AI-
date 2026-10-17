@@ -25,6 +25,11 @@ export function formatRelativeTime(iso: string, locale: string): string {
   return date.toLocaleDateString(locale)
 }
 
+export function formatDateTime(d: string | Date): string {
+  const date = typeof d === 'string' ? new Date(d) : d
+  return date.toLocaleString()
+}
+
 export function isToday(iso: string): boolean {
   const date = new Date(iso)
   const now = new Date()

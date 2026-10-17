@@ -77,7 +77,7 @@
                 size="large"
                 @close="removeVariable(v)"
               >
-                {{ '{{' }}{{ v }}}}{{ '}}' }}
+                {{ '&lbrace;&lbrace;' }}{{ v }}{{ '&rbrace;&rbrace;' }}
               </el-tag>
               <el-input
                 v-model="newVariable"

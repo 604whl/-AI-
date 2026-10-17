@@ -244,6 +244,11 @@ const inviteForm = ref({
   role: 'EDITOR' as WorkspaceRole,
 })
 
+interface QuotaInfo {
+  remaining: number
+  dailyQuota: number
+}
+
 // P0-2: Quota
 const quotaInfo = ref<QuotaInfo | null>(null)
 
@@ -263,8 +268,8 @@ async function loadQuota() {
     return
   }
   try {
-    const { data } = await getQuota(activeWorkspaceId.value)
-    quotaInfo.value = data
+    const res = await getQuota(activeWorkspaceId.value)
+    quotaInfo.value = res.data.data as QuotaInfo
   } catch {
     quotaInfo.value = null
   }
@@ -406,6 +411,7 @@ watch(activeWorkspaceId, () => {
   }
   // P0-2: reload quota display on workspace switch
   loadWorkspaceQuota()
+  loadQuota()
 })
 
 onMounted(() => {
@@ -413,6 +419,7 @@ onMounted(() => {
     userStore.fetchWorkspaces().catch(() => undefined)
   }
   loadWorkspaceQuota()
+  loadQuota()
 })
 </script>
 

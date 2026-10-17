@@ -23,6 +23,7 @@ export interface UserProfile {
   displayName: string | null
   defaultPersona: PersonaType
   dailyQuota: number
+  createdAt?: string
 }
 
 export interface UserUsage {

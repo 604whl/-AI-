@@ -17,7 +17,7 @@
             {{ t('export.formatDocx') }}
           </el-dropdown-item>
           <el-dropdown-item command="zip">
-            <el-icon><FolderZip /></el-icon>
+            <el-icon><Folder /></el-icon>
             {{ t('export.formatZip') }}
           </el-dropdown-item>
           <el-dropdown-item command="csv" divided>
@@ -28,7 +28,7 @@
       </template>
     </el-dropdown>
 
-    <!-- CSV 直接下载（无状态轮询） -->
+    <!-- CSV directly download (no status polling) -->
     <template v-if="showCsvProgress">
       <el-progress
         v-if="csvProgress < 100"
@@ -41,7 +41,7 @@
       </span>
     </template>
 
-    <!-- 导出状态弹窗 -->
+    <!-- Export status dialog -->
     <el-dialog
       v-model="showStatusDialog"
       :title="t('export.exportingTitle')"
@@ -102,7 +102,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
-import { Download, ArrowDown, Document, FolderZip, Grid, Loading } from '@element-plus/icons-vue'
+import { Download, ArrowDown, Document, Folder, Grid, Loading } from '@element-plus/icons-vue'
 import {
   enqueueExport,
   fetchExportStatus,
@@ -127,7 +127,6 @@ const exportProgress = ref(0)
 const showCsvProgress = ref(false)
 const csvProgress = ref(0)
 const pendingFormat = ref<ExportFormat | null>(null)
-let pollTimer: ReturnType<typeof setTimeout> | null = null
 
 async function handleCommand(format: ExportFormat) {
   if (format === 'csv') {
@@ -162,7 +161,7 @@ async function handleCsv() {
   csvProgress.value = 0
 
   try {
-    // 模拟进度
+    // Simulate progress
     const interval = setInterval(() => {
       csvProgress.value = Math.min(csvProgress.value + 20, 90)
     }, 200)
@@ -189,7 +188,9 @@ async function handleCsv() {
 function pollExportStatus() {
   if (!exportId.value) return
 
-  pollTimer = setTimeout(async () => {
+  let timer: ReturnType<typeof setTimeout>
+  timer = setTimeout(async () => {
+    clearTimeout(timer)
     try {
       const res = await fetchExportStatus(exportId.value!)
       const data = res.data.data
@@ -197,7 +198,6 @@ function pollExportStatus() {
       exportError.value = data.errorMessage || ''
 
       if (data.status === 'ready') {
-        // 已就绪，等待用户点击下载
         exportProgress.value = 100
       } else if (data.status === 'processing') {
         exportProgress.value = 50
@@ -206,10 +206,9 @@ function pollExportStatus() {
         exportProgress.value = 20
         pollExportStatus()
       } else {
-        // failed / expired，不轮询
+        // failed / expired, don't poll
       }
     } catch {
-      // 网络错误时停止轮询
       exportStatus.value = 'failed'
       exportError.value = t('export.statusCheckFailed')
     }
