@@ -9,6 +9,7 @@ import com.shortvideoscripagent.xhsagentyunying.domain.entity.WorkspaceMember;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.UserMapper;
 import com.shortvideoscripagent.xhsagentyunying.workspace.dto.WorkspaceDtos;
 import com.shortvideoscripagent.xhsagentyunying.workspace.dto.WorkspaceDtosV2;
+import com.shortvideoscripagent.xhsagentyunying.infra.audit.Audited;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -70,6 +71,7 @@ public class WorkspaceController {
     }
 
     @PostMapping
+    @Audited(action = "workspace.create", resourceType = "workspace", resourceId = "#request.name")
     public ApiResponse<WorkspaceDtosV2.WorkspaceDetailVo> create(@Valid @RequestBody WorkspaceDtos.CreateWorkspaceRequest request) {
         Long userId = RequestContext.requireUserId();
         Workspace workspace = workspaceService.createWorkspace(userId, request);
@@ -102,6 +104,7 @@ public class WorkspaceController {
     }
 
     @PostMapping("/{id}/members")
+    @Audited(action = "workspace.member.invite", resourceType = "workspace_member", resourceId = "#workspaceId + ':' + #request.userId")
     public ApiResponse<WorkspaceDtosV2.MemberVo> inviteMember(
             @PathVariable("id") String workspaceId,
             @Valid @RequestBody WorkspaceDtos.InviteMemberRequest request
@@ -114,6 +117,7 @@ public class WorkspaceController {
     }
 
     @PatchMapping("/{id}/members/{userId}")
+    @Audited(action = "workspace.member.role_update", resourceType = "workspace_member", resourceId = "#workspaceId + ':' + #memberUserId")
     public ApiResponse<WorkspaceDtosV2.MemberVo> updateMemberRole(
             @PathVariable("id") String workspaceId,
             @PathVariable("userId") Long memberUserId,
@@ -127,6 +131,7 @@ public class WorkspaceController {
     }
 
     @DeleteMapping("/{id}/members/{userId}")
+    @Audited(action = "workspace.member.remove", resourceType = "workspace_member", resourceId = "#workspaceId + ':' + #memberUserId")
     public ApiResponse<Void> removeMember(
             @PathVariable("id") String workspaceId,
             @PathVariable("userId") Long memberUserId
@@ -135,6 +140,23 @@ public class WorkspaceController {
         requireRoleAtLeast(actingUserId, workspaceId, WorkspaceRole.ADMIN);
         workspaceService.removeMember(workspaceId, actingUserId, memberUserId);
         return ApiResponse.ok();
+    }
+
+    /**
+     * PATCH 工作区设置（行业/区域/语言/配额/名称）。
+     * <p>仅 OWNER/ADMIN 可调用。null 字段不会被修改。</p>
+     */
+    @PatchMapping("/{id}")
+    @Audited(action = "workspace.update", resourceType = "workspace", resourceId = "#workspaceId")
+    public ApiResponse<WorkspaceDtosV2.WorkspaceDetailVo> update(
+            @PathVariable("id") String workspaceId,
+            @Valid @RequestBody WorkspaceDtos.UpdateWorkspaceRequest request
+    ) {
+        Long userId = RequestContext.requireUserId();
+        requireRoleAtLeast(userId, workspaceId, WorkspaceRole.ADMIN);
+        Workspace workspace = workspaceService.updateWorkspace(workspaceId, request);
+        WorkspaceRole role = workspaceService.findRole(userId, workspaceId);
+        return ApiResponse.ok(WorkspaceDtosV2.WorkspaceDetailVo.from(workspace, role == null ? null : role.name()));
     }
 
     private void requireMember(Long userId, String workspaceId) {

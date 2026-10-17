@@ -1,0 +1,120 @@
+# Prometheus 告警规则
+# 适用于 XhsAgent 后端（/actuator/prometheus 暴露指标）
+#
+# 部署：将本文件挂载到 Prometheus Server 的 rules 目录，然后 reload：
+#   curl -X POST http://prometheus:9090/-/reload
+#
+# 关键指标（前缀 xhs_）：
+#   - xhs_tasks_completed_total{status="failed"} — 失败任务计数
+#   - xhs_tasks_dlq_total — 死信计数
+#   - xhs_quota_denied_total — 额度拒绝计数
+#   - xhs_audit_writes_total — 审计写入计数
+#   - xhs_tasks_cancelled_total — 用户取消任务数
+#   - http_server_requests_seconds_count{uri="/v1/..."} — 接口调用
+#   - jvm_memory_used_bytes{area="heap"} — JVM 堆使用
+
+groups:
+  - name: xhs_agent_critical
+    interval: 30s
+    rules:
+      # === 任务队列相关 ===
+
+      - alert: TaskDLQSpike
+        expr: increase(xhs_tasks_dlq_total[5m]) > 10
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "XhsAgent 死信队列 5 分钟内新增 >10"
+          description: "任务失败率激增，请立即检查模型 API / 数据库 / Redis 健康。"
+
+      - alert: TaskFailureRateHigh
+        expr: |
+          sum(rate(xhs_tasks_completed_total{status="failed"}[5m]))
+            /
+          sum(rate(xhs_tasks_completed_total[5m]))
+            > 0.3
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "XhsAgent 任务失败率 > 30%"
+          description: "5 分钟内失败任务占比超过 30%，请检查 AI 模型与 worker 日志。"
+
+      - alert: TaskStuckLong
+        # 5 分钟内无任务完成（消费循环卡住）
+        expr: |
+          sum(increase(xhs_tasks_completed_total[5m])) == 0
+            and
+          sum(increase(xhs_tasks_submitted_total[5m])) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "XhsAgent 任务消费疑似卡住"
+          description: "5 分钟内有任务提交但没有任务完成，worker 可能 hang 死。"
+
+      # === 额度相关 ===
+
+      - alert: QuotaDeniedSpike
+        expr: increase(xhs_quota_denied_total[5m]) > 50
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "XhsAgent 额度拒绝激增（5 分钟 > 50 次）"
+          description: "可能是配额配置过低 / 限流过严 / 攻击行为。"
+
+      # === JVM / 服务健康 ===
+
+      - alert: JvmHeapHigh
+        expr: jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"} > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "XhsAgent JVM 堆使用率 > 85%"
+          description: "考虑扩容 worker 或排查内存泄漏。"
+
+      - alert: JvmHeapCritical
+        expr: jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"} > 0.95
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "XhsAgent JVM 堆使用率 > 95%"
+          description: "即将 OOM，请立即处理。"
+
+      # === HTTP 接口 ===
+
+      - alert: Http5xxSpike
+        expr: |
+          sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) > 1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "XhsAgent HTTP 5xx 错误率 > 1 req/s"
+          description: "请检查后端日志和数据库连接。"
+
+  - name: xhs_agent_warning
+    interval: 60s
+    rules:
+      - alert: AuditWritesZero
+        # 1 小时内无审计写入（异常；正常业务下应该不间断有写操作）
+        expr: increase(xhs_audit_writes_total[1h]) == 0
+        for: 30m
+        labels:
+          severity: info
+        annotations:
+          summary: "XhsAgent 1 小时内无审计写入"
+          description: "可能是切面被禁用 / 数据库连接异常，请检查 audit_event 表。"
+
+      - alert: CancelledTasksSpike
+        expr: increase(xhs_tasks_cancelled_total[10m]) > 20
+        for: 5m
+        labels:
+          severity: info
+        annotations:
+          summary: "XhsAgent 10 分钟内用户取消任务 > 20"
+          description: "可能客户端异常或模型响应过慢，考虑优化超时。"

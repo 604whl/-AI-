@@ -194,12 +194,14 @@ app:
     # 本地保留 localhost 兜底，prod profile 启动时 CorsStartupValidator 会校验不允许 localhost。
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
 
-# Actuator 端点：仅暴露 health 给内部健康检查；details 只在 prod 显示（受 profile 控制）。
+# Actuator 端点：health 给内部健康检查，prometheus 给运维抓取。
+# 注意：包含 prometheus 端点意味着任何能访问该端口的内部网络都可拉指标；
+# 公网部署时务必通过基础设施层（nginx/envoy）限制 /actuator/prometheus 只能内网访问。
 management:
   endpoints:
     web:
       exposure:
-        include: health
+        include: health,info,prometheus
       base-path: /actuator
   endpoint:
     health:
@@ -213,6 +215,17 @@ management:
       enabled: true
     diskspace:
       enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+        step: 60s
 
 springdoc:
   swagger-ui:

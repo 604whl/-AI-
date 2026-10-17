@@ -2,7 +2,36 @@
   <div class="workspace-settings">
     <!-- 工作区信息 -->
     <el-card class="workspace-info" :header="t('workspace.info')">
-      <el-descriptions :column="2" border>
+      <el-form
+        v-if="canEdit"
+        :model="editForm"
+        label-width="120px"
+        :disabled="saving"
+      >
+        <el-form-item :label="t('workspace.name')">
+          <el-input v-model="editForm.name" :placeholder="t('workspace.namePlaceholder')" maxlength="60" show-word-limit />
+        </el-form-item>
+        <el-form-item :label="t('workspace.industry')">
+          <el-input v-model="editForm.industry" :placeholder="t('workspace.industryPlaceholder')" maxlength="40" />
+        </el-form-item>
+        <el-form-item :label="t('workspace.region')">
+          <el-input v-model="editForm.region" :placeholder="t('workspace.regionPlaceholder')" maxlength="8" />
+        </el-form-item>
+        <el-form-item :label="t('workspace.defaultLocale')">
+          <el-input v-model="editForm.defaultLocale" placeholder="zh-CN" maxlength="16" />
+        </el-form-item>
+        <el-form-item :label="t('workspace.dailyQuota')">
+          <el-input-number v-model="editForm.defaultQuota" :min="0" :max="10000" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" :loading="saving" @click="handleSaveWorkspace">
+            {{ t('common.save') }}
+          </el-button>
+          <el-button @click="resetForm">{{ t('common.cancel') }}</el-button>
+        </el-form-item>
+      </el-form>
+
+      <el-descriptions v-else :column="2" border>
         <el-descriptions-item :label="t('workspace.name')">
           {{ workspaceName }}
         </el-descriptions-item>
@@ -163,6 +192,43 @@ const exporting = ref(false)
 const destroying = ref(false)
 const confirming = ref(false)
 const cancelling = ref(false)
+const saving = ref(false)
+
+const editForm = ref({
+  name: '',
+  industry: '',
+  region: '',
+  defaultLocale: '',
+  defaultQuota: 100,
+})
+
+const canEdit = computed(() => {
+  const role = workspaceStore.currentWorkspace?.role
+  return role === 'OWNER' || role === 'ADMIN'
+})
+
+function resetForm() {
+  const w = currentWorkspace.value
+  editForm.value.name = w?.name ?? ''
+  editForm.value.industry = w?.industry ?? ''
+  editForm.value.region = w?.region ?? ''
+  editForm.value.defaultLocale = w?.defaultLocale ?? ''
+  editForm.value.defaultQuota = w?.defaultQuota ?? 100
+}
+
+async function handleSaveWorkspace() {
+  if (!workspaceId.value) return
+  saving.value = true
+  try {
+    await workspaceStore.updateWorkspace(workspaceId.value, editForm.value)
+    await workspaceStore.fetchWorkspaceDetail(workspaceId.value)
+    ElMessage.success(t('common.saveSuccess'))
+  } catch (e) {
+    ElMessage.error((e as Error).message || t('common.requestFailed'))
+  } finally {
+    saving.value = false
+  }
+}
 
 // Load data
 async function loadDestructionStatus() {
@@ -255,6 +321,7 @@ onMounted(async () => {
   if (workspaceId.value) {
     await workspaceStore.fetchWorkspaceDetail(workspaceId.value)
   }
+  resetForm()
   loadDestructionStatus()
   loadRetentionPolicy()
 })

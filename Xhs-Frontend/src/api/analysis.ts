@@ -35,6 +35,18 @@ export function deleteAnalysis(id: string) {
   return http.delete<ApiResponse<null>>(`/analysis/${id}`)
 }
 
+/**
+ * 取消一个尚未完成的分析任务（pending/running/queued → cancelled）。
+ * 终态任务将返回 409。
+ */
+export function cancelAnalysis(id: string) {
+  return http.post<ApiResponse<{
+    taskId: string
+    result: string
+    priorStatus: string
+  }>>(`/analysis/${id}/cancel`)
+}
+
 export function generateTitles(payload: TitleGenerateRequest) {
   return http.post<ApiResponse<TitleGenerateResponse>>('/titles', payload)
 }

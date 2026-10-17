@@ -52,4 +52,26 @@ public class WorkspaceDtos {
         @Pattern(regexp = "^(EDITOR|REVIEWER|VIEWER)$", message = "invalid role")
         private String role;
     }
+
+    @Data
+    public static class UpdateWorkspaceRequest {
+        @Size(max = 60, message = "name too long")
+        private String name;
+
+        @Size(max = 80, message = "slug too long")
+        @Pattern(regexp = "^[a-z0-9-]+$", message = "slug must be lowercase letters, digits or dashes")
+        private String slug;
+
+        @Size(max = 40)
+        private String industry;
+
+        @Size(max = 8)
+        private String region;
+
+        @Size(max = 16)
+        private String defaultLocale;
+
+        /** null = 不修改；正整数 = 新每日配额 */
+        private Integer defaultQuota;
+    }
 }

@@ -1,0 +1,48 @@
+name: scheduled-backup
+
+# 每日凌晨 2 点（UTC）触发生产环境备份
+# 工作流本身只校验脚本语法/权限；实际备份由部署环境 cron 触发
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  smoke-backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate backup script syntax
+        run: |
+          set -e
+          chmod +x ./Xhs-Backend/infra/backup/backup.sh
+          bash -n ./Xhs-Backend/infra/backup/backup.sh
+          echo "✅ backup.sh syntax OK"
+
+      - name: Validate restore script syntax
+        run: |
+          set -e
+          chmod +x ./Xhs-Backend/infra/backup/restore.sh
+          bash -n ./Xhs-Backend/infra/backup/restore.sh
+          echo "✅ restore.sh syntax OK"
+
+      - name: Verify required env placeholders exist
+        run: |
+          grep -q "PGHOST" ./Xhs-Backend/infra/backup/backup.sh || \
+            (echo "❌ backup.sh must reference PGHOST" && exit 1)
+          grep -q "S3_BUCKET" ./Xhs-Backend/infra/backup/backup.sh || \
+            (echo "❌ backup.sh must reference S3_BUCKET" && exit 1)
+          echo "✅ backup.sh has required env vars"
+
+  notify:
+    if: always()
+    needs: smoke-backup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log run result
+        run: |
+          echo "Backup smoke run result: ${{ needs.smoke-backup.result }}"
+          echo "Time: $(date -u)"
+          echo "Commit: ${{ github.sha }}"

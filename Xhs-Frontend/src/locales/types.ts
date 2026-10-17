@@ -13,8 +13,11 @@ export interface LocaleMessages {
   common: {
     on: string
     off: string
-    requestFailed: string
+    save: string
+    confirm: string
     cancel: string
+    requestFailed: string
+    saveSuccess: string
   }
   language: {
     label: string
@@ -46,7 +49,10 @@ export interface LocaleMessages {
     industryPlaceholder: string
     region: string
     regionPlaceholder: string
+    defaultLocale: string
     dailyQuota: string
+    info: string
+    createdAt: string
     email: string
     emailPlaceholder: string
     emailRequired: string
@@ -357,6 +363,10 @@ export interface LocaleMessages {
     deleteConfirm: string
     deleteSuccess: string
     deleteFailed: string
+    cancel: string
+    cancelConfirm: string
+    cancelled: string
+    cancelFailed: string
     reanalyze: string
     reanalyzeStarted: string
     reanalyzeFailed: string

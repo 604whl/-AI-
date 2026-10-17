@@ -3,6 +3,14 @@ import { computed, ref } from 'vue'
 import http from '@/api/http'
 import type { WorkspaceDetail, WorkspaceSummary } from '@/types/auth'
 
+export interface UpdateWorkspacePayload {
+  name?: string
+  industry?: string
+  region?: string
+  defaultLocale?: string
+  defaultQuota?: number
+}
+
 export const useWorkspaceStore = defineStore('workspace', () => {
   // 列表：当前用户的所有 workspace summary
   const workspaceList = ref<WorkspaceSummary[]>([])
@@ -47,6 +55,22 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     return detail
   }
 
+  /**
+   * 部分更新工作区设置（PATCH）。
+   * 后端只更新非空字段。
+   */
+  async function updateWorkspace(id: string, payload: UpdateWorkspacePayload): Promise<WorkspaceDetail | null> {
+    const res = await http.patch<{ code: number; data: WorkspaceDetail | null }>(
+      `/workspaces/${id}`,
+      payload
+    )
+    const detail = res.data.data
+    if (detail) {
+      currentWorkspace.value = detail
+    }
+    return detail
+  }
+
   return {
     workspaceList,
     currentWorkspace,
@@ -55,5 +79,6 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     setCurrentWorkspace,
     fetchWorkspaces,
     fetchWorkspaceDetail,
+    updateWorkspace,
   }
 })

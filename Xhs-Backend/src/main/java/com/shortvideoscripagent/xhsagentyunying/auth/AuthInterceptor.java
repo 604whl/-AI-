@@ -41,6 +41,10 @@ public class AuthInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws Exception {
+        // 优先把 IP / UA 写入上下文（用于审计），即使后面 401 也保留
+        RequestContext.setRequestIp(resolveClientIp(request));
+        RequestContext.setUserAgent(request.getHeader(HttpHeaders.USER_AGENT));
+
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             return true;
         }
@@ -96,6 +100,23 @@ public class AuthInterceptor implements HandlerInterceptor {
             return uri.substring(contextPath.length());
         }
         return uri;
+    }
+
+    /**
+     * 解析客户端真实 IP：优先取 {@code X-Forwarded-For} 首段，回退 {@code X-Real-IP}，最后取 {@code remoteAddr}。
+     * 注意：前置必须配置可信代理，否则可能被伪造。生产环境应仅信任来自反向代理的 XFF。
+     */
+    private String resolveClientIp(HttpServletRequest request) {
+        String xff = request.getHeader("X-Forwarded-For");
+        if (xff != null && !xff.isBlank()) {
+            int comma = xff.indexOf(',');
+            return (comma > 0 ? xff.substring(0, comma) : xff).trim();
+        }
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
+        }
+        return request.getRemoteAddr();
     }
 
     private boolean isPublicPath(String path) {

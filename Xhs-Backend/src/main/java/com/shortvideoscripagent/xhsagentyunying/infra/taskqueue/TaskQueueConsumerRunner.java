@@ -47,6 +47,9 @@ public class TaskQueueConsumerRunner {
     @Autowired
     private DeadLetterQueue deadLetterQueue;
 
+    @Autowired
+    private TaskCancellationService cancellationService;
+
     private final AtomicBoolean running = new AtomicBoolean(true);
     private ExecutorService executor;
 
@@ -137,11 +140,25 @@ public class TaskQueueConsumerRunner {
 
         log.debug("Processing task: taskId={} taskType={} attempt={}", taskId, taskType, attempt);
 
+        // 检查用户取消信号（仅在执行 handler 之前；运行中取消由 handler 内部检查）
+        if (cancellationService.isCancelled(taskId)) {
+            log.info("Skipping cancelled task: taskId={} taskType={}", taskId, taskType);
+            cancellationService.clearSignal(taskId);
+            return;
+        }
+
         // 调度时间还没到，等待
         long waitMs = scheduledAt - System.currentTimeMillis();
         if (waitMs > 0) {
             log.debug("Task {} scheduled for later, waiting {}ms", taskId, waitMs);
             sleep(Math.min(waitMs, 5000));
+        }
+
+        // 二次检查（避免等待期间被取消）
+        if (cancellationService.isCancelled(taskId)) {
+            log.info("Skipping cancelled task after wait: taskId={}", taskId);
+            cancellationService.clearSignal(taskId);
+            return;
         }
 
         // 查找 handler
@@ -153,6 +170,9 @@ public class TaskQueueConsumerRunner {
 
         // 处理（handler 内部会更新状态）
         handler.handle(taskId, payload);
+
+        // 处理成功后清理取消信号（避免 key 长期残留）
+        cancellationService.clearSignal(taskId);
 
         log.info("Task completed: taskId={} taskType={}", taskId, taskType);
     }

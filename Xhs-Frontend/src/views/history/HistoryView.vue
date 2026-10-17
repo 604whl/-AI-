@@ -108,10 +108,20 @@
               {{ formatRelativeTime(row.createdAt, locale) }}
             </template>
           </el-table-column>
-          <el-table-column :label="t('history.actions')" width="220" fixed="right">
+          <el-table-column :label="t('history.actions')" width="240" fixed="right">
             <template #default="{ row }">
               <el-button text type="primary" size="small" @click.stop="goToReport(row)">
                 {{ t('history.view') }}
+              </el-button>
+              <el-button
+                v-if="canCancel(row.status)"
+                text
+                type="warning"
+                size="small"
+                :loading="cancellingId === row.id"
+                @click.stop="handleCancel(row)"
+              >
+                {{ t('history.cancel') }}
               </el-button>
               <el-button
                 text
@@ -153,7 +163,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { useWorkspaceChange } from '@/composables/useWorkspaceChange'
-import { deleteAnalysis, fetchAnalysisList } from '@/api/analysis'
+import { deleteAnalysis, fetchAnalysisList, cancelAnalysis } from '@/api/analysis'
 import { useReanalyze } from '@/composables/useReanalyze'
 import type { AnalysisListItem, AnalysisScenario, AnalysisStatus } from '@/types/api'
 import { averageReportScore, formatRelativeTime } from '@/utils/analysisDisplay'
@@ -203,6 +213,34 @@ function statusTagType(status: AnalysisStatus) {
 
 function goToReport(row: AnalysisListItem) {
   router.push(`/analysis/${row.id}`)
+}
+
+const cancellingId = ref<string | null>(null)
+
+function canCancel(status: AnalysisStatus): boolean {
+  return status === 'pending' || status === 'processing'
+}
+
+async function handleCancel(row: AnalysisListItem) {
+  try {
+    await ElMessageBox.confirm(
+      t('history.cancelConfirm', { title: row.title || row.id }),
+      t('history.cancel'),
+      { type: 'warning', confirmButtonText: t('common.confirm'), cancelButtonText: t('common.cancel') }
+    )
+  } catch {
+    return
+  }
+  cancellingId.value = row.id
+  try {
+    await cancelAnalysis(row.id)
+    ElMessage.success(t('history.cancelled'))
+    loadRecords()
+  } catch (e) {
+    ElMessage.error((e as Error).message || t('common.requestFailed'))
+  } finally {
+    cancellingId.value = null
+  }
 }
 
 function handleSearch() {

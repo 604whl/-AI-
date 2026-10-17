@@ -188,6 +188,42 @@ public class WorkspaceService {
         );
     }
 
+    /**
+     * 部分更新工作区设置。仅 OWNER/ADMIN 可调用。
+     * <p>
+     * 只更新非空字段；{@code defaultQuota} 必须为正整数。
+     * </p>
+     */
+    @Transactional
+    public Workspace updateWorkspace(String workspaceId, WorkspaceDtos.UpdateWorkspaceRequest request) {
+        Workspace workspace = requireWorkspace(workspaceId);
+        if (request.getName() != null && !request.getName().isBlank()) {
+            workspace.setName(request.getName().trim());
+        }
+        if (request.getSlug() != null && !request.getSlug().isBlank()) {
+            workspace.setSlug(request.getSlug().trim());
+        }
+        if (request.getIndustry() != null) {
+            workspace.setIndustry(request.getIndustry().isBlank() ? null : request.getIndustry().trim());
+        }
+        if (request.getRegion() != null) {
+            workspace.setRegion(request.getRegion().isBlank() ? null : request.getRegion().trim());
+        }
+        if (request.getDefaultLocale() != null) {
+            workspace.setDefaultLocale(request.getDefaultLocale().isBlank() ? null : request.getDefaultLocale().trim());
+        }
+        if (request.getDefaultQuota() != null) {
+            if (request.getDefaultQuota() < 0) {
+                throw new BusinessException(CODE_BAD_REQUEST, "default_quota_must_be_non_negative");
+            }
+            workspace.setDefaultQuota(request.getDefaultQuota());
+        }
+        workspace.setUpdatedAt(OffsetDateTime.now());
+        workspaceMapper.updateById(workspace);
+        log.info("Workspace updated: id={} actor omitted", workspaceId);
+        return workspace;
+    }
+
     @Transactional
     public WorkspaceMember inviteMember(String workspaceId, WorkspaceDtos.InviteMemberRequest request) {
         User invitee = userMapper.selectOne(

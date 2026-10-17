@@ -14,6 +14,7 @@ import com.shortvideoscripagent.xhsagentyunying.dto.analysis.OptimizeDraftRespon
 import com.shortvideoscripagent.xhsagentyunying.dto.analysis.PaginatedResponse;
 import com.shortvideoscripagent.xhsagentyunying.dto.title.TitleGenerateRequest;
 import com.shortvideoscripagent.xhsagentyunying.dto.title.TitleGenerateResponse;
+import com.shortvideoscripagent.xhsagentyunying.infra.taskqueue.TaskCancellationService;
 import com.shortvideoscripagent.xhsagentyunying.service.AnalysisAppService;
 import com.shortvideoscripagent.xhsagentyunying.service.TitleService;
 import jakarta.validation.Valid;
@@ -39,6 +40,7 @@ public class AnalysisController {
 
     private final AnalysisAppService analysisAppService;
     private final TitleService titleService;
+    private final TaskCancellationService taskCancellationService;
 
     /**
      * 创建笔记分析任务。
@@ -85,6 +87,18 @@ public class AnalysisController {
         Long userId = requireUserId();
         analysisAppService.delete(userId, id);
         return ApiResponse.ok(null);
+    }
+
+    /**
+     * 取消一个尚未完成的分析任务（pending/running/queued → cancelled）。
+     * <p>
+     * 终态（completed/failed/cancelled）任务将返回 409 + 提示当前状态。
+     * </p>
+     */
+    @PostMapping("/{id}/cancel")
+    public ApiResponse<TaskCancellationService.CancelResult> cancel(@PathVariable String id) {
+        requireUserId(); // 触发 AuthInterceptor 校验 token
+        return ApiResponse.ok(taskCancellationService.cancel(id));
     }
 
     @PostMapping("/{id}/optimize-draft")
