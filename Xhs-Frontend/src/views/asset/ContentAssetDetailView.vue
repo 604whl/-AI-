@@ -24,6 +24,10 @@
           {{ t('asset.submitReview') }}
         </el-button>
         <el-button @click="goToVersions">{{ t('asset.viewVersions') }}</el-button>
+        <ExportMenu
+          :asset-id="assetId"
+          :workspace-id="workspaceStore.activeWorkspaceId || ''"
+        />
       </div>
     </div>
 
@@ -172,10 +176,13 @@ import {
 import AssetStatusBadge from '@/components/asset/AssetStatusBadge.vue'
 import { formatDateTime } from '@/utils/analysisDisplay'
 import type { ContentAsset, AssetUpdateRequest } from '@/api/asset'
+import ExportMenu from '@/components/ExportMenu.vue'
+import { useWorkspace } from '@/stores/workspace'
 
 const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
+const workspaceStore = useWorkspace()
 const assetId = route.params.id as string
 
 const loading = ref(true)

@@ -27,6 +27,7 @@ const router = createRouter({
         { path: 'asset', name: 'asset-list', component: () => import('@/views/asset/ContentAssetListView.vue') },
         { path: 'asset/:id', name: 'asset-detail', component: () => import('@/views/asset/ContentAssetDetailView.vue') },
         { path: 'asset/:id/versions', name: 'asset-diff', component: () => import('@/views/asset/ContentAssetDiffView.vue') },
+        { path: 'workspace/exports', name: 'export-log', component: () => import('@/views/workspace/ExportLogView.vue') },
         { path: 'template', name: 'template-library', component: () => import('@/views/template/TemplateLibraryView.vue') },
         { path: 'template/new', name: 'template-new', component: () => import('@/views/template/TemplateEditorView.vue') },
         { path: 'template/:id', name: 'template-edit', component: () => import('@/views/template/TemplateEditorView.vue') },
