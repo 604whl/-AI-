@@ -315,7 +315,10 @@ async function handleAddComment() {
   }
 }
 
-onMounted(loadTask)
+onMounted(async () => {
+  await workspaceStore.fetchWorkspaces()
+  await loadTask()
+})
 </script>
 
 <style scoped>

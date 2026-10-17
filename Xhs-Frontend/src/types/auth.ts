@@ -71,4 +71,5 @@ export interface WorkspaceDetail extends WorkspaceSummary {
   defaultQuota?: number
   ownerUserId?: number
   members?: WorkspaceMember[]
+  createdAt?: string
 }

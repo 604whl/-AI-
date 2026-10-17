@@ -132,14 +132,15 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/stores/user'
+import { useWorkspaceStore } from '@/stores/workspace'
 import DangerConfirmDialog from '@/components/DangerConfirmDialog.vue'
 import {
-  getDestructionStatus,
+  fetchDestructionStatus,
   requestWorkspaceDestruction,
   confirmWorkspaceDestruction,
   cancelWorkspaceDestruction,
   requestWorkspaceExport,
-  getRetentionPolicy,
+  fetchRetentionPolicy,
   type WorkspaceDestructionResponse,
   type RetentionPolicyResponse,
 } from '@/api/retention'
@@ -147,10 +148,11 @@ import {
 const { t } = useI18n()
 const router = useRouter()
 const userStore = useUserStore()
+const workspaceStore = useWorkspaceStore()
 
 const workspaceId = computed(() => userStore.activeWorkspaceId || '')
 const workspaceName = computed(() => userStore.activeWorkspace?.name || '')
-const currentWorkspace = computed(() => userStore.activeWorkspace)
+const currentWorkspace = computed(() => workspaceStore.currentWorkspace)
 
 // State
 const destructionStatus = ref<WorkspaceDestructionResponse | null>(null)
@@ -166,7 +168,7 @@ const cancelling = ref(false)
 async function loadDestructionStatus() {
   if (!workspaceId.value) return
   try {
-    const res = await getDestructionStatus(workspaceId.value)
+    const res = await fetchDestructionStatus(workspaceId.value)
     destructionStatus.value = res.data.data
   } catch (e) {
     console.error('Failed to load destruction status:', e)
@@ -176,7 +178,7 @@ async function loadDestructionStatus() {
 async function loadRetentionPolicy() {
   if (!workspaceId.value) return
   try {
-    const res = await getRetentionPolicy(workspaceId.value)
+    const res = await fetchRetentionPolicy(workspaceId.value)
     policy.value = res.data.data
   } catch (e) {
     console.error('Failed to load retention policy:', e)
@@ -249,7 +251,10 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleString()
 }
 
-onMounted(() => {
+onMounted(async () => {
+  if (workspaceId.value) {
+    await workspaceStore.fetchWorkspaceDetail(workspaceId.value)
+  }
   loadDestructionStatus()
   loadRetentionPolicy()
 })

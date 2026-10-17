@@ -93,16 +93,15 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { ArrowLeft, Download } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { fetchExportHistory, getExportDownloadUrl, type ExportListItem } from '@/api/export'
-import { useWorkspace } from '@/stores/workspace'
+import { useWorkspaceStore } from '@/stores/workspace'
 
 const { t, locale } = useI18n()
-const route = useRoute()
 const router = useRouter()
-const workspaceStore = useWorkspace()
+const workspaceStore = useWorkspaceStore()
 
 const loading = ref(true)
 const items = ref<ExportListItem[]>([])
