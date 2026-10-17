@@ -1,11 +1,10 @@
 package com.shortvideoscripagent.xhsagentyunying.quota;
 
-import com.shortvideoscripagent.xhsagentyunying.common.exception.BusinessException;
+import com.shortvideoscripagent.xhsagentyunying.domain.mapper.WorkspaceMapper;
 import com.shortvideoscripagent.xhsagentyunying.quota.domain.entity.UsageLedger;
 import com.shortvideoscripagent.xhsagentyunying.quota.domain.entity.WorkspaceQuota;
 import com.shortvideoscripagent.xhsagentyunying.quota.domain.mapper.UsageLedgerMapper;
 import com.shortvideoscripagent.xhsagentyunying.quota.domain.mapper.WorkspaceQuotaMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,24 +21,27 @@ import java.util.UUID;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class AtomicQuotaGuard {
-
-    private static final int CODE_QUOTA_EXCEEDED = 42901;
 
     private final WorkspaceQuotaMapper workspaceQuotaMapper;
     private final UsageLedgerMapper usageLedgerMapper;
+    private final WorkspaceMapper workspaceMapper;
     private final QuotaProperties quotaProperties;
+
+    public AtomicQuotaGuard(
+            WorkspaceQuotaMapper workspaceQuotaMapper,
+            UsageLedgerMapper usageLedgerMapper,
+            WorkspaceMapper workspaceMapper,
+            QuotaProperties quotaProperties
+    ) {
+        this.workspaceQuotaMapper = workspaceQuotaMapper;
+        this.usageLedgerMapper = usageLedgerMapper;
+        this.workspaceMapper = workspaceMapper;
+        this.quotaProperties = quotaProperties;
+    }
 
     /**
      * 原子扣减 workspace 额度。
-     * <p>
-     * 1. 尝试单 SQL UPDATE 扣减
-     * 2. 若 affected=0 且 reset_at 过期 → 重置后再试一次
-     * 3. 成功后插入一条 ledger CONSUMED 记录
-     * </p>
-     *
-     * @return QuotaCheckResult 成功返回 ledgerId，失败返回 exceeded 原因
      */
     @Transactional
     public QuotaCheckResult tryConsume(UUID workspaceId, String action, UUID refId, String reason) {
@@ -50,18 +52,25 @@ public class AtomicQuotaGuard {
             // 2. 检查是否因为 reset_at 过期导致扣减失败
             int resetRows = workspaceQuotaMapper.resetIfExpired(workspaceId);
             if (resetRows > 0) {
-                // 重置后重试一次
+                log.info("Auto-reset quota for workspace {}", workspaceId);
                 affected = workspaceQuotaMapper.atomicConsume(workspaceId);
             }
         }
 
         if (affected == 0) {
-            // 仍然失败：配额不足
+            // 3. 仍失败：workspace 不存在或配额耗尽，尝试懒创建
+            if (workspaceQuotaMapper.selectById(workspaceId) == null) {
+                lazyInitQuota(workspaceId);
+                affected = workspaceQuotaMapper.atomicConsume(workspaceId);
+            }
+        }
+
+        if (affected == 0) {
             log.warn("Quota exceeded for workspace {} action {}", workspaceId, action);
             return QuotaCheckResult.exceeded("quota_exceeded");
         }
 
-        // 3. 写入 ledger CONSUMED
+        // 4. 写入 ledger CONSUMED
         UsageLedger ledger = new UsageLedger();
         ledger.setId(UUID.randomUUID());
         ledger.setWorkspaceId(workspaceId);
@@ -78,55 +87,52 @@ public class AtomicQuotaGuard {
     }
 
     /**
-     * 懒创建 workspace 配额记录（首次访问时自动创建）。
+     * 懒创建 workspace 配额记录。
      */
-    public void ensureQuotaExists(UUID workspaceId) {
-        if (workspaceQuotaMapper.selectById(workspaceId) != null) {
-            return;
+    private void lazyInitQuota(UUID workspaceId) {
+        var ws = workspaceMapper.selectById(workspaceId.toString());
+        int dailyQuota = quotaProperties.getDefaultDailyQuota();
+        if (ws != null && ws.getDefaultQuota() != null) {
+            dailyQuota = ws.getDefaultQuota();
         }
-        WorkspaceQuota quota = new WorkspaceQuota();
-        quota.setWorkspaceId(workspaceId);
-        quota.setDailyQuota(quotaProperties.getDefaultDailyQuota());
-        quota.setUsed(0);
-        if (quotaProperties.isLazyInitExpired()) {
-            // 立即过期，下次请求会重置
-            quota.setResetAt(OffsetDateTime.now().minusSeconds(1));
-        } else {
-            quota.setResetAt(OffsetDateTime.now().plusDays(1));
-        }
-        quota.setCreatedAt(OffsetDateTime.now());
-        quota.setUpdatedAt(OffsetDateTime.now());
+        OffsetDateTime resetAt = quotaProperties.isLazyInitExpired()
+                ? OffsetDateTime.now().minusSeconds(1)
+                : OffsetDateTime.now().plusDays(1);
+
+        WorkspaceQuota q = new WorkspaceQuota();
+        q.setWorkspaceId(workspaceId);
+        q.setDailyQuota(dailyQuota);
+        q.setUsed(0);
+        q.setResetAt(resetAt);
+        q.setCreatedAt(OffsetDateTime.now());
+        q.setUpdatedAt(OffsetDateTime.now());
         try {
-            workspaceQuotaMapper.insert(quota);
+            workspaceQuotaMapper.insert(q);
+            log.info("Lazy-initialized workspace_quota for {}", workspaceId);
         } catch (Exception ex) {
-            // 幂等：并发创建时 ignore
-            log.debug("Quota already exists for workspace {}", workspaceId);
+            log.debug("workspace_quota already exists for {}", workspaceId);
         }
     }
 
     /**
-     * 查询 workspace 配额状态（自动创建记录）。
-     */
-    public WorkspaceQuota getOrCreate(UUID workspaceId) {
-        ensureQuotaExists(workspaceId);
-        return workspaceQuotaMapper.selectById(workspaceId);
-    }
-
-    /**
-     * 查询 workspace 配额（不自动创建）。
+     * 查询 workspace 配额状态。
      */
     public WorkspaceQuota getQuota(UUID workspaceId) {
-        return workspaceQuotaMapper.selectById(workspaceId);
+        WorkspaceQuota q = workspaceQuotaMapper.selectById(workspaceId);
+        if (q != null && q.getResetAt() != null && q.getResetAt().isBefore(OffsetDateTime.now())) {
+            workspaceQuotaMapper.resetIfExpired(workspaceId);
+            q = workspaceQuotaMapper.selectById(workspaceId);
+        }
+        return q;
     }
 
     /**
-     * 检查 workspace 是否还有剩余配额（不自动创建）。
+     * 检查是否还有剩余配额。
      */
     public boolean hasQuota(UUID workspaceId) {
-        WorkspaceQuota quota = workspaceQuotaMapper.selectById(workspaceId);
-        if (quota == null) {
-            return true; // 无记录视为有配额
-        }
-        return quota.getUsed() < quota.getDailyQuota() || quota.getResetAt().isBefore(OffsetDateTime.now());
+        WorkspaceQuota q = workspaceQuotaMapper.selectById(workspaceId);
+        if (q == null) return true;
+        if (q.getResetAt() != null && q.getResetAt().isBefore(OffsetDateTime.now())) return true;
+        return q.getUsed() < q.getDailyQuota();
     }
 }
