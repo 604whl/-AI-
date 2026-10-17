@@ -28,6 +28,7 @@ import io.minio.RemoveObjectArgs;
 import io.minio.http.Method;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -70,7 +71,9 @@ public class ExportService {
     private final ExportLogMapper exportLogMapper;
     private final ContentAssetMapper contentAssetMapper;
     private final ContentAssetMediaMapper mediaMapper;
-    private final TaskQueueProducer taskQueueProducer;
+    /** TaskQueueProducer 可能不存在（当 app.task-queue.enabled=false 时）。 */
+    @Autowired(required = false)
+    private TaskQueueProducer taskQueueProducer;
     private final RedisRateLimiter rateLimiter;
     private final StringRedisTemplate redisTemplate;
     private final MarkdownRenderer markdownRenderer;
@@ -130,15 +133,24 @@ public class ExportService {
 
         // ── 投递异步任务 ─────────────────────────────────────────────────────
         try {
-            Map<String, Object> payload = Map.of(
-                    "exportId", exportId.toString(),
-                    "workspaceId", workspaceId.toString(),
-                    "userId", userId.toString(),
-                    "assetId", assetId != null ? assetId.toString() : "",
-                    "format", format
-            );
-            String payloadJson = objectMapper.writeValueAsString(payload);
-            taskQueueProducer.enqueue("EXPORT", exportId.toString(), payloadJson, 1);
+            if (taskQueueProducer != null) {
+                Map<String, Object> payload = Map.of(
+                        "exportId", exportId.toString(),
+                        "workspaceId", workspaceId.toString(),
+                        "userId", userId.toString(),
+                        "assetId", assetId != null ? assetId.toString() : "",
+                        "format", format
+                );
+                String payloadJson = objectMapper.writeValueAsString(payload);
+                taskQueueProducer.enqueue("EXPORT", exportId.toString(), payloadJson, 1);
+            } else {
+                // [P1 FIX] task-queue 未启用时，同步降级处理，避免 ExportLog 永远卡在 PENDING。
+                // processExport 内部已有幂等保护（status=PENDING 检查 + CAS updateStatusToProcessing），
+                // 即使并发查询也不会重复处理。异常由 processExport 内部捕获并标记 FAILED，
+                // 不会让请求 500，也不会让记录白等。
+                log.info("TaskQueueProducer not available, fallback to sync process for export {}", exportId);
+                processExport(exportId);
+            }
         } catch (Exception e) {
             log.error("Failed to enqueue export task {}: {}", exportId, e.getMessage());
             // 任务记录已创建，用户可以查询状态

@@ -6,7 +6,7 @@ SET search_path TO app, kb, public;
 CREATE TABLE IF NOT EXISTS app.template (
     id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     scope            VARCHAR(16) NOT NULL,  -- OFFICIAL / WORKSPACE / PERSONAL
-    workspace_id     UUID        REFERENCES app.workspace(id) ON DELETE CASCADE,
+    workspace_id     VARCHAR(32) REFERENCES app.workspace(id) ON DELETE CASCADE,
     owner_user_id   BIGINT      REFERENCES app.users(id),
     category         VARCHAR(64) NOT NULL,
     scenario         VARCHAR(64),
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS app.template_apply_log (
     id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     template_id   UUID        NOT NULL REFERENCES app.template(id) ON DELETE CASCADE,
     asset_id      UUID        REFERENCES app.content_asset(id) ON DELETE SET NULL,
-    workspace_id  UUID        NOT NULL REFERENCES app.workspace(id) ON DELETE CASCADE,
+    workspace_id  VARCHAR(32) NOT NULL REFERENCES app.workspace(id) ON DELETE CASCADE,
     user_id       BIGINT      NOT NULL REFERENCES app.users(id),
     created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

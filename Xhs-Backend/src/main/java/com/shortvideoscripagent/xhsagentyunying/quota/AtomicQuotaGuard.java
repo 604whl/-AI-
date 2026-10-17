@@ -44,7 +44,7 @@ public class AtomicQuotaGuard {
      * 原子扣减 workspace 额度。
      */
     @Transactional
-    public QuotaCheckResult tryConsume(UUID workspaceId, String action, UUID refId, String reason) {
+    public QuotaCheckResult tryConsume(String workspaceId, String action, UUID refId, String reason) {
         // 1. 首次原子扣减
         int affected = workspaceQuotaMapper.atomicConsume(workspaceId);
 
@@ -89,8 +89,8 @@ public class AtomicQuotaGuard {
     /**
      * 懒创建 workspace 配额记录。
      */
-    private void lazyInitQuota(UUID workspaceId) {
-        var ws = workspaceMapper.selectById(workspaceId.toString());
+    private void lazyInitQuota(String workspaceId) {
+        var ws = workspaceMapper.selectById(workspaceId);
         int dailyQuota = quotaProperties.getDefaultDailyQuota();
         if (ws != null && ws.getDefaultQuota() != null) {
             dailyQuota = ws.getDefaultQuota();
@@ -117,7 +117,7 @@ public class AtomicQuotaGuard {
     /**
      * 查询 workspace 配额状态。
      */
-    public WorkspaceQuota getQuota(UUID workspaceId) {
+    public WorkspaceQuota getQuota(String workspaceId) {
         WorkspaceQuota q = workspaceQuotaMapper.selectById(workspaceId);
         if (q != null && q.getResetAt() != null && q.getResetAt().isBefore(OffsetDateTime.now())) {
             workspaceQuotaMapper.resetIfExpired(workspaceId);
@@ -129,7 +129,7 @@ public class AtomicQuotaGuard {
     /**
      * 检查是否还有剩余配额。
      */
-    public boolean hasQuota(UUID workspaceId) {
+    public boolean hasQuota(String workspaceId) {
         WorkspaceQuota q = workspaceQuotaMapper.selectById(workspaceId);
         if (q == null) return true;
         if (q.getResetAt() != null && q.getResetAt().isBefore(OffsetDateTime.now())) return true;

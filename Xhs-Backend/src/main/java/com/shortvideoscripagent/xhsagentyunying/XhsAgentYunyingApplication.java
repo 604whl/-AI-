@@ -5,7 +5,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@MapperScan("com.shortvideoscripagent.xhsagentyunying.domain.mapper")
+@MapperScan({
+        "com.shortvideoscripagent.xhsagentyunying.domain.mapper",
+        "com.shortvideoscripagent.xhsagentyunying.quota.domain.mapper",
+        "com.shortvideoscripagent.xhsagentyunying.freeze"
+})
 @EnableScheduling
 @SpringBootApplication(exclude = {
         org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration.class,
@@ -13,7 +17,13 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         org.springframework.ai.model.openai.autoconfigure.OpenAiAudioSpeechAutoConfiguration.class,
         org.springframework.ai.model.openai.autoconfigure.OpenAiAudioTranscriptionAutoConfiguration.class,
         org.springframework.ai.model.openai.autoconfigure.OpenAiImageAutoConfiguration.class,
-        org.springframework.ai.model.openai.autoconfigure.OpenAiModerationAutoConfiguration.class
+        org.springframework.ai.model.openai.autoconfigure.OpenAiModerationAutoConfiguration.class,
+        com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAgentAutoConfiguration.class,
+        com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeChatAutoConfiguration.class,
+        com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeEmbeddingAutoConfiguration.class,
+        com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeImageAutoConfiguration.class,
+        com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAudioSpeechAutoConfiguration.class,
+        com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAudioTranscriptionAutoConfiguration.class
 })
 public class XhsAgentYunyingApplication {
 

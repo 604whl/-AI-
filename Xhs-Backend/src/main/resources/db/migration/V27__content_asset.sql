@@ -5,8 +5,8 @@ SET search_path TO app, kb, public;
 -- 1. content_asset 表：内容资产主表
 CREATE TABLE IF NOT EXISTS app.content_asset (
     id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    workspace_id     UUID        NOT NULL REFERENCES app.workspace(id) ON DELETE CASCADE,
-    owner_user_id   UUID        NOT NULL REFERENCES app.users(id),
+    workspace_id     VARCHAR(32) NOT NULL REFERENCES app.workspace(id) ON DELETE CASCADE,
+    owner_user_id    BIGINT      NOT NULL REFERENCES app.users(id),
     title           VARCHAR(255) NOT NULL,
     body            TEXT        NOT NULL DEFAULT '',
     persona         VARCHAR(64),
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS app.content_asset_version (
     version_no  INT         NOT NULL,
     title       VARCHAR(255) NOT NULL,
     body        TEXT        NOT NULL,
-    edited_by   UUID        REFERENCES app.users(id),
+    edited_by   BIGINT      REFERENCES app.users(id),
     edit_reason VARCHAR(255),
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE (asset_id, version_no)

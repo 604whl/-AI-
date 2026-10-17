@@ -22,7 +22,7 @@ spring:
       port: ${REDIS_PORT:6379}
   ai:
     dashscope:
-      api-key: ${DASHSCOPE_API_KEY:}
+      api-key: ${DASHSCOPE_API_KEY:dummy-key-not-used-locally}
       chat:
         enabled: false
         options:

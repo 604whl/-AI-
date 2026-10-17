@@ -105,19 +105,17 @@ public class AnalysisTaskHandler implements TaskHandler {
             log.error("workspaceId not found in payload for task {}", taskId);
             throw new IllegalStateException("workspaceId required in payload");
         }
-        java.util.UUID workspaceId = java.util.UUID.fromString(workspaceIdStr);
-
         // P0-2: 进入 handler 时先扣减配额，失败直接返回（任务不会执行）
         java.util.UUID ledgerId;
         try {
             QuotaCheckResult consumeResult = atomicQuotaGuard.tryConsume(
-                    workspaceId,
+                    workspaceIdStr,
                     "ANALYSIS",
                     java.util.UUID.fromString(taskId),
                     "task-start"
             );
             if (!consumeResult.isOk()) {
-                log.warn("Quota exceeded for workspace {} on task {}", workspaceId, taskId);
+                log.warn("Quota exceeded for workspace {} on task {}", workspaceIdStr, taskId);
                 // 标记任务为 quota_exceeded 状态
                 transactionTemplate.executeWithoutResult(txStatus -> {
                     taskMapper.update(null,
@@ -201,7 +199,7 @@ public class AnalysisTaskHandler implements TaskHandler {
 
             // P0-3: 分析成功时自动创建 ContentAsset draft
             try {
-                createDraftAssetFromAnalysis(taskId, payload, workspaceId);
+                createDraftAssetFromAnalysis(taskId, payload, java.util.UUID.fromString(workspaceIdStr));
             } catch (Exception draftEx) {
                 // 资产创建失败不影响任务完成，只记录日志
                 log.warn("Failed to create draft asset for task {}: {}", taskId, draftEx.getMessage());

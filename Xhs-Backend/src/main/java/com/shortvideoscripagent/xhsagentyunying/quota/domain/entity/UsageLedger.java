@@ -24,12 +24,12 @@ public class UsageLedger {
     /**
      * Workspace ID。
      */
-    private UUID workspaceId;
+    private String workspaceId;
 
     /**
      * 用户 ID（可选）。
      */
-    private UUID userId;
+    private Long userId;
 
     /**
      * 操作类型：ANALYSIS / TITLE / BODY / COVER / CHAT。

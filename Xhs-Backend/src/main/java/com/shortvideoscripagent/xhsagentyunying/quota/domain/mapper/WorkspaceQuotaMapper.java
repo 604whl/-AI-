@@ -23,7 +23,7 @@ public interface WorkspaceQuotaMapper extends BaseMapper<WorkspaceQuota> {
             WHERE workspace_id = #{workspaceId}
               AND (used < daily_quota OR reset_at < NOW())
             """)
-    int atomicConsume(@Param("workspaceId") java.util.UUID workspaceId);
+    int atomicConsume(@Param("workspaceId") String workspaceId);
 
     /**
      * 重置已用次数（reset_at 过期时调用）。
@@ -36,7 +36,7 @@ public interface WorkspaceQuotaMapper extends BaseMapper<WorkspaceQuota> {
             WHERE workspace_id = #{workspaceId}
               AND reset_at < NOW()
             """)
-    int resetIfExpired(@Param("workspaceId") java.util.UUID workspaceId);
+    int resetIfExpired(@Param("workspaceId") String workspaceId);
 
     /**
      * 冲正：used - 1。
@@ -47,5 +47,5 @@ public interface WorkspaceQuotaMapper extends BaseMapper<WorkspaceQuota> {
                 updated_at = NOW()
             WHERE workspace_id = #{workspaceId}
             """)
-    int refund(@Param("workspaceId") java.util.UUID workspaceId);
+    int refund(@Param("workspaceId") String workspaceId);
 }

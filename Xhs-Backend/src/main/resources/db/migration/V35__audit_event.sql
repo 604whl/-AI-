@@ -14,8 +14,8 @@ SET search_path TO app, public;
 
 CREATE TABLE IF NOT EXISTS app.audit_event (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    workspace_id    UUID,
-    actor_user_id   UUID,
+    workspace_id    VARCHAR(32),
+    actor_user_id   BIGINT,
     action          VARCHAR(64) NOT NULL,
     resource_type   VARCHAR(64) NOT NULL,
     resource_id     VARCHAR(128),

@@ -5,11 +5,11 @@ BEGIN;
 
 CREATE TABLE app.review_task (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    workspace_id UUID NOT NULL REFERENCES app.workspace(id) ON DELETE CASCADE,
+    workspace_id VARCHAR(32) NOT NULL REFERENCES app.workspace(id) ON DELETE CASCADE,
     asset_id UUID NOT NULL REFERENCES app.content_asset(id) ON DELETE CASCADE,
     version_no INT NOT NULL,
-    submitted_by UUID NOT NULL REFERENCES app.user(id),
-    reviewer_user_id UUID REFERENCES app.user(id),
+    submitted_by BIGINT NOT NULL REFERENCES app.users(id),
+    reviewer_user_id BIGINT REFERENCES app.users(id),
     status VARCHAR(16) NOT NULL DEFAULT 'pending',
     -- status: pending / in_review / approved / rejected / cancelled
     is_high_risk BOOLEAN NOT NULL DEFAULT false,
@@ -32,7 +32,7 @@ CREATE TABLE app.review_comment (
     highlighted_text TEXT,  -- 正文里被批注的片段
     comment_type VARCHAR(16) NOT NULL DEFAULT 'comment',
     -- comment_type: comment / approve / reject
-    created_by UUID NOT NULL REFERENCES app.user(id),
+    created_by BIGINT NOT NULL REFERENCES app.users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
-import java.util.UUID;
 
 /**
  * Workspace 级每日配额实体。
@@ -22,7 +21,7 @@ public class WorkspaceQuota {
      * Workspace ID，主键。
      */
     @TableId(type = IdType.INPUT)
-    private UUID workspaceId;
+    private String workspaceId;
 
     /**
      * 每日配额上限，默认 100。

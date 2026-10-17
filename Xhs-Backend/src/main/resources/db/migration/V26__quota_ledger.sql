@@ -5,7 +5,7 @@ SET search_path TO app, kb, public;
 
 -- 1. workspace_quota 表：workspace 级每日配额
 CREATE TABLE IF NOT EXISTS app.workspace_quota (
-    workspace_id    UUID        PRIMARY KEY REFERENCES app.workspace(id) ON DELETE CASCADE,
+    workspace_id    VARCHAR(32) PRIMARY KEY REFERENCES app.workspace(id) ON DELETE CASCADE,
     daily_quota     INT         NOT NULL DEFAULT 100,
     used            INT         NOT NULL DEFAULT 0,
     reset_at        TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '1 day'),
@@ -18,8 +18,8 @@ CREATE INDEX IF NOT EXISTS idx_workspace_quota_reset_at ON app.workspace_quota (
 -- 2. usage_ledger 审计表：记录每一次扣减和冲正
 CREATE TABLE IF NOT EXISTS app.usage_ledger (
     id             UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    workspace_id   UUID        NOT NULL REFERENCES app.workspace(id) ON DELETE CASCADE,
-    user_id        UUID,
+    workspace_id   VARCHAR(32) NOT NULL REFERENCES app.workspace(id) ON DELETE CASCADE,
+    user_id        BIGINT,
     action         VARCHAR(64) NOT NULL,          -- ANALYSIS / TITLE / BODY / COVER / CHAT
     ref_id         UUID,                          -- 关联 taskId / sessionId
     delta          INT         NOT NULL,           -- +1 扣减 / -1 冲正

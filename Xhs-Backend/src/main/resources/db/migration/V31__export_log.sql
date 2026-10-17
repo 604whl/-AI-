@@ -5,8 +5,8 @@ SET search_path TO app, kb, public;
 
 CREATE TABLE IF NOT EXISTS app.export_log (
     id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    workspace_id     UUID        NOT NULL REFERENCES app.workspace(id) ON DELETE CASCADE,
-    user_id          UUID        NOT NULL REFERENCES app.users(id),
+    workspace_id     VARCHAR(32) NOT NULL REFERENCES app.workspace(id) ON DELETE CASCADE,
+    user_id          BIGINT      NOT NULL REFERENCES app.users(id),
     asset_id         UUID        REFERENCES app.content_asset(id) ON DELETE SET NULL,
     format           VARCHAR(16) NOT NULL,  -- md / docx / zip / csv
     status           VARCHAR(16) NOT NULL DEFAULT 'pending',

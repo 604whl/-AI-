@@ -54,11 +54,10 @@ public class UserQuotaService {
     }
 
     public UserUsageVo getAnalysisUsage(Long userId) {
-        String workspaceIdStr = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID workspaceId = UUID.fromString(workspaceIdStr);
+        String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
 
         WorkspaceQuota quota = atomicQuotaGuard.getQuota(workspaceId);
-        int dailyQuota = resolveDailyQuota(workspaceIdStr);
+        int dailyQuota = resolveDailyQuota(workspaceId);
         int used = quota != null ? quota.getUsed() : 0;
         int remaining = Math.max(dailyQuota - used, 0);
 
@@ -71,8 +70,7 @@ public class UserQuotaService {
 
     @Transactional
     public void consumeAnalysisQuota(Long userId, String taskId) {
-        String workspaceIdStr = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID workspaceId = UUID.fromString(workspaceIdStr);
+        String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
         UUID refId = taskId != null ? UUID.fromString(taskId) : null;
 
         QuotaCheckResult result = atomicQuotaGuard.tryConsume(workspaceId, ACTION_ANALYSIS, refId, "task-created");
@@ -81,66 +79,60 @@ public class UserQuotaService {
         }
 
         // 兼容旧 usage_log
-        writeLegacyUsageLog(userId, workspaceIdStr, ACTION_ANALYSIS, taskId);
+        writeLegacyUsageLog(userId, workspaceId, ACTION_ANALYSIS, taskId);
     }
 
     public int remainingAgentMessageQuota(Long userId) {
         requireUser(userId);
-        String workspaceIdStr = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID workspaceId = UUID.fromString(workspaceIdStr);
+        String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
         return atomicQuotaGuard.hasQuota(workspaceId) ? 1 : 0;
     }
 
     @Transactional
     public void consumeAgentMessageQuota(Long userId, String sessionId) {
-        String workspaceIdStr = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID workspaceId = UUID.fromString(workspaceIdStr);
+        String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
         UUID refId = sessionId != null ? UUID.fromString(sessionId) : null;
 
         QuotaCheckResult result = atomicQuotaGuard.tryConsume(workspaceId, ACTION_AGENT_MESSAGE, refId, "agent-message");
         if (!result.isOk()) {
             throw new BusinessException(CODE_AGENT_QUOTA_EXCEEDED, "agent_quota_exceeded");
         }
-        writeLegacyUsageLog(userId, workspaceIdStr, ACTION_AGENT_MESSAGE, sessionId);
+        writeLegacyUsageLog(userId, workspaceId, ACTION_AGENT_MESSAGE, sessionId);
     }
 
     public int remainingWebSearchQuota(Long userId) {
         requireUser(userId);
-        String workspaceIdStr = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID workspaceId = UUID.fromString(workspaceIdStr);
+        String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
         return atomicQuotaGuard.hasQuota(workspaceId) ? 1 : 0;
     }
 
     public int remainingBodyGenerationQuota(Long userId) {
-        String workspaceIdStr = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID workspaceId = UUID.fromString(workspaceIdStr);
+        String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
         return atomicQuotaGuard.hasQuota(workspaceId) ? 1 : 0;
     }
 
     @Transactional
     public void consumeBodyGenerationQuota(Long userId, String taskId) {
-        String workspaceIdStr = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID workspaceId = UUID.fromString(workspaceIdStr);
+        String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
         UUID refId = taskId != null ? UUID.fromString(taskId) : null;
 
         QuotaCheckResult result = atomicQuotaGuard.tryConsume(workspaceId, ACTION_BODY_GENERATION, refId, "body-generation");
         if (!result.isOk()) {
             throw new BusinessException(CODE_BODY_QUOTA_EXCEEDED, "body_quota_exceeded");
         }
-        writeLegacyUsageLog(userId, workspaceIdStr, ACTION_BODY_GENERATION, taskId);
+        writeLegacyUsageLog(userId, workspaceId, ACTION_BODY_GENERATION, taskId);
     }
 
     @Transactional
     public void consumeWebSearchQuota(Long userId, String sessionId) {
-        String workspaceIdStr = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID workspaceId = UUID.fromString(workspaceIdStr);
+        String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
         UUID refId = sessionId != null ? UUID.fromString(sessionId) : null;
 
         QuotaCheckResult result = atomicQuotaGuard.tryConsume(workspaceId, ACTION_WEB_SEARCH, refId, "web-search");
         if (!result.isOk()) {
             throw new BusinessException(CODE_WEB_SEARCH_QUOTA_EXCEEDED, "web_search_quota_exceeded");
         }
-        writeLegacyUsageLog(userId, workspaceIdStr, ACTION_WEB_SEARCH, sessionId);
+        writeLegacyUsageLog(userId, workspaceId, ACTION_WEB_SEARCH, sessionId);
     }
 
     // ========== 新 API ==========
@@ -148,7 +140,7 @@ public class UserQuotaService {
     /**
      * 获取 workspace 当前配额快照。
      */
-    public WorkspaceQuota getWorkspaceQuota(UUID workspaceId) {
+    public WorkspaceQuota getWorkspaceQuota(String workspaceId) {
         return atomicQuotaGuard.getQuota(workspaceId);
     }
 

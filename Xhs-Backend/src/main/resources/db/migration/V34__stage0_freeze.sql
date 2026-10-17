@@ -226,9 +226,6 @@ COMMENT ON TABLE app.platform_connector_authorization IS '阶段0：平台 × �
 -- ============================================================
 -- 7. data_retention_policy 默认值（V33 已建表，补默认数据）
 -- ============================================================
--- 仅补充：所有现存 workspace 默认有保留策略（继承全局默认）
-INSERT INTO app.data_retention_policy (workspace_id, asset_retention_days, log_retention_days, media_retention_days, export_retention_days, chat_session_retention_days, updated_by)
-SELECT '00000000-0000-0000-0000-000000000000', 365, 365, 180, 7, 180, NULL
-WHERE NOT EXISTS (
-    SELECT 1 FROM app.data_retention_policy WHERE workspace_id = '00000000-0000-0000-0000-000000000000'
-);
+-- 全局默认保留策略由应用层 fallback 处理（policy.workerId = NULL 时取全局默认）。
+-- 这里不再插入"全零 workspace_id"哨兵行，因为 workspace.id 是 VARCHAR(32) 主键，哨兵值
+-- 反而会污染主键空间并让查询逻辑变复杂。

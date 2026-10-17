@@ -53,6 +53,9 @@ public class TaskQueueConsumerRunner {
     private final AtomicBoolean running = new AtomicBoolean(true);
     private ExecutorService executor;
 
+    /** 确保只初始化一次，防止 Redis Stream 不存在时反复重试 */
+    private volatile boolean groupInitialized = false;
+
     @PostConstruct
     public void start() {
         executor = Executors.newSingleThreadExecutor(r -> {
@@ -74,25 +77,78 @@ public class TaskQueueConsumerRunner {
         log.info("TaskQueueConsumer stopped");
     }
 
+    /**
+     * [P2 FIX] 初始化 Consumer Group。
+     * - 先 createGroup：Stream 存在时正常创建 Group
+     * - 再 XADD dummy 消息：确保 Stream 存在（MKSTREAM 的等价实现）
+     * 调用方通过检查 `groupInitialized` 标志判断是否成功。
+     */
+    private void initConsumerGroup(String streamKey, String group) {
+        try {
+            // 1. 尝试创建 Consumer Group（Stream 存在时正常，Stream 不存在时抛 NOGROUP）
+            redisTemplate.opsForStream().createGroup(streamKey, ReadOffset.from("0"), group);
+            log.info("Consumer group {} created for stream {}", group, streamKey);
+            groupInitialized = true;
+            return;
+        } catch (Exception ex) {
+            String msg = ex.getMessage() == null ? "" : ex.getMessage();
+            if (msg.contains("BUSYGROUP")) {
+                // Group 已存在，非错误，初始化成功
+                log.debug("Consumer group {} already exists, skipping", group);
+                groupInitialized = true;
+                return;
+            } else if (msg.contains("NOGROUP")) {
+                // Stream 不存在 → 用 XADD 创建 Stream，同时 XADD 一条 __init__ 消息充当占位
+                // 后续 XREADGROUP 会读到这条 __init__ 消息，在 processRecord 中跳过它
+                log.info("Stream {} does not exist, creating with XADD", streamKey);
+                try {
+                    redisTemplate.opsForStream().add(
+                            streamKey,
+                            Map.of("taskId", "__init__", "taskType", "__init__",
+                                    "payload", "{}", "attempt", "0", "scheduledAt", "0")
+                    );
+                    // 再次创建 Group（此时 Stream 已存在）
+                    redisTemplate.opsForStream().createGroup(streamKey, ReadOffset.from("0"), group);
+                    log.info("Stream {} and consumer group {} created", streamKey, group);
+                    groupInitialized = true;
+                    return;
+                } catch (Exception initEx) {
+                    String initMsg = initEx.getMessage() == null ? "" : initEx.getMessage();
+                    if (initMsg.contains("BUSYGROUP")) {
+                        log.debug("Consumer group {} already exists after init", group);
+                        groupInitialized = true;
+                        return;
+                    } else {
+                        log.warn("Failed to init stream/group for {}: {}", streamKey, initMsg);
+                    }
+                }
+            } else {
+                log.warn("Unexpected error initializing stream/group for {}: {}", streamKey, msg);
+            }
+        }
+        // 初始化失败，groupInitialized 保持 false，下次循环重试
+    }
+
     private void consumeLoop() {
         String streamKey = properties.getStreamKey();
         String group = properties.getConsumerGroup();
         String consumer = properties.getWorkerId();
 
-        // 确保 Consumer Group 存在
-        try {
-            redisTemplate.opsForStream().createGroup(streamKey, ReadOffset.from("0"), group);
-        } catch (Exception ex) {
-            // BUSYGROUP 表示已存在，忽略
-            if (!ex.getMessage().contains("BUSYGROUP")) {
-                log.debug("Consumer group {} may already exist: {}", group, ex.getMessage());
-            }
-        }
-
-        // 写入初始心跳
-        heartbeat.heartbeat();
-
         while (running.get()) {
+            // [P2 FIX] 初始化/重试 Consumer Group，直到成功。
+            // - Stream 不存在 → createGroup 抛 NOGROUP → XADD 创建 Stream → 重试 createGroup
+            // - BUSYGROUP → Group 已存在，非错误，初始化成功
+            // - 其他错误 → warn + sleep(2s) + 下次循环重试（groupInitialized 仍为 false）
+            // 初始化成功后不再重试，避免 XREADGROUP 白白报错。
+            if (!groupInitialized) {
+                initConsumerGroup(streamKey, group);
+                if (!groupInitialized) {
+                    // 初始化未成功（可能 NOGROUP + XADD 失败，或 Redis 暂时不可用），稍后重试
+                    sleep(2000);
+                    continue;
+                }
+            }
+
             try {
                 // 定期心跳
                 heartbeat.heartbeat();

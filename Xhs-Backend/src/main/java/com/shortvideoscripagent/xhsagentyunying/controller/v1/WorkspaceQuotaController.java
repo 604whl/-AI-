@@ -42,8 +42,7 @@ public class WorkspaceQuotaController {
     ) {
         requireWorkspaceAccess(workspaceId);
 
-        UUID wsUuid = UUID.fromString(workspaceId);
-        WorkspaceQuota quota = userQuotaService.getWorkspaceQuota(wsUuid);
+        WorkspaceQuota quota = userQuotaService.getWorkspaceQuota(workspaceId);
 
         int dailyQuota = quota != null ? quota.getDailyQuota() : 100;
         int used = quota != null ? quota.getUsed() : 0;
@@ -88,8 +87,8 @@ public class WorkspaceQuotaController {
     ) {
         requireOwnerOrAdmin(workspaceId);
 
-        UUID wsUuid = UUID.fromString(workspaceId);
-        WorkspaceQuota quota = userQuotaService.getWorkspaceQuota(wsUuid);
+        String wsId = workspaceId;
+        WorkspaceQuota quota = userQuotaService.getWorkspaceQuota(wsId);
 
         if (quota == null) {
             throw new BusinessException(40403, "quota_not_found");
@@ -103,7 +102,7 @@ public class WorkspaceQuotaController {
 
         // 更新配额
         WorkspaceQuota update = new WorkspaceQuota();
-        update.setWorkspaceId(wsUuid);
+        update.setWorkspaceId(wsId);
         update.setDailyQuota(newDailyQuota);
         update.setUsed(quota.getUsed());
         update.setResetAt(quota.getResetAt());
