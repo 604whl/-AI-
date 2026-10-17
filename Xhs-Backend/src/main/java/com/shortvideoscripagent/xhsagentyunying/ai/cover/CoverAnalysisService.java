@@ -31,7 +31,7 @@ public class CoverAnalysisService {
     private final AppAiProperties appProperties;
     private final AiRuntimePolicy aiRuntimePolicy;
 
-    private volatile String coverVisionSystemPrompt;
+    private volatile String coverSystemPrompt;
 
     public Map<String, Object> analyzeByContext(String coverImageUrl, String title, String body) {
         if (coverImageUrl == null || coverImageUrl.isBlank()) {
@@ -54,24 +54,20 @@ public class CoverAnalysisService {
 
         aiRuntimePolicy.assertRealAiAvailable();
         ModelProvider provider = modelProviderRegistry.getDefault();
-        if (!provider.supportsVision()) {
-            log.warn("Model provider {} does not support vision, skipping cover analysis", provider.id());
-            return unavailable("vision_not_supported");
-        }
 
         try {
             String objectKey = coverStorageService.extractObjectKey(task.getCoverImageUrl());
             CoverStorageService.StoredObject stored = coverStorageService.load(objectKey);
-            String userPrompt = buildUserPrompt(task);
+            String userPrompt = buildUserPrompt(task, stored);
             int timeoutSeconds = appProperties.getAi().getAnalysisTimeoutSeconds();
             String raw = CompletableFuture
-                    .supplyAsync(() -> provider.chatWithImage(coverVisionSystemPrompt(), userPrompt, stored.bytes(), stored.contentType()))
+                    .supplyAsync(() -> provider.chat(coverSystemPrompt(), userPrompt))
                     .orTimeout(timeoutSeconds, TimeUnit.SECONDS)
                     .join();
             return jsonReportParser.parseCoverAnalysis(raw);
         } catch (Exception ex) {
-            log.warn("Cover vision analysis failed for task {}: {}", task.getId(), ex.getMessage());
-            return unavailable("vision_analysis_failed");
+            log.warn("Cover analysis failed for task {}: {}", task.getId(), ex.getMessage());
+            return unavailable("cover_analysis_failed");
         }
     }
 
@@ -109,9 +105,14 @@ public class CoverAnalysisService {
         report.put("scores", scoresCopy);
     }
 
-    private String buildUserPrompt(AnalysisTask task) {
+    private String buildUserPrompt(AnalysisTask task, CoverStorageService.StoredObject stored) {
         StringBuilder sb = new StringBuilder();
-        sb.append("请分析这张小红书笔记封面图，结合笔记主题给出视觉运营点评。\n");
+        sb.append("用户已上传小红书笔记封面图，请结合笔记文案给出封面运营建议。\n");
+        sb.append("【封面文件】类型=")
+                .append(stored.contentType() == null ? "unknown" : stored.contentType())
+                .append("，大小=")
+                .append(stored.bytes() == null ? 0 : stored.bytes().length)
+                .append("字节\n");
         if (task.getTitle() != null && !task.getTitle().isBlank()) {
             sb.append("【标题】").append(task.getTitle().trim()).append('\n');
         }
@@ -125,24 +126,24 @@ public class CoverAnalysisService {
         return sb.toString();
     }
 
-    private String coverVisionSystemPrompt() {
-        if (coverVisionSystemPrompt != null) {
-            return coverVisionSystemPrompt;
+    private String coverSystemPrompt() {
+        if (coverSystemPrompt != null) {
+            return coverSystemPrompt;
         }
         synchronized (this) {
-            if (coverVisionSystemPrompt != null) {
-                return coverVisionSystemPrompt;
+            if (coverSystemPrompt != null) {
+                return coverSystemPrompt;
             }
             try {
-                ClassPathResource resource = new ClassPathResource("prompts/cover-vision-system.txt");
-                coverVisionSystemPrompt = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
+                ClassPathResource resource = new ClassPathResource("prompts/cover-analysis-system.txt");
+                coverSystemPrompt = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
             } catch (Exception ex) {
-                coverVisionSystemPrompt = """
-                        你是小红书封面视觉分析师。仅输出 JSON：
+                coverSystemPrompt = """
+                        你是小红书封面运营分析师。仅输出 JSON：
                         {"available":true,"keywords":[],"contrastComment":"","emotionMatch":"","ctrImpact":""}
                         """;
             }
-            return coverVisionSystemPrompt;
+            return coverSystemPrompt;
         }
     }
 

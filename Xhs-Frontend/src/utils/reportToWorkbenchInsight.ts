@@ -55,27 +55,15 @@ function buildOptimization(report: AnalysisReport): AiOptimizationAdvice {
 }
 
 function titlesFromReport(report: AnalysisReport): RecommendedTitle[] {
-  const baseCtr = report.scores.ctr.score
-  const fromOptimizations = report.optimizations.title.map((item, index) => ({
+  return report.optimizations.title.map((item) => ({
     title: item.optimized,
-    ctr: Math.min(98, baseCtr + (index === 0 ? 4 : index)),
   }))
-
-  if (fromOptimizations.length) return fromOptimizations
-
-  return []
-}
-
-export function ctrFromEstimated(level?: GeneratedTitle['estimatedCtr']): number {
-  if (level === 'high') return 90
-  if (level === 'medium') return 80
-  return 70
 }
 
 export function generatedTitlesToRecommended(titles: GeneratedTitle[]): RecommendedTitle[] {
-  return titles.map((item, index) => ({
+  return titles.map((item) => ({
     title: item.text,
-    ctr: ctrFromEstimated(item.estimatedCtr) + (index % 3),
+    estimatedCtr: item.estimatedCtr,
   }))
 }
 

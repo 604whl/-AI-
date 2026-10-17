@@ -103,7 +103,7 @@
 
         <HotTopicsPanel
           class="bottom-topics"
-          :topics="displayTopics"
+          :topics="workbench.hotTopics.value"
           @select="applyHotTopic"
         />
       </el-card>
@@ -139,7 +139,6 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { DataAnalysis } from '@element-plus/icons-vue'
 import { createAnalysis, fetchAnalysis } from '@/api/analysis'
-import { MOCK_HOT_TOPICS } from '@/mocks/workbench'
 import AnalysisContentFields from '@/components/analysis/AnalysisContentFields.vue'
 import SensitiveWordDetector from '@/components/workbench/SensitiveWordDetector.vue'
 import HotTopicsPanel from '@/components/workbench/HotTopicsPanel.vue'
@@ -190,10 +189,6 @@ const poll = useAnalysisWait(async () => {
   const res = await fetchAnalysis(pollingId.value)
   return res.data.data
 })
-
-const displayTopics = computed(() =>
-  workbench.hotTopics.value.length ? workbench.hotTopics.value : MOCK_HOT_TOPICS,
-)
 
 watch(
   () => [form.title, form.body],

@@ -14,6 +14,7 @@ public class AgentModelProviderRegistry {
     private static final int CODE_AI_UNAVAILABLE = 50002;
 
     private final MockAgentModelProvider mockAgentModelProvider;
+    private final ObjectProvider<DeepSeekAgentModelProvider> deepSeekAgentModelProvider;
     private final ObjectProvider<OpenAiAgentModelProvider> openAiAgentModelProvider;
     private final ObjectProvider<DashScopeAgentModelProvider> dashScopeAgentModelProvider;
     private final AgentRuntimePolicy agentRuntimePolicy;
@@ -24,26 +25,34 @@ public class AgentModelProviderRegistry {
             return mockAgentModelProvider;
         }
         String primary = appAiProperties.getAi().getDefaultProvider();
-        if ("openai".equalsIgnoreCase(primary)) {
-            OpenAiAgentModelProvider openAi = openAiAgentModelProvider.getIfAvailable();
-            if (openAi != null) {
-                return openAi;
-            }
+        AgentModelProvider matched = resolve(primary);
+        if (matched != null) {
+            return matched;
         }
-        if ("dashscope".equalsIgnoreCase(primary)) {
-            DashScopeAgentModelProvider dashScope = dashScopeAgentModelProvider.getIfAvailable();
-            if (dashScope != null) {
-                return dashScope;
-            }
+        AgentModelProvider deepSeek = deepSeekAgentModelProvider.getIfAvailable();
+        if (deepSeek != null) {
+            return deepSeek;
         }
-        DashScopeAgentModelProvider dashScopeFallback = dashScopeAgentModelProvider.getIfAvailable();
-        if (dashScopeFallback != null) {
-            return dashScopeFallback;
+        AgentModelProvider openAi = openAiAgentModelProvider.getIfAvailable();
+        if (openAi != null) {
+            return openAi;
         }
-        OpenAiAgentModelProvider openAiFallback = openAiAgentModelProvider.getIfAvailable();
-        if (openAiFallback != null) {
-            return openAiFallback;
+        AgentModelProvider dashScope = dashScopeAgentModelProvider.getIfAvailable();
+        if (dashScope != null) {
+            return dashScope;
         }
         throw new BusinessException(CODE_AI_UNAVAILABLE, "ai_service_unavailable: no agent model provider configured");
+    }
+
+    private AgentModelProvider resolve(String primary) {
+        if (primary == null) {
+            return null;
+        }
+        return switch (primary.trim().toLowerCase()) {
+            case "deepseek" -> deepSeekAgentModelProvider.getIfAvailable();
+            case "openai" -> openAiAgentModelProvider.getIfAvailable();
+            case "dashscope" -> dashScopeAgentModelProvider.getIfAvailable();
+            default -> null;
+        };
     }
 }

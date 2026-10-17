@@ -2,15 +2,17 @@ package com.shortvideoscripagent.xhsagentyunying.ai.model;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
- * 可选 OpenAI 兼容提供商（DeepSeek 等可配置 base-url）。
+ * OpenAI 兼容提供商模板（默认关闭）。
  */
 @Component
+@ConditionalOnProperty(name = "app.ai.mock-enabled", havingValue = "false")
 @ConditionalOnProperty(name = "app.ai.openai.enabled", havingValue = "true")
 @ConditionalOnBean(OpenAiChatModel.class)
 public class OpenAiModelProvider implements ModelProvider {
@@ -19,7 +21,7 @@ public class OpenAiModelProvider implements ModelProvider {
     private final String modelName;
 
     public OpenAiModelProvider(
-            OpenAiChatModel openAiChatModel,
+            @Qualifier("openAiChatModel") OpenAiChatModel openAiChatModel,
             @Value("${spring.ai.openai.chat.options.model:gpt-4o-mini}") String modelName
     ) {
         this.chatClient = ChatClient.builder(openAiChatModel).build();

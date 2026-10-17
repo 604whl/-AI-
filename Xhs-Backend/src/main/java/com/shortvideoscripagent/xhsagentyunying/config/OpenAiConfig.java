@@ -14,7 +14,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class OpenAiConfig {
 
-    @Bean
+    @Bean("openAiChatModel")
+    @ConditionalOnProperty(name = "app.ai.mock-enabled", havingValue = "false")
     @ConditionalOnProperty(name = "app.ai.openai.enabled", havingValue = "true")
     public OpenAiChatModel openAiChatModel(
             @Value("${spring.ai.openai.api-key}") String apiKey,
@@ -33,7 +34,26 @@ public class OpenAiConfig {
                 .build();
     }
 
+    @Bean("deepSeekChatModel")
+    @ConditionalOnProperty(name = "app.ai.mock-enabled", havingValue = "false")
+    @ConditionalOnProperty(name = "app.ai.deepseek.enabled", havingValue = "true")
+    public OpenAiChatModel deepSeekChatModel(AppAiProperties appProperties) {
+        AppAiProperties.CompatibleProvider props = appProperties.getAi().getDeepseek();
+        OpenAiApi api = OpenAiApi.builder()
+                .apiKey(props.getApiKey())
+                .baseUrl(props.getBaseUrl())
+                .build();
+        OpenAiChatOptions options = OpenAiChatOptions.builder()
+                .model(props.getModel())
+                .build();
+        return OpenAiChatModel.builder()
+                .openAiApi(api)
+                .defaultOptions(options)
+                .build();
+    }
+
     @Bean
+    @ConditionalOnProperty(name = "app.ai.mock-enabled", havingValue = "false")
     @ConditionalOnProperty(name = "app.ai.deepseek.enabled", havingValue = "true")
     public ModelProvider deepseekModelProvider(AppAiProperties appProperties, ObjectMapper objectMapper) {
         AppAiProperties.CompatibleProvider props = appProperties.getAi().getDeepseek();
@@ -47,6 +67,7 @@ public class OpenAiConfig {
     }
 
     @Bean
+    @ConditionalOnProperty(name = "app.ai.mock-enabled", havingValue = "false")
     @ConditionalOnProperty(name = "app.ai.zhipu.enabled", havingValue = "true")
     public ModelProvider zhipuModelProvider(AppAiProperties appProperties, ObjectMapper objectMapper) {
         AppAiProperties.CompatibleProvider props = appProperties.getAi().getZhipu();

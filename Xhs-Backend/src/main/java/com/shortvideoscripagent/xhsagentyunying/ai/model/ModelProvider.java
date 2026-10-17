@@ -1,7 +1,7 @@
 package com.shortvideoscripagent.xhsagentyunying.ai.model;
 
 /**
- * 多模型统一抽象：主路径 DashScope，可扩展 OpenAI 兼容 API。
+ * 多模型统一抽象：默认 DeepSeek 文本聊天，可按配置启用其他 OpenAI 兼容提供商。
  */
 public interface ModelProvider {
 
@@ -13,12 +13,7 @@ public interface ModelProvider {
 
     String chat(String systemPrompt, String userPrompt);
 
-    /**
-     * 多模态对话；不支持视觉的提供商应返回空字符串并由调用方降级。
-     */
-    default String chatWithImage(String systemPrompt, String userPrompt, byte[] imageBytes, String mimeType) {
-        return "";
+    default boolean supportsVision() {
+        return false;
     }
-
-    boolean supportsVision();
 }

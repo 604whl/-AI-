@@ -29,8 +29,7 @@ public class AiStartupValidator implements ApplicationRunner {
         }
         log.error(
                 "Real AI requested (AI_MOCK_ENABLED=false) but no usable model API key is configured. "
-                        + "Set DASHSCOPE_API_KEY, DEEPSEEK_API_KEY, ZHIPU_API_KEY or OPENAI_API_KEY, "
-                        + "or set AI_MOCK_ENABLED=true for offline development."
+                        + "Set DEEPSEEK_API_KEY (default provider), or enable another provider template."
         );
     }
 }

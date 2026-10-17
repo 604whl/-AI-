@@ -25,7 +25,7 @@
 
     <el-empty
       v-else-if="hasGenerated && !loading"
-      :description="promptVersion === 'mock-pending' ? t('titles.mockPending') : t('titles.empty')"
+      :description="t('titles.empty')"
     />
     <div v-else class="results-placeholder">
       <el-icon class="placeholder-icon"><EditPen /></el-icon>

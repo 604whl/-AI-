@@ -137,7 +137,6 @@ export interface LocaleMessages {
     newTitle: string
     newDesc: string
     aiInsight: string
-    mockAnalyzeDone: string
     reportTitle: string
     reportHint: string
     scenario: string
@@ -271,7 +270,6 @@ export interface LocaleMessages {
     goal: string
     count: string
     empty: string
-    mockPending: string
     resultsTitle: string
     resultsPlaceholder: string
     aiGenerating: string

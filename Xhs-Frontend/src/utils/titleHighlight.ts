@@ -75,6 +75,6 @@ export function highlightTitleHtml(title: string, segments: string[]): string {
 }
 
 /** CTR 是否属于高亮档位 */
-export function isHighCtr(ctr: number, threshold = 88): boolean {
-  return ctr >= threshold
+export function isHighCtr(level?: 'low' | 'medium' | 'high'): boolean {
+  return level === 'high'
 }

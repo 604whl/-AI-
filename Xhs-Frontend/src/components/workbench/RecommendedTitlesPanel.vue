@@ -26,17 +26,10 @@
         <div class="title-rank">{{ index + 1 }}</div>
         <div class="title-content">
           <p class="title-text">{{ item.title }}</p>
-          <div class="title-meta">
+          <div v-if="item.estimatedCtr" class="title-meta">
             <el-tag size="small" type="danger" effect="plain" round>
-              {{ t('workbench.titleClickPotential', { score: item.ctr }) }}
+              {{ t('titles.ctrPredict') }} {{ t(`titles.ctr.${item.estimatedCtr}`) }}
             </el-tag>
-            <el-progress
-              :percentage="item.ctr"
-              :stroke-width="4"
-              :show-text="false"
-              color="#ff2442"
-              class="ctr-bar"
-            />
           </div>
         </div>
         <div class="title-actions">

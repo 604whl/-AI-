@@ -13,12 +13,12 @@ export type TitleLoadingStep =
 /** 带评分的 AI 生成标题 */
 export interface ScoredTitle {
   title: string
-  ctr: number
-  viral: number
-  emotion: number
+  estimatedCtr: GeneratedTitleCtr
   typeTag: TitleTypeTag
   highlights: string[]
 }
+
+export type GeneratedTitleCtr = 'low' | 'medium' | 'high'
 
 /** 标题生成请求参数 */
 export interface TitleGenerateParams {

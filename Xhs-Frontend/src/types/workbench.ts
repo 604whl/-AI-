@@ -10,7 +10,7 @@ export interface ViralScoreCard {
 /** AI 推荐标题 */
 export interface RecommendedTitle {
   title: string
-  ctr: number
+  estimatedCtr?: 'low' | 'medium' | 'high'
 }
 
 /** 爆点拆解项 */

@@ -138,7 +138,6 @@ const en: LocaleMessages = {
     newDesc:
       'Paste your note — AI scores viral potential, CTR, emotion, hook breakdown, and optimization tips.',
     aiInsight: 'AI ops insight',
-    mockAnalyzeDone: 'AI analysis complete — see insights on the right',
     reportTitle: 'Analysis report',
     reportHint:
       'Report page modules: Scores → Structure → Diagnosis → Suggestions → Actions (see docs/wireframe-report.md)',
@@ -255,7 +254,7 @@ const en: LocaleMessages = {
     coverMissingTitle: 'No cover uploaded',
     coverMissingDesc: 'Upload a cover image to improve CTR analysis accuracy.',
     coverUnavailableTitle: 'Cover analysis unavailable',
-    coverUnavailableDesc: 'Cover was uploaded but vision analysis failed; CTR score is based mainly on title and body.',
+    coverUnavailableDesc: 'Cover was uploaded but analysis did not complete; CTR score is based mainly on title and body.',
     coverKeywords: 'Visual keywords',
     coverContrast: 'Contrast: ',
     coverEmotion: 'Emotion match: ',
@@ -273,7 +272,6 @@ const en: LocaleMessages = {
     goal: 'Generation goal',
     count: 'Count',
     empty: 'No titles yet. Adjust your content and try again.',
-    mockPending: 'Generating titles, please wait…',
     resultsTitle: 'AI title candidates',
     resultsPlaceholder: 'Fill in content and click Generate — AI will score CTR and viral structure',
     aiGenerating: 'AI is generating high-CTR titles…',

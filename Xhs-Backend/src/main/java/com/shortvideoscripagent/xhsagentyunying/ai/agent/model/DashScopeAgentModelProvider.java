@@ -11,7 +11,8 @@ import org.springframework.ai.tool.ToolCallback;
 import java.util.List;
 
 @Component
-@ConditionalOnProperty(name = "app.ai.dashscope.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "app.ai.mock-enabled", havingValue = "false")
+@ConditionalOnProperty(name = "app.ai.dashscope.enabled", havingValue = "true")
 public class DashScopeAgentModelProvider implements AgentModelProvider {
 
     private final ChatModel chatModel;

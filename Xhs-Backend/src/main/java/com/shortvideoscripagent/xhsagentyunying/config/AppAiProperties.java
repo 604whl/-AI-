@@ -17,8 +17,8 @@ public class AppAiProperties {
 
     @Data
     public static class Ai {
-        private String defaultProvider = "dashscope";
-        private boolean mockEnabled = true;
+        private String defaultProvider = "deepseek";
+        private boolean mockEnabled = false;
         private int analysisTimeoutSeconds = 45;
         private int analysisMaxRetries = 1;
         private List<String> fallbackProviders = new ArrayList<>();
@@ -30,8 +30,7 @@ public class AppAiProperties {
 
     @Data
     public static class Dashscope {
-        private boolean enabled = true;
-        private String visionModel = "qwen-vl-plus";
+        private boolean enabled = false;
     }
 
     @Data

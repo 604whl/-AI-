@@ -20,5 +20,19 @@ app:
       bucket: ${MINIO_BUCKET:xhs-agent}
   ai:
     mock-enabled: false
+    default-provider: deepseek
+    deepseek:
+      enabled: true
+      api-key: ${DEEPSEEK_API_KEY}
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      model: ${DEEPSEEK_CHAT_MODEL:deepseek-chat}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:https://your-frontend-domain.com}
+
+# 生产环境开放 actuator health 的 details（仅内网访问）
+management:
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true

@@ -11,6 +11,7 @@ import org.springframework.ai.tool.ToolCallback;
 import java.util.List;
 
 @Component
+@ConditionalOnProperty(name = "app.ai.mock-enabled", havingValue = "false")
 @ConditionalOnProperty(name = "app.ai.openai.enabled", havingValue = "true")
 public class OpenAiAgentModelProvider implements AgentModelProvider {
 

@@ -7,37 +7,10 @@
 
     <p class="title-text" v-html="highlightedHtml" />
 
-    <div class="score-row">
-      <div class="score-item">
-        <span class="score-label">{{ t('titles.ctrPredict') }}</span>
-        <el-progress
-          :percentage="item.ctr"
-          :stroke-width="6"
-          :color="scoreColor(item.ctr)"
-          :format="() => `${item.ctr}`"
-        />
-      </div>
-      <div class="score-item">
-        <span class="score-label">{{ t('titles.viralIndex') }}</span>
-        <el-progress
-          :percentage="item.viral"
-          :stroke-width="6"
-          color="#6366f1"
-          :format="() => `${item.viral}`"
-        />
-      </div>
-      <div class="score-item">
-        <span class="score-label">{{ t('titles.emotionValue') }}</span>
-        <el-progress
-          :percentage="item.emotion"
-          :stroke-width="6"
-          color="#f59e0b"
-          :format="() => `${item.emotion}`"
-        />
-      </div>
-    </div>
-
     <div class="meta-row">
+      <el-tag :type="ctrTagType" size="small" effect="plain" round>
+        {{ t('titles.ctrPredict') }} {{ t(`titles.ctr.${item.estimatedCtr}`) }}
+      </el-tag>
       <el-tag :type="typeTagColor" size="small" effect="dark" round>
         {{ t(`titles.typeTags.${item.typeTag}`) }}
       </el-tag>
@@ -73,11 +46,17 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const highCtr = computed(() => isHighCtr(props.item.ctr))
+const highCtr = computed(() => isHighCtr(props.item.estimatedCtr))
 
 const highlightedHtml = computed(() =>
   highlightTitleHtml(props.item.title, props.item.highlights),
 )
+
+const ctrTagType = computed(() => {
+  if (props.item.estimatedCtr === 'high') return 'danger'
+  if (props.item.estimatedCtr === 'medium') return 'warning'
+  return 'info'
+})
 
 const typeTagColor = computed(() => {
   const map: Record<TitleTypeTag, 'danger' | 'warning' | 'success' | 'info'> = {
@@ -88,12 +67,6 @@ const typeTagColor = computed(() => {
   }
   return map[props.item.typeTag]
 })
-
-function scoreColor(value: number): string {
-  if (value >= 88) return '#ff2442'
-  if (value >= 75) return '#f59e0b'
-  return '#6366f1'
-}
 </script>
 
 <style scoped>
@@ -146,20 +119,6 @@ function scoreColor(value: number): string {
   border-radius: 2px;
 }
 
-.score-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.score-label {
-  display: block;
-  font-size: 11px;
-  color: #9ca3af;
-  margin-bottom: 4px;
-}
-
 .meta-row {
   display: flex;
   align-items: center;
@@ -173,11 +132,5 @@ function scoreColor(value: number): string {
   align-items: center;
   gap: 6px;
   margin-left: auto;
-}
-
-@media (max-width: 576px) {
-  .score-row {
-    grid-template-columns: 1fr;
-  }
 }
 </style>

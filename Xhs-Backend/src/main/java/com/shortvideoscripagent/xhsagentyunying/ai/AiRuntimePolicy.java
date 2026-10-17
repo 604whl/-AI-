@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 统一判断 Mock AI 与真实 DashScope 调用；{@code AI_MOCK_ENABLED=false} 时不再因缺 Key 静默回退 Mock。
+ * 统一判断 Mock AI 与真实模型调用；{@code AI_MOCK_ENABLED=false} 时不再因缺 Key 静默回退 Mock。
  */
 @Component
 @RequiredArgsConstructor
@@ -83,7 +83,7 @@ public class AiRuntimePolicy {
         if (!hasRealApiKey()) {
             throw new BusinessException(
                     CODE_AI_UNAVAILABLE,
-                    "ai_not_configured: set OPENAI_API_KEY, DASHSCOPE_API_KEY, DEEPSEEK_API_KEY, ZHIPU_API_KEY, or AI_MOCK_ENABLED=true"
+                    "ai_not_configured: set DEEPSEEK_API_KEY (or enable another provider template)"
             );
         }
     }
@@ -93,9 +93,15 @@ public class AiRuntimePolicy {
     }
 
     public String primaryChatModel() {
-        if ("openai".equalsIgnoreCase(appProperties.getAi().getDefaultProvider())) {
-            return aiRuntimeProperties.getOpenaiChatModel();
+        String provider = appProperties.getAi().getDefaultProvider();
+        if (provider == null) {
+            return appProperties.getAi().getDeepseek().getModel();
         }
-        return aiRuntimeProperties.getDashscopeChatModel();
+        return switch (provider.trim().toLowerCase()) {
+            case "openai" -> aiRuntimeProperties.getOpenaiChatModel();
+            case "dashscope" -> aiRuntimeProperties.getDashscopeChatModel();
+            case "zhipu" -> appProperties.getAi().getZhipu().getModel();
+            default -> appProperties.getAi().getDeepseek().getModel();
+        };
     }
 }

@@ -47,12 +47,14 @@ app:
     access-token-expire-seconds: 7200
     refresh-token-expire-seconds: 604800
   ai:
-    default-provider: dashscope
+    default-provider: deepseek
     mock-enabled: true
     analysis-timeout-seconds: 45
     analysis-max-retries: 1
+    deepseek:
+      enabled: false
     dashscope:
-      vision-model: qwen-vl-plus
+      enabled: false
     openai:
       enabled: false
   rag:
