@@ -13,6 +13,8 @@ public class AnalysisReport {
     @TableId
     private String taskId;
 
+    private String workspaceId;
+
     private String reportJson;
 
     private String coverAnalysis;

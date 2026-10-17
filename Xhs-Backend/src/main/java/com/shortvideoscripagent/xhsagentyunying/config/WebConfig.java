@@ -2,6 +2,7 @@ package com.shortvideoscripagent.xhsagentyunying.config;
 
 import com.shortvideoscripagent.xhsagentyunying.auth.AuthInterceptor;
 import com.shortvideoscripagent.xhsagentyunying.common.api.RequestContext;
+import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceInterceptor;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import java.util.UUID;
 public class WebConfig implements WebMvcConfigurer {
 
     private final AuthInterceptor authInterceptor;
+    private final WorkspaceInterceptor workspaceInterceptor;
 
     @Value("${app.cors.allowed-origins}")
     private String allowedOrigins;
@@ -54,5 +56,6 @@ public class WebConfig implements WebMvcConfigurer {
         });
 
         registry.addInterceptor(authInterceptor).addPathPatterns("/**");
+        registry.addInterceptor(workspaceInterceptor).addPathPatterns("/**");
     }
 }

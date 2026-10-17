@@ -9,9 +9,12 @@ import com.shortvideoscripagent.xhsagentyunying.auth.dto.RegisterRequest;
 import com.shortvideoscripagent.xhsagentyunying.auth.dto.TokenRefreshResponse;
 import com.shortvideoscripagent.xhsagentyunying.auth.dto.UpdateProfileRequest;
 import com.shortvideoscripagent.xhsagentyunying.auth.dto.UserProfileVo;
+import com.shortvideoscripagent.xhsagentyunying.auth.dto.WorkspaceVo;
 import com.shortvideoscripagent.xhsagentyunying.common.exception.BusinessException;
 import com.shortvideoscripagent.xhsagentyunying.domain.entity.User;
+import com.shortvideoscripagent.xhsagentyunying.domain.entity.Workspace;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.UserMapper;
+import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -20,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -35,6 +39,7 @@ public class AuthService {
     private final UserMapper userMapper;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenStore refreshTokenStore;
+    private final WorkspaceService workspaceService;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -54,7 +59,10 @@ public class AuthService {
         user.setUpdatedAt(now);
         userMapper.insert(user);
 
-        return buildAuthResponse(user);
+        // 多租户：注册时自动创建 default workspace 并加入 OWNER
+        Workspace workspace = workspaceService.ensureDefaultWorkspace(user.getId());
+
+        return buildAuthResponse(user, workspace);
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -63,7 +71,9 @@ public class AuthService {
         if (user == null || !BCrypt.checkpw(request.getPassword(), user.getPasswordHash())) {
             throw new BusinessException(CODE_UNAUTHORIZED, "邮箱或密码错误");
         }
-        return buildAuthResponse(user);
+        // 老用户兜底：登录时若还没 workspace，立刻补建
+        Workspace workspace = workspaceService.ensureDefaultWorkspace(user.getId());
+        return buildAuthResponse(user, workspace);
     }
 
     public TokenRefreshResponse refresh(String refreshToken) {
@@ -96,6 +106,8 @@ public class AuthService {
         if (user == null) {
             throw new BusinessException(CODE_UNAUTHORIZED, "unauthorized");
         }
+        // 触发 workspace 补建（多租户迁移期防御）
+        workspaceService.ensureDefaultWorkspace(user.getId());
         return toProfile(user);
     }
 
@@ -158,16 +170,28 @@ public class AuthService {
         }
     }
 
-    private AuthResponse buildAuthResponse(User user) {
+    private AuthResponse buildAuthResponse(User user, Workspace defaultWorkspace) {
         JwtTokenProvider.IssuedToken access = jwtTokenProvider.createAccessToken(user.getId());
         JwtTokenProvider.IssuedToken refresh = jwtTokenProvider.createRefreshToken(user.getId());
         refreshTokenStore.save(refresh.jti(), user.getId(), refresh.expiresInSeconds());
+
+        List<Workspace> workspaces = workspaceService.listUserWorkspaces(user.getId());
+        List<WorkspaceVo> workspaceVos = workspaces.stream()
+                .map(w -> WorkspaceVo.builder()
+                        .id(w.getId())
+                        .name(w.getName())
+                        .slug(w.getSlug())
+                        .role(w.getOwnerUserId().equals(user.getId()) ? "OWNER" : "MEMBER")
+                        .build())
+                .toList();
 
         return AuthResponse.builder()
                 .accessToken(access.token())
                 .refreshToken(refresh.token())
                 .expiresIn(access.expiresInSeconds())
                 .user(toProfile(user))
+                .workspaces(workspaceVos)
+                .defaultWorkspaceId(defaultWorkspace == null ? null : defaultWorkspace.getId())
                 .build();
     }
 

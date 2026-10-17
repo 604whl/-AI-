@@ -20,6 +20,8 @@ public class AgentToolLog {
 
     private Long userId;
 
+    private String workspaceId;
+
     private String toolName;
 
     @TableField(typeHandler = JsonbStringTypeHandler.class)

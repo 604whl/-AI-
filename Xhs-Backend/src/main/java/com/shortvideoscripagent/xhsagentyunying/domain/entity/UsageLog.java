@@ -16,6 +16,8 @@ public class UsageLog {
 
     private Long userId;
 
+    private String workspaceId;
+
     private String action;
 
     private String taskId;

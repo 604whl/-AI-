@@ -15,6 +15,8 @@ public class AnalysisTask {
 
     private Long userId;
 
+    private String workspaceId;
+
     private String scenario;
 
     private String persona;

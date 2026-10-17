@@ -15,6 +15,8 @@ public class ChatSession {
 
     private Long userId;
 
+    private String workspaceId;
+
     private String title;
 
     private String persona;
