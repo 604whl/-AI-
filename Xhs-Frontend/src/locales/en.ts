@@ -527,6 +527,22 @@ const en: LocaleMessages = {
     toolIndustryCalendar: 'Industry calendar',
     toolGetUserProfile: 'User profile',
   },
+  quota: {
+    title: 'Quota Management',
+    editQuota: 'Edit quota',
+    updated: 'Quota updated',
+    dailyQuota: 'Daily quota',
+    usedToday: 'Used today',
+    remaining: 'Remaining',
+    resetAt: 'Resets at',
+    ledgerTitle: 'Usage audit',
+    filterAction: 'Filter action',
+    action: 'Action',
+    delta: 'Change',
+    status: 'Status',
+    reason: 'Reason',
+    createdAt: 'Time',
+  },
 }
 
 export default en

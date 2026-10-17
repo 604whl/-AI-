@@ -16,6 +16,10 @@ import com.shortvideoscripagent.xhsagentyunying.domain.entity.AnalysisTask;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.AnalysisReportMapper;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.AnalysisTaskMapper;
 import com.shortvideoscripagent.xhsagentyunying.infra.taskqueue.TaskHandler;
+import com.shortvideoscripagent.xhsagentyunying.quota.AtomicQuotaGuard;
+import com.shortvideoscripagent.xhsagentyunying.quota.QuotaCheckResult;
+import com.shortvideoscripagent.xhsagentyunying.quota.QuotaExceededException;
+import com.shortvideoscripagent.xhsagentyunying.quota.QuotaRefundService;
 import com.shortvideoscripagent.xhsagentyunying.service.analysis.AnalysisProgressEvent;
 import com.shortvideoscripagent.xhsagentyunying.service.analysis.AnalysisStreamHub;
 import jakarta.annotation.Resource;
@@ -70,6 +74,10 @@ public class AnalysisTaskHandler implements TaskHandler {
     private TaskQueueProperties taskQueueProperties;
     @Autowired
     private TransactionTemplate transactionTemplate;
+    @Autowired
+    private AtomicQuotaGuard atomicQuotaGuard;
+    @Autowired
+    private QuotaRefundService quotaRefundService;
 
     @Resource(name = "aiExecutor")
     private Executor aiExecutor;
@@ -85,8 +93,52 @@ public class AnalysisTaskHandler implements TaskHandler {
         long startedAt = System.currentTimeMillis();
         String workerId = taskQueueProperties.getWorkerId();
 
+        // P0-2: 从 payload 提取 workspaceId
+        String workspaceIdStr = payload != null ? String.valueOf(payload.get("workspaceId")) : null;
+        if (workspaceIdStr == null || workspaceIdStr.equals("null")) {
+            log.error("workspaceId not found in payload for task {}", taskId);
+            throw new IllegalStateException("workspaceId required in payload");
+        }
+        java.util.UUID workspaceId = java.util.UUID.fromString(workspaceIdStr);
+
+        // P0-2: 进入 handler 时先扣减配额，失败直接返回（任务不会执行）
+        java.util.UUID ledgerId;
+        try {
+            QuotaCheckResult consumeResult = atomicQuotaGuard.tryConsume(
+                    workspaceId,
+                    "ANALYSIS",
+                    java.util.UUID.fromString(taskId),
+                    "task-start"
+            );
+            if (!consumeResult.isOk()) {
+                log.warn("Quota exceeded for workspace {} on task {}", workspaceId, taskId);
+                // 标记任务为 quota_exceeded 状态
+                transactionTemplate.executeWithoutResult(txStatus -> {
+                    taskMapper.update(null,
+                            new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<AnalysisTask>()
+                                    .eq(AnalysisTask::getId, taskId)
+                                    .in(AnalysisTask::getStatus, List.of("pending", "queued"))
+                                    .set(AnalysisTask::getStatus, "failed")
+                                    .set(AnalysisTask::getFailureReason, "quota_exceeded")
+                                    .set(AnalysisTask::getFailureCode, 42901)
+                                    .set(AnalysisTask::getFinishedAt, OffsetDateTime.now())
+                                    .set(AnalysisTask::getUpdatedAt, OffsetDateTime.now())
+                    );
+                });
+                publishProgress(taskId, "failed", "failed", "配额不足", 42901, "quota_exceeded", null);
+                throw new QuotaExceededException("quota_exceeded");
+            }
+            ledgerId = consumeResult.ledgerId();
+        } catch (QuotaExceededException ex) {
+            throw ex; // 直接传递
+        } catch (Exception ex) {
+            log.warn("Unexpected error during quota consume for task {}: {}", taskId, ex.getMessage());
+            ledgerId = null;
+        }
+
         // 1. 状态更新为 running（事务中）
         final String finalWorkerId = workerId;
+        final java.util.UUID finalLedgerId = ledgerId;
         transactionTemplate.executeWithoutResult(status -> {
             int updated = taskMapper.update(null,
                     new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<AnalysisTask>()
@@ -139,7 +191,7 @@ public class AnalysisTaskHandler implements TaskHandler {
             });
 
             publishProgress(taskId, "completed", "finished", "分析完成", null, null, processingMs);
-            log.info("Analysis task completed: {} in {}ms", taskId, processingMs);
+            log.info("Analysis task completed: {} in {}ms (quota consumed ledgerId={})", taskId, processingMs, finalLedgerId);
 
         } catch (Exception ex) {
             log.error("Analysis task failed: {}", taskId, ex);
@@ -158,6 +210,15 @@ public class AnalysisTaskHandler implements TaskHandler {
                 );
             });
             publishProgress(taskId, "failed", "failed", "分析失败：" + reason, code, reason, processingMs);
+
+            // P0-2: 任务失败时自动冲正配额
+            if (finalLedgerId != null) {
+                try {
+                    quotaRefundService.refund(finalLedgerId, "task-failed:" + reason);
+                } catch (Exception refundEx) {
+                    log.warn("Failed to refund quota for task {}: {}", taskId, refundEx.getMessage());
+                }
+            }
             throw ex;
         }
     }

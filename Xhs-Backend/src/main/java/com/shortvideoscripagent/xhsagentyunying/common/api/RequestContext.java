@@ -28,6 +28,10 @@ public final class RequestContext {
         return USER_ID.get();
     }
 
+    public static Long getUserIdOrNull() {
+        return USER_ID.get();
+    }
+
     /**
      * 强制要求当前请求已经写入 userId；缺失时抛 401。
      */

@@ -4,6 +4,10 @@
       <el-icon class="ws-icon"><OfficeBuilding /></el-icon>
       <span class="ws-label">{{ activeWorkspace?.name || t('workspace.select') }}</span>
       <el-icon class="ws-arrow"><ArrowDown /></el-icon>
+      <!-- P0-2: Quota badge -->
+      <span v-if="quotaInfo" class="ws-quota-badge" :class="quotaBadgeClass">
+        {{ quotaInfo.remaining }}/{{ quotaInfo.dailyQuota }}
+      </span>
     </span>
     <template #dropdown>
       <el-dropdown-menu>
@@ -17,6 +21,16 @@
             <div class="ws-menu-name">{{ ws.name }}</div>
             <div class="ws-menu-meta">
               <el-tag size="small" type="info" effect="plain" round>{{ roleLabel(ws.role) }}</el-tag>
+              <span v-if="ws.id === activeWorkspaceId && workspaceQuota" class="ws-quota-bar">
+                <el-progress
+                  :percentage="workspaceUsagePercent"
+                  :show-text="false"
+                  :stroke-width="4"
+                  :color="workspaceProgressColor"
+                  style="width: 60px"
+                />
+                <span class="ws-quota-label">{{ workspaceQuota.remaining }}/{{ workspaceQuota.dailyQuota }}</span>
+              </span>
             </div>
           </div>
         </el-dropdown-item>
@@ -27,6 +41,10 @@
         <el-dropdown-item command="manage" :disabled="!activeWorkspace">
           <el-icon><Setting /></el-icon>
           <span>{{ t('workspace.manage') }}</span>
+        </el-dropdown-item>
+        <el-dropdown-item command="quota" :disabled="!activeWorkspace">
+          <el-icon><PieChart /></el-icon>
+          <span>{{ t('quota.title') }}</span>
         </el-dropdown-item>
       </el-dropdown-menu>
     </template>
@@ -152,14 +170,50 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { ArrowDown, OfficeBuilding, Plus, Setting } from '@element-plus/icons-vue'
+import { useRouter } from 'vue-router'
+import { ArrowDown, OfficeBuilding, Plus, Setting, PieChart } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/stores/user'
 import type { WorkspaceMember, WorkspaceRole } from '@/types/auth'
+import { getQuota, type QuotaResponse } from '@/api/quota'
 
 const { t } = useI18n()
+const router = useRouter()
 const userStore = useUserStore()
+
+// P0-2: workspace quota display in dropdown
+const workspaceQuota = ref<QuotaResponse | null>(null)
+const workspaceQuotaLoading = ref(false)
+
+async function loadWorkspaceQuota() {
+  const wsId = userStore.activeWorkspaceId
+  if (!wsId) {
+    workspaceQuota.value = null
+    return
+  }
+  workspaceQuotaLoading.value = true
+  try {
+    const res = await getQuota(wsId)
+    workspaceQuota.value = res.data.data
+  } catch {
+    workspaceQuota.value = null
+  } finally {
+    workspaceQuotaLoading.value = false
+  }
+}
+
+const workspaceUsagePercent = computed(() => {
+  if (!workspaceQuota.value || workspaceQuota.value.dailyQuota === 0) return 0
+  return Math.min(100, Math.round((workspaceQuota.value.used / workspaceQuota.value.dailyQuota) * 100))
+})
+
+const workspaceProgressColor = computed(() => {
+  const p = workspaceUsagePercent.value
+  if (p >= 90) return '#F56C6C'
+  if (p >= 70) return '#E6A23C'
+  return '#67C23A'
+})
 
 const workspaces = computed(() => userStore.workspaces)
 const activeWorkspace = computed(() => userStore.activeWorkspace)
@@ -190,6 +244,32 @@ const inviteForm = ref({
   role: 'EDITOR' as WorkspaceRole,
 })
 
+// P0-2: Quota
+const quotaInfo = ref<QuotaInfo | null>(null)
+
+const quotaBadgeClass = computed(() => {
+  if (!quotaInfo.value) return ''
+  const pct = quotaInfo.value.dailyQuota > 0
+    ? quotaInfo.value.remaining / quotaInfo.value.dailyQuota
+    : 1
+  if (pct > 0.5) return 'badge-ok'
+  if (pct > 0.2) return 'badge-warn'
+  return 'badge-danger'
+})
+
+async function loadQuota() {
+  if (!activeWorkspaceId.value) {
+    quotaInfo.value = null
+    return
+  }
+  try {
+    const { data } = await getQuota(activeWorkspaceId.value)
+    quotaInfo.value = data
+  } catch {
+    quotaInfo.value = null
+  }
+}
+
 function roleLabel(role: WorkspaceRole | undefined) {
   switch (role) {
     case 'OWNER':
@@ -214,6 +294,8 @@ function onCommand(cmd: string) {
   } else if (cmd === 'manage') {
     loadMembers()
     manageDialogVisible.value = true
+  } else if (cmd === 'quota') {
+    router.push({ name: 'quota-manage' })
   } else if (cmd.startsWith('switch:')) {
     const id = cmd.substring('switch:'.length)
     if (id !== activeWorkspaceId.value) {
@@ -322,12 +404,15 @@ watch(activeWorkspaceId, () => {
   if (manageDialogVisible.value) {
     loadMembers()
   }
+  // P0-2: reload quota display on workspace switch
+  loadWorkspaceQuota()
 })
 
 onMounted(() => {
   if (userStore.isLoggedIn() && workspaces.value.length === 0) {
     userStore.fetchWorkspaces().catch(() => undefined)
   }
+  loadWorkspaceQuota()
 })
 </script>
 
@@ -378,6 +463,38 @@ onMounted(() => {
 }
 .ws-menu-meta {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ws-quota-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.ws-quota-label {
+  font-size: 10px;
+  color: var(--el-text-color-secondary);
+  white-space: nowrap;
+}
+.ws-quota-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-weight: 600;
+  margin-left: 4px;
+}
+.ws-quota-badge.badge-ok {
+  background: #f0f9eb;
+  color: #67c23a;
+}
+.ws-quota-badge.badge-warn {
+  background: #fdf6ec;
+  color: #e6a23c;
+}
+.ws-quota-badge.badge-danger {
+  background: #fef0f0;
+  color: #f56c6c;
 }
 :deep(.el-dropdown-menu__item.is-active) {
   background: var(--el-color-primary-light-9);

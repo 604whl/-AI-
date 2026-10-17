@@ -3,6 +3,10 @@ package com.shortvideoscripagent.xhsagentyunying.workspace;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.shortvideoscripagent.xhsagentyunying.common.api.WorkspaceContext;
 import com.shortvideoscripagent.xhsagentyunying.common.exception.BusinessException;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 /**
@@ -17,16 +21,40 @@ import org.springframework.stereotype.Component;
  * }</pre>
  */
 @Component
-public final class WorkspaceGuards {
+public final class WorkspaceGuards implements ApplicationContextAware {
+
+    private static ApplicationContext ctx;
 
     private WorkspaceGuards() {
     }
+
+    @Override
+    public void setApplicationContext(@NonNull ApplicationContext applicationContext) throws BeansException {
+        ctx = applicationContext;
+    }
+
+    private static final int CODE_FORBIDDEN = 40301;
 
     /**
      * 返回当前请求的 workspaceId，未设置则抛错（由 WorkspaceInterceptor 负责写入）。
      */
     public static String requireCurrentWorkspaceId() {
         return WorkspaceContext.requireWorkspaceId();
+    }
+
+    /**
+     * 校验当前用户是否为 workspace 成员。
+     */
+    public static void requireMember(String workspaceId) {
+        Long userId = com.shortvideoscripagent.xhsagentyunying.common.api.RequestContext.getUserIdOrNull();
+        if (userId == null) {
+            throw new BusinessException(CODE_FORBIDDEN, "unauthorized");
+        }
+        WorkspaceService wsService = ctx.getBean(WorkspaceService.class);
+        WorkspaceRole role = wsService.findRole(userId, workspaceId);
+        if (role == null) {
+            throw new BusinessException(CODE_FORBIDDEN, "workspace_access_denied");
+        }
     }
 
     /**

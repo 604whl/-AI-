@@ -519,6 +519,22 @@ const zhTW: LocaleMessages = {
     toolIndustryCalendar: '行業日曆',
     toolGetUserProfile: '用戶畫像',
   },
+  quota: {
+    title: '配額管理',
+    editQuota: '編輯配額',
+    updated: '配額已更新',
+    dailyQuota: '每日配額',
+    usedToday: '今日已用',
+    remaining: '剩餘次數',
+    resetAt: '重置時間',
+    ledgerTitle: '使用審計',
+    filterAction: '篩選操作',
+    action: '操作',
+    delta: '變更',
+    status: '狀態',
+    reason: '原因',
+    createdAt: '時間',
+  },
 }
 
 export default zhTW

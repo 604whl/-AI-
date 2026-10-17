@@ -524,6 +524,22 @@ const zhCN: LocaleMessages = {
     toolIndustryCalendar: '行业日历',
     toolGetUserProfile: '用户画像',
   },
+  quota: {
+    title: '配额管理',
+    editQuota: '编辑配额',
+    updated: '配额已更新',
+    dailyQuota: '每日配额',
+    usedToday: '今日已用',
+    remaining: '剩余次数',
+    resetAt: '重置时间',
+    ledgerTitle: '使用审计',
+    filterAction: '筛选操作',
+    action: '操作',
+    delta: '变更',
+    status: '状态',
+    reason: '原因',
+    createdAt: '时间',
+  },
 }
 
 export default zhCN

@@ -23,6 +23,7 @@ const router = createRouter({
         { path: 'titles', name: 'titles', component: () => import('@/views/titles/TitlesView.vue') },
         { path: 'history', name: 'history', component: () => import('@/views/history/HistoryView.vue') },
         { path: 'settings', name: 'settings', component: () => import('@/views/settings/SettingsView.vue') },
+        { path: 'workspace/quota', name: 'quota-manage', component: () => import('@/views/workspace/QuotaManageView.vue') },
       ],
     },
   ],

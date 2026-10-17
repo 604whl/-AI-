@@ -26,6 +26,7 @@ import com.shortvideoscripagent.xhsagentyunying.dto.analysis.BodyGenerateRespons
 import com.shortvideoscripagent.xhsagentyunying.dto.analysis.OptimizeDraftRequest;
 import com.shortvideoscripagent.xhsagentyunying.dto.analysis.OptimizeDraftResponse;
 import com.shortvideoscripagent.xhsagentyunying.dto.analysis.PaginatedResponse;
+import com.shortvideoscripagent.xhsagentyunying.quota.QuotaLedgerService;
 import com.shortvideoscripagent.xhsagentyunying.service.analysis.AnalysisProgressEvent;
 import com.shortvideoscripagent.xhsagentyunying.service.analysis.AnalysisStreamHub;
 import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceGuards;
@@ -34,6 +35,8 @@ import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.util.UUID;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -72,6 +75,7 @@ public class AnalysisAppService {
     private final AiRuntimeProperties aiRuntimeProperties;
     private final AiRuntimePolicy aiRuntimePolicy;
     private final AnalysisStreamHub analysisStreamHub;
+    private final QuotaLedgerService quotaLedgerService;
 
     @Resource(name = "aiExecutor")
     private Executor aiExecutor;
@@ -109,7 +113,8 @@ public class AnalysisAppService {
         taskMapper.insert(task);
         analysisStreamHub.publish(toProgressEvent(task));
 
-        userQuotaService.consumeAnalysisQuota(userId, task.getId());
+        // P0-2: 扣减移到任务成功时（AnalysisTaskHandler），这里不再扣减
+        // 任务失败/超时由 TaskQueueConsumerRunner 触发冲正
         analysisOrchestrator.analyzeAsync(task.getId());
         return new AnalysisCreateResponse(task.getId(), task.getStatus());
     }
