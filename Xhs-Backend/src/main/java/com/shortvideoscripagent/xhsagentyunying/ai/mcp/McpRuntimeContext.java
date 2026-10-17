@@ -26,12 +26,13 @@ public final class McpRuntimeContext {
     /**
      * 绑定当前 MCP 请求的调用者身份。
      *
-     * @param userId    已通过 JWT 或 API Key 校验的用户 ID
-     * @param sessionId 虚拟会话 ID，写入 chat/agent 审计日志
-     * @param persona   运营人设（agency / mentor / senior）
+     * @param userId      已通过 JWT 或 API Key 校验的用户 ID
+     * @param workspaceId 业务隔离单元
+     * @param sessionId   虚拟会话 ID，写入 chat/agent 审计日志
+     * @param persona     运营人设（agency / mentor / senior）
      */
-    public static void bind(Long userId, String sessionId, String persona) {
-        CONTEXT.set(new Holder(userId, sessionId, persona));
+    public static void bind(Long userId, String workspaceId, String sessionId, String persona) {
+        CONTEXT.set(new Holder(userId, workspaceId, sessionId, persona));
     }
 
     /**
@@ -52,6 +53,7 @@ public final class McpRuntimeContext {
         Holder holder = requireCurrent();
         return new ToolContext(
                 holder.userId(),
+                holder.workspaceId(),
                 holder.sessionId(),
                 holder.persona(),
                 null,
@@ -67,10 +69,11 @@ public final class McpRuntimeContext {
     /**
      * MCP 调用者快照。
      *
-     * @param userId    用户主键
-     * @param sessionId 虚拟会话 ID
-     * @param persona   人设
+     * @param userId      用户主键
+     * @param workspaceId 业务隔离单元
+     * @param sessionId   虚拟会话 ID
+     * @param persona     人设
      */
-    public record Holder(Long userId, String sessionId, String persona) {
+    public record Holder(Long userId, String workspaceId, String sessionId, String persona) {
     }
 }

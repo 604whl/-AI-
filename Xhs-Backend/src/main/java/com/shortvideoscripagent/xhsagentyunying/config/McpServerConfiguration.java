@@ -3,6 +3,7 @@ package com.shortvideoscripagent.xhsagentyunying.config;
 import com.shortvideoscripagent.xhsagentyunying.ai.mcp.McpAuthFilter;
 import com.shortvideoscripagent.xhsagentyunying.auth.AuthService;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.UserMapper;
+import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -30,10 +31,11 @@ public class McpServerConfiguration {
             AuthService authService,
             UserMapper userMapper,
             AppAgentProperties appAgentProperties,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            WorkspaceService workspaceService
     ) {
         FilterRegistrationBean<McpAuthFilter> registration = new FilterRegistrationBean<>();
-        registration.setFilter(new McpAuthFilter(authService, userMapper, appAgentProperties, objectMapper));
+        registration.setFilter(new McpAuthFilter(authService, userMapper, appAgentProperties, objectMapper, workspaceService));
         registration.addUrlPatterns("/mcp", "/mcp/*");
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 20);
         registration.setName("mcpAuthFilter");

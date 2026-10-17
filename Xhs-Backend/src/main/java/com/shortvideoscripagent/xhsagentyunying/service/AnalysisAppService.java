@@ -28,6 +28,7 @@ import com.shortvideoscripagent.xhsagentyunying.dto.analysis.OptimizeDraftRespon
 import com.shortvideoscripagent.xhsagentyunying.dto.analysis.PaginatedResponse;
 import com.shortvideoscripagent.xhsagentyunying.service.analysis.AnalysisProgressEvent;
 import com.shortvideoscripagent.xhsagentyunying.service.analysis.AnalysisStreamHub;
+import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceGuards;
 import lombok.RequiredArgsConstructor;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -78,12 +79,14 @@ public class AnalysisAppService {
     @Transactional
     public AnalysisCreateResponse create(Long userId, AnalysisCreateRequest request) {
         validateCreateRequest(request);
-        assertNoConcurrentTask(userId);
+        String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
+        assertNoConcurrentTask(userId, workspaceId);
 
         OffsetDateTime now = OffsetDateTime.now();
         AnalysisTask task = new AnalysisTask();
         task.setId(generateTaskId());
         task.setUserId(userId);
+        task.setWorkspaceId(workspaceId);
         task.setScenario(request.getScenario());
         task.setPersona(request.getPersona() == null ? "agency" : request.getPersona());
         task.setTitle(trimToNull(request.getTitle()));
@@ -252,9 +255,10 @@ public class AnalysisAppService {
                 .build();
     }
 
-    private void assertNoConcurrentTask(Long userId) {
+    private void assertNoConcurrentTask(Long userId, String workspaceId) {
         Long active = taskMapper.selectCount(new LambdaQueryWrapper<AnalysisTask>()
                 .eq(AnalysisTask::getUserId, userId)
+                .eq(AnalysisTask::getWorkspaceId, workspaceId)
                 .in(AnalysisTask::getStatus, List.of("pending", "processing")));
         if (active != null && active > 0) {
             throw new BusinessException(CODE_ALREADY_PROCESSING, "analysis_already_processing");
@@ -342,8 +346,10 @@ public class AnalysisAppService {
             String scenario,
             String keyword
     ) {
+        String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
         LambdaQueryWrapper<AnalysisTask> wrapper = new LambdaQueryWrapper<AnalysisTask>()
-                .eq(AnalysisTask::getUserId, userId);
+                .eq(AnalysisTask::getUserId, userId)
+                .eq(AnalysisTask::getWorkspaceId, workspaceId);
 
         if (status != null && !status.isBlank()) {
             wrapper.eq(AnalysisTask::getStatus, status.trim());
@@ -360,10 +366,14 @@ public class AnalysisAppService {
 
     private AnalysisTask requireOwnedTask(Long userId, String id) {
         AnalysisTask task = taskMapper.selectById(id);
-        if (task == null || !task.getUserId().equals(userId)) {
-            throw new BusinessException(CODE_NOT_FOUND, "analysis not found");
-        }
-        return task;
+        return WorkspaceGuards.requireOwned(
+                task,
+                AnalysisTask::getUserId,
+                AnalysisTask::getWorkspaceId,
+                userId,
+                CODE_NOT_FOUND,
+                "analysis not found"
+        );
     }
 
     private void validateCreateRequest(AnalysisCreateRequest request) {

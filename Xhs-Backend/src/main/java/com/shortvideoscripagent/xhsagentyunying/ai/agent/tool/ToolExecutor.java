@@ -66,6 +66,7 @@ public class ToolExecutor {
             AgentToolLog log = new AgentToolLog();
             log.setSessionId(context.sessionId());
             log.setUserId(context.userId());
+            log.setWorkspaceId(context.workspaceId());
             log.setToolName(toolName);
             log.setInputJson(objectMapper.writeValueAsString(args));
             log.setOutputSummary(truncate(result.json(), 2000));

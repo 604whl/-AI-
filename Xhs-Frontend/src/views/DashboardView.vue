@@ -348,6 +348,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useWorkspaceChange } from '@/composables/useWorkspaceChange'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -726,6 +727,11 @@ async function handleQuickAnalyze() {
 
 onMounted(async () => {
   await Promise.all([userStore.fetchUsage(), loadRecentRecords(), loadSystemInfo()])
+})
+
+useWorkspaceChange(() => {
+  userStore.fetchUsage()
+  loadRecentRecords()
 })
 </script>
 

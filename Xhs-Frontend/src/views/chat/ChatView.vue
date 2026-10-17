@@ -143,6 +143,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { useWorkspaceChange } from '@/composables/useWorkspaceChange'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import type { UploadFile } from 'element-plus'
@@ -199,6 +200,13 @@ onMounted(async () => {
   if (sessions.value.length) {
     await selectSession(sessions.value[0].sessionId)
   }
+})
+
+useWorkspaceChange(() => {
+  // 切换 workspace 后清空当前会话并重新拉新工作区下的会话列表
+  activeSessionId.value = null
+  messages.value = []
+  loadSessions()
 })
 
 watch(

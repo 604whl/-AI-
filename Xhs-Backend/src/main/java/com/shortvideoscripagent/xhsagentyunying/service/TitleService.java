@@ -11,6 +11,7 @@ import com.shortvideoscripagent.xhsagentyunying.domain.entity.AnalysisTask;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.AnalysisTaskMapper;
 import com.shortvideoscripagent.xhsagentyunying.dto.title.TitleGenerateRequest;
 import com.shortvideoscripagent.xhsagentyunying.dto.title.TitleGenerateResponse;
+import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceGuards;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -83,6 +84,15 @@ public class TitleService {
         if (task == null || !task.getUserId().equals(userId)) {
             throw new BusinessException(CODE_NOT_FOUND, "analysis not found");
         }
+        // 强制要求任务归属于当前 workspace
+        WorkspaceGuards.requireOwned(
+                task,
+                AnalysisTask::getUserId,
+                AnalysisTask::getWorkspaceId,
+                userId,
+                CODE_NOT_FOUND,
+                "analysis not found"
+        );
 
         if (request.getTitle() == null || request.getTitle().isBlank()) {
             request.setTitle(task.getTitle());

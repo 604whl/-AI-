@@ -33,6 +33,40 @@ export interface LocaleMessages {
     headerTitle: string
     logout: string
   }
+  workspace: {
+    select: string
+    createNew: string
+    manage: string
+    name: string
+    namePlaceholder: string
+    nameRequired: string
+    industry: string
+    industryPlaceholder: string
+    region: string
+    regionPlaceholder: string
+    dailyQuota: string
+    email: string
+    emailPlaceholder: string
+    emailRequired: string
+    role: string
+    invite: string
+    invited: string
+    created: string
+    switched: string
+    roleUpdated: string
+    removed: string
+    remove: string
+    confirmRemove: string
+    member: string
+    roleLabel: string
+    roles: {
+      owner: string
+      admin: string
+      editor: string
+      reviewer: string
+      viewer: string
+    }
+  }
   auth: {
     brandBadge: string
     brandTitle: string

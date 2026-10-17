@@ -22,6 +22,7 @@ import com.shortvideoscripagent.xhsagentyunying.dto.chat.ChatSessionResponse;
 import com.shortvideoscripagent.xhsagentyunying.dto.chat.ChatToolTraceDto;
 import com.shortvideoscripagent.xhsagentyunying.common.api.RequestContext;
 import com.shortvideoscripagent.xhsagentyunying.service.chat.ChatSseWriter;
+import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceGuards;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -62,12 +63,14 @@ public class ChatAppService {
 
     public PaginatedResponse<ChatSessionResponse> listSessions(Long userId, int page, int size) {
         assertAgentEnabled();
+        String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
         int safePage = Math.max(page, 1);
         int safeSize = Math.min(Math.max(size, 1), 50);
         int offset = (safePage - 1) * safeSize;
 
         LambdaQueryWrapper<ChatSession> wrapper = new LambdaQueryWrapper<ChatSession>()
                 .eq(ChatSession::getUserId, userId)
+                .eq(ChatSession::getWorkspaceId, workspaceId)
                 .eq(ChatSession::getStatus, "active")
                 .orderByDesc(ChatSession::getUpdatedAt)
                 .last("LIMIT " + safeSize + " OFFSET " + offset);
@@ -75,6 +78,7 @@ public class ChatAppService {
         List<ChatSession> sessions = chatSessionMapper.selectList(wrapper);
         Long total = chatSessionMapper.selectCount(new LambdaQueryWrapper<ChatSession>()
                 .eq(ChatSession::getUserId, userId)
+                .eq(ChatSession::getWorkspaceId, workspaceId)
                 .eq(ChatSession::getStatus, "active"));
 
         List<ChatSessionResponse> items = sessions.stream().map(this::toSessionResponse).toList();

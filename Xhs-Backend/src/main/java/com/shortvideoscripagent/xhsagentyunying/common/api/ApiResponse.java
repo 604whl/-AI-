@@ -19,6 +19,10 @@ public class ApiResponse<T> {
         return new ApiResponse<>(0, "ok", data, RequestContext.getRequestId(), System.currentTimeMillis());
     }
 
+    public static ApiResponse<Void> ok() {
+        return new ApiResponse<>(0, "ok", null, RequestContext.getRequestId(), System.currentTimeMillis());
+    }
+
     public static <T> ApiResponse<T> fail(int code, String message) {
         return new ApiResponse<>(code, message, null, RequestContext.getRequestId(), System.currentTimeMillis());
     }

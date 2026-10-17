@@ -5,14 +5,23 @@ import com.shortvideoscripagent.xhsagentyunying.common.exception.BusinessExcepti
 import com.shortvideoscripagent.xhsagentyunying.config.AppAgentProperties;
 import com.shortvideoscripagent.xhsagentyunying.domain.entity.UsageLog;
 import com.shortvideoscripagent.xhsagentyunying.domain.entity.User;
+import com.shortvideoscripagent.xhsagentyunying.domain.entity.Workspace;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.UsageLogMapper;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.UserMapper;
+import com.shortvideoscripagent.xhsagentyunying.domain.mapper.WorkspaceMapper;
+import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceGuards;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 
+/**
+ * 额度/用量统计（按 workspace 隔离）。
+ * <p>
+ * 设计目标：把"按 user 限制"升级为"按 workspace 限制"，让一个 owner 的多个 session
+ * 或后续添加的团队成员能共享同一份配额。同时所有额度日志带 workspaceId 便于跨用户审计。
+ */
 @Service
 @RequiredArgsConstructor
 public class UserQuotaService {
@@ -29,6 +38,7 @@ public class UserQuotaService {
 
     private final UserMapper userMapper;
     private final UsageLogMapper usageLogMapper;
+    private final WorkspaceMapper workspaceMapper;
     private final AppAgentProperties appAgentProperties;
 
     public int remainingAnalysisQuota(Long userId) {
@@ -36,9 +46,10 @@ public class UserQuotaService {
     }
 
     public UserUsageVo getAnalysisUsage(Long userId) {
+        String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
         User user = requireUser(userId);
-        int dailyQuota = user.getDailyQuota();
-        int usedToday = usageLogMapper.countTodayByUserAndAction(userId, ACTION_ANALYSIS);
+        int dailyQuota = resolveDailyQuota(workspaceId, user);
+        int usedToday = usageLogMapper.countTodayByWorkspaceAndAction(workspaceId, ACTION_ANALYSIS);
         int remaining = Math.max(dailyQuota - usedToday, 0);
         return UserUsageVo.builder()
                 .dailyQuota(dailyQuota)
@@ -54,6 +65,7 @@ public class UserQuotaService {
         }
         UsageLog log = new UsageLog();
         log.setUserId(userId);
+        log.setWorkspaceId(WorkspaceGuards.requireCurrentWorkspaceId());
         log.setAction(ACTION_ANALYSIS);
         log.setTaskId(taskId);
         log.setCreatedAt(OffsetDateTime.now());
@@ -62,8 +74,9 @@ public class UserQuotaService {
 
     public int remainingAgentMessageQuota(Long userId) {
         requireUser(userId);
+        String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
         int dailyQuota = appAgentProperties.getDailyMessageQuota();
-        int usedToday = usageLogMapper.countTodayByUserAndAction(userId, ACTION_AGENT_MESSAGE);
+        int usedToday = usageLogMapper.countTodayByWorkspaceAndAction(workspaceId, ACTION_AGENT_MESSAGE);
         return Math.max(dailyQuota - usedToday, 0);
     }
 
@@ -74,6 +87,7 @@ public class UserQuotaService {
         }
         UsageLog log = new UsageLog();
         log.setUserId(userId);
+        log.setWorkspaceId(WorkspaceGuards.requireCurrentWorkspaceId());
         log.setAction(ACTION_AGENT_MESSAGE);
         log.setTaskId(sessionId);
         log.setCreatedAt(OffsetDateTime.now());
@@ -82,15 +96,17 @@ public class UserQuotaService {
 
     public int remainingWebSearchQuota(Long userId) {
         requireUser(userId);
+        String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
         int dailyQuota = appAgentProperties.getWebSearch().getDailyQuotaPerUser();
-        int usedToday = usageLogMapper.countTodayByUserAndAction(userId, ACTION_WEB_SEARCH);
+        int usedToday = usageLogMapper.countTodayByWorkspaceAndAction(workspaceId, ACTION_WEB_SEARCH);
         return Math.max(dailyQuota - usedToday, 0);
     }
 
     public int remainingBodyGenerationQuota(Long userId) {
+        String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
         User user = requireUser(userId);
-        int dailyQuota = user.getDailyQuota();
-        int usedToday = usageLogMapper.countTodayByUserAndAction(userId, ACTION_BODY_GENERATION);
+        int dailyQuota = resolveDailyQuota(workspaceId, user);
+        int usedToday = usageLogMapper.countTodayByWorkspaceAndAction(workspaceId, ACTION_BODY_GENERATION);
         return Math.max(dailyQuota - usedToday, 0);
     }
 
@@ -101,6 +117,7 @@ public class UserQuotaService {
         }
         UsageLog log = new UsageLog();
         log.setUserId(userId);
+        log.setWorkspaceId(WorkspaceGuards.requireCurrentWorkspaceId());
         log.setAction(ACTION_BODY_GENERATION);
         log.setTaskId(taskId);
         log.setCreatedAt(OffsetDateTime.now());
@@ -114,10 +131,23 @@ public class UserQuotaService {
         }
         UsageLog log = new UsageLog();
         log.setUserId(userId);
+        log.setWorkspaceId(WorkspaceGuards.requireCurrentWorkspaceId());
         log.setAction(ACTION_WEB_SEARCH);
         log.setTaskId(sessionId);
         log.setCreatedAt(OffsetDateTime.now());
         usageLogMapper.insert(log);
+    }
+
+    private int resolveDailyQuota(String workspaceId, User user) {
+        // 优先 workspace 配置的 default_quota，回退到 user 配置
+        Workspace workspace = workspaceMapper.selectById(workspaceId);
+        if (workspace != null && workspace.getDefaultQuota() != null) {
+            return workspace.getDefaultQuota();
+        }
+        if (user.getDailyQuota() == null) {
+            return 3;
+        }
+        return user.getDailyQuota();
     }
 
     private User requireUser(Long userId) {

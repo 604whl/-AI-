@@ -44,7 +44,8 @@ public class CoverStorageService {
     public CoverUploadResponse upload(Long userId, MultipartFile file) {
         validateFile(file);
         String ext = resolveExtension(file);
-        String objectKey = "covers/" + userId + "/" + UUID.randomUUID().toString().replace("-", "") + ext;
+        String workspaceId = com.shortvideoscripagent.xhsagentyunying.common.api.WorkspaceContext.requireWorkspaceId();
+        String objectKey = "covers/" + workspaceId + "/" + userId + "/" + UUID.randomUUID().toString().replace("-", "") + ext;
 
         if ("minio".equalsIgnoreCase(storageProperties.getType())) {
             try {

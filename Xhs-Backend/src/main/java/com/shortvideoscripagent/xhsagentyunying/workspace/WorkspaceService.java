@@ -9,6 +9,7 @@ import com.shortvideoscripagent.xhsagentyunying.domain.entity.WorkspaceMember;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.UserMapper;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.WorkspaceMapper;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.WorkspaceMemberMapper;
+import com.shortvideoscripagent.xhsagentyunying.workspace.dto.WorkspaceDtos;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,8 @@ public class WorkspaceService {
 
     private static final int CODE_NOT_FOUND = 40404;
     private static final int CODE_FORBIDDEN = 40301;
+    private static final int CODE_CONFLICT = 40904;
+    private static final int CODE_BAD_REQUEST = 40001;
 
     private final WorkspaceMapper workspaceMapper;
     private final WorkspaceMemberMapper workspaceMemberMapper;
@@ -42,9 +45,7 @@ public class WorkspaceService {
      */
     @Transactional
     public Workspace ensureDefaultWorkspace(Long userId) {
-        Workspace existing = workspaceMapper.selectOne(
-                new LambdaQueryWrapper<Workspace>().eq(Workspace::getOwnerUserId, userId)
-        );
+        Workspace existing = findOwnedWorkspace(userId);
         if (existing != null) {
             return existing;
         }
@@ -111,11 +112,166 @@ public class WorkspaceService {
         return workspace;
     }
 
+    /**
+     * 列出当前用户作为 member 加入的所有 workspace。
+     */
     public List<Workspace> listUserWorkspaces(Long userId) {
-        return workspaceMapper.selectList(
-                new LambdaQueryWrapper<Workspace>()
-                        .eq(Workspace::getOwnerUserId, userId)
-                        .eq(Workspace::getStatus, "active")
+        // 收集当前用户作为 member 的 workspaceId
+        List<WorkspaceMember> memberships = workspaceMemberMapper.selectList(
+                new LambdaQueryWrapper<WorkspaceMember>()
+                        .eq(WorkspaceMember::getUserId, userId)
+                        .eq(WorkspaceMember::getStatus, "active")
+        );
+        if (memberships.isEmpty()) {
+            return List.of();
+        }
+        List<String> workspaceIds = memberships.stream().map(WorkspaceMember::getWorkspaceId).toList();
+        return workspaceMapper.selectBatchIds(workspaceIds).stream()
+                .filter(w -> "active".equals(w.getStatus()))
+                .toList();
+    }
+
+    /**
+     * 查询当前用户对指定 workspace 的角色（找不到返回 null）。
+     */
+    public WorkspaceRole findRole(Long userId, String workspaceId) {
+        WorkspaceMember member = workspaceMemberMapper.selectOne(
+                new LambdaQueryWrapper<WorkspaceMember>()
+                        .eq(WorkspaceMember::getWorkspaceId, workspaceId)
+                        .eq(WorkspaceMember::getUserId, userId)
+                        .eq(WorkspaceMember::getStatus, "active")
+        );
+        return member == null ? null : WorkspaceRole.parse(member.getRole());
+    }
+
+    @Transactional
+    public Workspace createWorkspace(Long userId, WorkspaceDtos.CreateWorkspaceRequest request) {
+        OffsetDateTime now = OffsetDateTime.now();
+        String workspaceId = generateWorkspaceId();
+        Workspace workspace = new Workspace();
+        workspace.setId(workspaceId);
+        workspace.setName(request.getName().trim());
+        workspace.setSlug(request.getSlug() == null || request.getSlug().isBlank()
+                ? ("ws-" + workspaceId.substring(3))
+                : request.getSlug().trim());
+        workspace.setOwnerUserId(userId);
+        workspace.setIndustry(request.getIndustry() == null || request.getIndustry().isBlank()
+                ? "general" : request.getIndustry().trim());
+        workspace.setRegion(request.getRegion() == null || request.getRegion().isBlank()
+                ? "CN" : request.getRegion().trim());
+        workspace.setDefaultLocale(request.getDefaultLocale() == null || request.getDefaultLocale().isBlank()
+                ? "zh-CN" : request.getDefaultLocale().trim());
+        workspace.setDefaultQuota(request.getDefaultQuota() == null ? 3 : request.getDefaultQuota());
+        workspace.setStatus("active");
+        workspace.setCreatedAt(now);
+        workspace.setUpdatedAt(now);
+        workspaceMapper.insert(workspace);
+
+        WorkspaceMember member = new WorkspaceMember();
+        member.setWorkspaceId(workspaceId);
+        member.setUserId(userId);
+        member.setRole(WorkspaceRole.OWNER.name());
+        member.setJoinedAt(now);
+        member.setLastActiveAt(now);
+        member.setStatus("active");
+        workspaceMemberMapper.insert(member);
+
+        log.info("User {} created workspace {}", userId, workspaceId);
+        return workspace;
+    }
+
+    public List<WorkspaceMember> listMembers(String workspaceId) {
+        return workspaceMemberMapper.selectList(
+                new LambdaQueryWrapper<WorkspaceMember>()
+                        .eq(WorkspaceMember::getWorkspaceId, workspaceId)
+                        .orderByAsc(WorkspaceMember::getJoinedAt)
+        );
+    }
+
+    @Transactional
+    public WorkspaceMember inviteMember(String workspaceId, WorkspaceDtos.InviteMemberRequest request) {
+        User invitee = userMapper.selectOne(
+                new LambdaQueryWrapper<User>().eq(User::getEmail, request.getEmail().trim().toLowerCase())
+        );
+        if (invitee == null) {
+            throw new BusinessException(CODE_NOT_FOUND, "invitee_not_found");
+        }
+        // 已存在则更新角色
+        WorkspaceMember existing = workspaceMemberMapper.selectOne(
+                new LambdaQueryWrapper<WorkspaceMember>()
+                        .eq(WorkspaceMember::getWorkspaceId, workspaceId)
+                        .eq(WorkspaceMember::getUserId, invitee.getId())
+        );
+        OffsetDateTime now = OffsetDateTime.now();
+        if (existing != null) {
+            if ("removed".equals(existing.getStatus())) {
+                existing.setStatus("active");
+            }
+            existing.setRole(WorkspaceRole.parse(request.getRole()).name());
+            existing.setJoinedAt(now);
+            existing.setLastActiveAt(now);
+            workspaceMemberMapper.updateById(existing);
+            return existing;
+        }
+        WorkspaceMember member = new WorkspaceMember();
+        member.setWorkspaceId(workspaceId);
+        member.setUserId(invitee.getId());
+        member.setRole(WorkspaceRole.parse(request.getRole()).name());
+        member.setJoinedAt(now);
+        member.setLastActiveAt(now);
+        member.setStatus("active");
+        workspaceMemberMapper.insert(member);
+        return member;
+    }
+
+    @Transactional
+    public WorkspaceMember updateMemberRole(String workspaceId, Long memberUserId, String roleStr) {
+        if (memberUserId == null) {
+            throw new BusinessException(CODE_BAD_REQUEST, "userId_required");
+        }
+        WorkspaceRole role = WorkspaceRole.parse(roleStr);
+        if (role == WorkspaceRole.OWNER) {
+            throw new BusinessException(CODE_BAD_REQUEST, "cannot_grant_owner_via_api");
+        }
+        WorkspaceMember member = requireMember(workspaceId, memberUserId);
+        if (WorkspaceRole.OWNER.name().equals(member.getRole())) {
+            throw new BusinessException(CODE_CONFLICT, "cannot_modify_owner");
+        }
+        member.setRole(role.name());
+        member.setLastActiveAt(OffsetDateTime.now());
+        workspaceMemberMapper.updateById(member);
+        return member;
+    }
+
+    @Transactional
+    public void removeMember(String workspaceId, Long actingUserId, Long memberUserId) {
+        if (actingUserId.equals(memberUserId)) {
+            throw new BusinessException(CODE_BAD_REQUEST, "cannot_remove_self");
+        }
+        WorkspaceMember member = requireMember(workspaceId, memberUserId);
+        if (WorkspaceRole.OWNER.name().equals(member.getRole())) {
+            throw new BusinessException(CODE_CONFLICT, "cannot_remove_owner");
+        }
+        member.setStatus("removed");
+        member.setLastActiveAt(OffsetDateTime.now());
+        workspaceMemberMapper.updateById(member);
+    }
+
+    private WorkspaceMember requireMember(String workspaceId, Long userId) {
+        WorkspaceMember member = workspaceMemberMapper.selectOne(
+                new LambdaQueryWrapper<WorkspaceMember>()
+                        .eq(WorkspaceMember::getWorkspaceId, workspaceId)
+                        .eq(WorkspaceMember::getUserId, userId)
+        );
+        if (member == null) {
+            throw new BusinessException(CODE_NOT_FOUND, "member_not_found");
+        }
+        return member;
+    }
+
+    private Workspace findOwnedWorkspace(Long userId) {
+        return workspaceMapper.selectOne(
+                new LambdaQueryWrapper<Workspace>().eq(Workspace::getOwnerUserId, userId)
         );
     }
 

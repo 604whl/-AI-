@@ -2,6 +2,7 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import type { ApiResponse } from '@/types/api'
 import { i18n } from '@/locales'
 import { clearTokens, getAccessToken, getRefreshToken, setTokens } from '@/utils/token'
+import { getActiveWorkspaceId } from '@/utils/workspace'
 
 const baseURL = import.meta.env.VITE_API_BASE || '/api/v1'
 
@@ -30,6 +31,19 @@ http.interceptors.request.use((config) => {
   const token = getAccessToken()
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
+  }
+  // 多租户隔离：每个业务请求都必须带 X-Workspace-Id，
+  // 否则 WorkspaceInterceptor 会拒绝。匿名/auth 类请求自动跳过。
+  const url = config.url ?? ''
+  const isAuthRequest =
+    url.includes('/auth/login') ||
+    url.includes('/auth/register') ||
+    url.includes('/auth/refresh')
+  if (!isAuthRequest) {
+    const workspaceId = getActiveWorkspaceId()
+    if (workspaceId) {
+      config.headers['X-Workspace-Id'] = workspaceId
+    }
   }
   return config
 })

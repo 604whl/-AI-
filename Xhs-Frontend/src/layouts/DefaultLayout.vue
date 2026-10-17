@@ -15,6 +15,7 @@
       <el-header class="header">
         <span class="header-title">{{ t('nav.headerTitle') }}</span>
         <div class="header-actions">
+          <WorkspaceSelector />
           <LanguageSwitcher />
           <span v-if="userStore.profile" class="user-name">
             {{ userStore.profile.displayName || userStore.profile.email }}
@@ -28,9 +29,11 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
+import WorkspaceSelector from '@/components/WorkspaceSelector.vue'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
@@ -42,6 +45,29 @@ async function handleLogout() {
   await userStore.logout()
   await router.push({ name: 'login' })
 }
+
+async function ensureWorkspacesLoaded() {
+  if (!userStore.isLoggedIn()) return
+  if (userStore.workspaces.length === 0) {
+    try {
+      await userStore.fetchWorkspaces()
+    } catch {
+      // 静默：失败会在业务请求时被 WorkspaceInterceptor 拒绝
+    }
+  }
+}
+
+onMounted(() => {
+  ensureWorkspacesLoaded()
+})
+
+// 登录后跳转到这里也要补一次拉取
+watch(
+  () => userStore.isLoggedIn(),
+  (logged) => {
+    if (logged) ensureWorkspacesLoaded()
+  },
+)
 </script>
 
 <style scoped>
@@ -59,7 +85,7 @@ async function handleLogout() {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 .user-name {
   font-size: 14px;

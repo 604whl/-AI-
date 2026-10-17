@@ -12,6 +12,7 @@ import com.shortvideoscripagent.xhsagentyunying.domain.entity.ChatMessage;
 import com.shortvideoscripagent.xhsagentyunying.domain.entity.ChatSession;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.ChatMessageMapper;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.ChatSessionMapper;
+import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceGuards;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -48,10 +49,12 @@ public class ChatHistoryService {
 
     @Transactional
     public ChatSession createSession(Long userId, String persona, String linkedTaskId, String title) {
+        String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
         OffsetDateTime now = OffsetDateTime.now();
         ChatSession session = new ChatSession();
         session.setId(generateSessionId());
         session.setUserId(userId);
+        session.setWorkspaceId(workspaceId);
         session.setPersona(persona == null || persona.isBlank() ? "agency" : persona);
         session.setLinkedTaskId(trimToNull(linkedTaskId));
         session.setTitle(trimToNull(title));
@@ -65,13 +68,14 @@ public class ChatHistoryService {
 
     public ChatSession requireOwnedSession(Long userId, String sessionId) {
         ChatSession session = sessionMapper.selectById(sessionId);
-        if (session == null) {
-            throw new BusinessException(CODE_NOT_FOUND, "chat_session_not_found");
-        }
-        if (!session.getUserId().equals(userId)) {
-            throw new BusinessException(CODE_FORBIDDEN, "forbidden");
-        }
-        return session;
+        return WorkspaceGuards.requireOwned(
+                session,
+                ChatSession::getUserId,
+                ChatSession::getWorkspaceId,
+                userId,
+                CODE_NOT_FOUND,
+                "chat_session_not_found"
+        );
     }
 
     @Transactional

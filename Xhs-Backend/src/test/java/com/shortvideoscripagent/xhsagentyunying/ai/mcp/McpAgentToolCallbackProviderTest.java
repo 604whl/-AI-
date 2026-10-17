@@ -66,7 +66,7 @@ class McpAgentToolCallbackProviderTest {
 
     @Test
     void callDelegatesToToolExecutorWithMcpContext() {
-        McpRuntimeContext.bind(42L, "mcp_test_session", "agency");
+        McpRuntimeContext.bind(42L, "ws_test_workspace", "mcp_test_session", "agency");
         when(toolExecutor.executeDirect(eq("search_kb"), any(), any()))
                 .thenReturn(ToolResult.ok(Map.of("chunks", List.of())));
 

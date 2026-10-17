@@ -152,6 +152,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
+import { useWorkspaceChange } from '@/composables/useWorkspaceChange'
 import { deleteAnalysis, fetchAnalysisList } from '@/api/analysis'
 import { useReanalyze } from '@/composables/useReanalyze'
 import type { AnalysisListItem, AnalysisScenario, AnalysisStatus } from '@/types/api'
@@ -261,6 +262,10 @@ async function confirmDelete(row: AnalysisListItem) {
 }
 
 onMounted(loadRecords)
+useWorkspaceChange(() => {
+  page.value = 1
+  loadRecords()
+})
 </script>
 
 <style scoped>

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shortvideoscripagent.xhsagentyunying.auth.AuthService;
 import com.shortvideoscripagent.xhsagentyunying.common.api.ApiResponse;
 import com.shortvideoscripagent.xhsagentyunying.common.api.RequestContext;
+import com.shortvideoscripagent.xhsagentyunying.common.api.WorkspaceContext;
 import com.shortvideoscripagent.xhsagentyunying.config.AppAgentProperties;
 import com.shortvideoscripagent.xhsagentyunying.domain.entity.User;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.UserMapper;
@@ -58,6 +59,7 @@ public class McpAuthFilter extends OncePerRequestFilter {
     private final UserMapper userMapper;
     private final AppAgentProperties appAgentProperties;
     private final ObjectMapper objectMapper;
+    private final com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceService workspaceService;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -86,15 +88,32 @@ public class McpAuthFilter extends OncePerRequestFilter {
 
             String sessionId = resolveSessionId(request, auth.userId());
             String persona = resolvePersona(request, user);
+            String workspaceId = resolveWorkspaceId(request, user);
 
             RequestContext.setUserId(auth.userId());
-            McpRuntimeContext.bind(auth.userId(), sessionId, persona);
+            WorkspaceContext.setWorkspaceId(workspaceId);
+            McpRuntimeContext.bind(auth.userId(), workspaceId, sessionId, persona);
 
             filterChain.doFilter(request, response);
         } finally {
             McpRuntimeContext.clear();
             RequestContext.clear();
+            WorkspaceContext.clear();
         }
+    }
+
+    /**
+     * 解析当前请求的工作区 ID。
+     * <p>
+     * 优先顺序：Header {@code X-Workspace-Id} → 用户首个 default workspace。
+     */
+    private String resolveWorkspaceId(HttpServletRequest request, User user) {
+        String header = request.getHeader("X-Workspace-Id");
+        if (header != null && !header.isBlank()) {
+            return header.trim();
+        }
+        // 老用户兜底：使用 default workspace
+        return workspaceService.ensureDefaultWorkspace(user.getId()).getId();
     }
 
     /**

@@ -181,7 +181,9 @@ public class AuthService {
                         .id(w.getId())
                         .name(w.getName())
                         .slug(w.getSlug())
-                        .role(w.getOwnerUserId().equals(user.getId()) ? "OWNER" : "MEMBER")
+                        .role(workspaceService.findRole(user.getId(), w.getId()) == null
+                                ? "MEMBER"
+                                : workspaceService.findRole(user.getId(), w.getId()).name())
                         .build())
                 .toList();
 
