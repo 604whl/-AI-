@@ -24,7 +24,7 @@ public class SecurityStartupValidator implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if (!isProdProfile()) {
+        if (isLocalOrTestProfile()) {
             return;
         }
 
@@ -33,10 +33,10 @@ public class SecurityStartupValidator implements ApplicationRunner {
             errors.add("JWT_SECRET must be set to a non-default value");
         }
         if (appProperties.getAi().isMockEnabled()) {
-            errors.add("AI_MOCK_ENABLED must be false in prod");
+            errors.add("AI_MOCK_ENABLED must be false outside local/test");
         }
         if (!aiRuntimePolicy.hasRealApiKey()) {
-            errors.add("DASHSCOPE_API_KEY must be set in prod");
+            errors.add("A real model API key must be set (default: DEEPSEEK_API_KEY)");
         }
 
         if (!errors.isEmpty()) {
@@ -44,8 +44,9 @@ public class SecurityStartupValidator implements ApplicationRunner {
         }
     }
 
-    private boolean isProdProfile() {
-        return Arrays.stream(environment.getActiveProfiles()).anyMatch("prod"::equalsIgnoreCase);
+    private boolean isLocalOrTestProfile() {
+        return Arrays.stream(environment.getActiveProfiles())
+                .anyMatch(p -> "local".equalsIgnoreCase(p) || "test".equalsIgnoreCase(p));
     }
 
     private static boolean isBlank(String value) {
