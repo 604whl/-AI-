@@ -7,6 +7,11 @@ import lombok.Data;
 
 import java.time.OffsetDateTime;
 
+/**
+ * 用户实体（P0-9 扩展）。
+ * <p>
+ * 新增字段用于账号注销（GDPR-like 30 天软删流程）。
+ */
 @Data
 @TableName("users")
 public class User {
@@ -35,4 +40,20 @@ public class User {
     private OffsetDateTime createdAt;
 
     private OffsetDateTime updatedAt;
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // P0-9 新增字段
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /** 计划删除时间（30 天后执行物理删除） */
+    private OffsetDateTime scheduledDeletionAt;
+
+    /** 账号状态：active / scheduled / cancelled / deleted */
+    private String deletionStatus;
+
+    /** 用户确认注销的时间 */
+    private OffsetDateTime deletionConfirmedAt;
+
+    /** 用户发起注销请求时的 IP */
+    private String deletionRequestIp;
 }

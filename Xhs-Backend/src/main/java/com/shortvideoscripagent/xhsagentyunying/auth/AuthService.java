@@ -85,6 +85,13 @@ public class AuthService {
             throw new BusinessException(423, "account_locked");
         }
 
+        // P0-9: 软删期间禁止登录
+        if ("scheduled".equals(user.getDeletionStatus())) {
+            log.warn("Login blocked: user {} is scheduled for deletion at {}",
+                    user.getId(), user.getScheduledDeletionAt());
+            throw new BusinessException(423, "account_scheduled_for_deletion");
+        }
+
         // 登录成功：重置失败计数
         resetFailedAttempts(user);
 
@@ -225,6 +232,9 @@ public class AuthService {
                 .displayName(user.getDisplayName())
                 .defaultPersona(user.getDefaultPersona())
                 .dailyQuota(user.getDailyQuota() == null ? 3 : user.getDailyQuota())
+                // P0-9: 新增字段透传到前端
+                .deletionStatus(user.getDeletionStatus())
+                .scheduledDeletionAt(user.getScheduledDeletionAt())
                 .build();
     }
 
