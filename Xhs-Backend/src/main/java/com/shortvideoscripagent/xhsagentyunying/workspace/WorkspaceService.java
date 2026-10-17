@@ -286,4 +286,42 @@ public class WorkspaceService {
         }
         return user.getEmail();
     }
+
+    /**
+     * 获取 workspace 的第一个成员 userId（用于 API Key 场景）。
+     */
+    public Long getFirstMemberUserId(String workspaceId) {
+        WorkspaceMember member = workspaceMemberMapper.selectOne(
+                new LambdaQueryWrapper<WorkspaceMember>()
+                        .eq(WorkspaceMember::getWorkspaceId, workspaceId)
+                        .orderByAsc(WorkspaceMember::getJoinedAt)
+                        .last("LIMIT 1")
+        );
+        return member != null ? member.getUserId() : null;
+    }
+
+    /**
+     * 校验用户是否为 workspace 指定角色。
+     *
+     * @throws BusinessException (403) 无权限
+     */
+    public void requireWorkspaceMember(Long userId, String workspaceId, String... allowedRoles) {
+        if (userId == null || workspaceId == null) {
+            throw new BusinessException(CODE_FORBIDDEN, "forbidden");
+        }
+        WorkspaceMember member = workspaceMemberMapper.selectOne(
+                new LambdaQueryWrapper<WorkspaceMember>()
+                        .eq(WorkspaceMember::getWorkspaceId, workspaceId)
+                        .eq(WorkspaceMember::getUserId, userId)
+        );
+        if (member == null) {
+            throw new BusinessException(CODE_FORBIDDEN, "forbidden");
+        }
+        for (String role : allowedRoles) {
+            if (role.equals(member.getRole())) {
+                return;
+            }
+        }
+        throw new BusinessException(CODE_FORBIDDEN, "forbidden");
+    }
 }

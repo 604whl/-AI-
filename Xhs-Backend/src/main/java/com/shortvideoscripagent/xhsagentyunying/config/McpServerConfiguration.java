@@ -1,6 +1,7 @@
 package com.shortvideoscripagent.xhsagentyunying.config;
 
 import com.shortvideoscripagent.xhsagentyunying.ai.mcp.McpAuthFilter;
+import com.shortvideoscripagent.xhsagentyunying.auth.ApiKeyService;
 import com.shortvideoscripagent.xhsagentyunying.auth.AuthService;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.UserMapper;
 import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceService;
@@ -29,13 +30,14 @@ public class McpServerConfiguration {
     @Bean
     public FilterRegistrationBean<McpAuthFilter> mcpAuthFilterRegistration(
             AuthService authService,
+            ApiKeyService apiKeyService,
             UserMapper userMapper,
             AppAgentProperties appAgentProperties,
             ObjectMapper objectMapper,
             WorkspaceService workspaceService
     ) {
         FilterRegistrationBean<McpAuthFilter> registration = new FilterRegistrationBean<>();
-        registration.setFilter(new McpAuthFilter(authService, userMapper, appAgentProperties, objectMapper, workspaceService));
+        registration.setFilter(new McpAuthFilter(authService, apiKeyService, userMapper, appAgentProperties, objectMapper, workspaceService));
         registration.addUrlPatterns("/mcp", "/mcp/*");
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 20);
         registration.setName("mcpAuthFilter");

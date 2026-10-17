@@ -1,12 +1,16 @@
 package com.shortvideoscripagent.xhsagentyunying.config;
 
+import com.shortvideoscripagent.xhsagentyunying.auth.ApiKeyAuthenticationFilter;
 import com.shortvideoscripagent.xhsagentyunying.auth.AuthInterceptor;
 import com.shortvideoscripagent.xhsagentyunying.common.api.RequestContext;
+import com.shortvideoscripagent.xhsagentyunying.infra.ratelimit.RateLimitInterceptor;
 import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceInterceptor;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -21,6 +25,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     private final AuthInterceptor authInterceptor;
     private final WorkspaceInterceptor workspaceInterceptor;
+    private final RateLimitInterceptor rateLimitInterceptor;
 
     @Value("${app.cors.allowed-origins}")
     private String allowedOrigins;
@@ -57,5 +62,16 @@ public class WebConfig implements WebMvcConfigurer {
 
         registry.addInterceptor(authInterceptor).addPathPatterns("/**");
         registry.addInterceptor(workspaceInterceptor).addPathPatterns("/**");
+        registry.addInterceptor(rateLimitInterceptor).addPathPatterns("/v1/**");
+    }
+
+    @Bean
+    public FilterRegistrationBean<ApiKeyAuthenticationFilter> apiKeyFilterRegistration(
+            ApiKeyAuthenticationFilter filter) {
+        FilterRegistrationBean<ApiKeyAuthenticationFilter> reg = new FilterRegistrationBean<>();
+        reg.setFilter(filter);
+        reg.addUrlPatterns("/api/*");
+        reg.setOrder(1); // 在 AuthInterceptor 之前运行
+        return reg;
     }
 }

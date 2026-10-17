@@ -80,6 +80,7 @@ public class WorkspaceInterceptor implements HandlerInterceptor {
 
         try {
             workspaceService.resolveAndAuthorize(userId, workspaceId);
+            WorkspaceContext.setUserId(userId);
             return true;
         } catch (com.shortvideoscripagent.xhsagentyunying.common.exception.BusinessException ex) {
             log.warn("workspace access denied for user={} workspace={}: {}",

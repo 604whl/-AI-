@@ -1,6 +1,7 @@
 package com.shortvideoscripagent.xhsagentyunying.ai.mcp;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.shortvideoscripagent.xhsagentyunying.auth.ApiKeyService;
 import com.shortvideoscripagent.xhsagentyunying.auth.AuthService;
 import com.shortvideoscripagent.xhsagentyunying.common.api.ApiResponse;
 import com.shortvideoscripagent.xhsagentyunying.common.api.RequestContext;
@@ -54,8 +55,11 @@ public class McpAuthFilter extends OncePerRequestFilter {
     public static final String HEADER_MCP_USER_ID = "X-Mcp-User-Id";
     public static final String HEADER_MCP_SESSION_ID = "X-Mcp-Session-Id";
     public static final String HEADER_MCP_PERSONA = "X-Mcp-Persona";
+    /** Workspace API Key Header (xhs_sk_xxx) */
+    public static final String HEADER_WORKSPACE_API_KEY = "X-API-Key";
 
     private final AuthService authService;
+    private final ApiKeyService apiKeyService;
     private final UserMapper userMapper;
     private final AppAgentProperties appAgentProperties;
     private final ObjectMapper objectMapper;
@@ -117,9 +121,10 @@ public class McpAuthFilter extends OncePerRequestFilter {
     }
 
     /**
-     * 解析调用者身份：优先 JWT，其次 API Key + User-Id。
+     * 解析调用者身份：优先 JWT，其次 X-API-Key（workspace API Key），最后 X-Mcp-Api-Key。
      */
     private AuthResult resolveAuth(HttpServletRequest request) {
+        // 1. Bearer JWT
         String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (authorization != null && authorization.startsWith("Bearer ")) {
             String token = authorization.substring("Bearer ".length()).trim();
@@ -129,13 +134,27 @@ public class McpAuthFilter extends OncePerRequestFilter {
             }
         }
 
+        // 2. X-API-Key: xhs_sk_xxx (workspace API Key)
+        String workspaceApiKey = request.getHeader(HEADER_WORKSPACE_API_KEY);
+        if (workspaceApiKey != null && !workspaceApiKey.isBlank()) {
+            String workspaceId = apiKeyService.validateAndGetWorkspaceId(workspaceApiKey);
+            if (workspaceId != null) {
+                // API Key 无用户态，通过 workspace 的第一个成员获取 userId
+                Long userId = workspaceService.getFirstMemberUserId(workspaceId);
+                if (userId != null) {
+                    return new AuthResult(userId, "workspace_api_key");
+                }
+            }
+        }
+
+        // 3. X-Mcp-Api-Key: 本地/测试用
         String configuredKey = appAgentProperties.getMcp().getApiKey();
         if (configuredKey != null && !configuredKey.isBlank()) {
             String apiKey = request.getHeader(HEADER_MCP_API_KEY);
             if (configuredKey.equals(apiKey)) {
                 Long userId = parseUserIdHeader(request.getHeader(HEADER_MCP_USER_ID));
                 if (userId != null) {
-                    return new AuthResult(userId, "api_key");
+                    return new AuthResult(userId, "mcp_api_key");
                 }
             }
         }

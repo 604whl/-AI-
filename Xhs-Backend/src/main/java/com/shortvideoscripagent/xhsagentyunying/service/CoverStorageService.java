@@ -3,6 +3,7 @@ package com.shortvideoscripagent.xhsagentyunying.service;
 import com.shortvideoscripagent.xhsagentyunying.common.exception.BusinessException;
 import com.shortvideoscripagent.xhsagentyunying.config.AppStorageProperties;
 import com.shortvideoscripagent.xhsagentyunying.dto.file.CoverUploadResponse;
+import com.shortvideoscripagent.xhsagentyunying.infra.upload.FileValidator;
 import io.minio.BucketExistsArgs;
 import io.minio.GetObjectArgs;
 import io.minio.MakeBucketArgs;
@@ -40,9 +41,11 @@ public class CoverStorageService {
     );
 
     private final AppStorageProperties storageProperties;
+    private final FileValidator fileValidator;
 
     public CoverUploadResponse upload(Long userId, MultipartFile file) {
-        validateFile(file);
+        // 综合校验：魔数 + 大小 + 分辨率
+        fileValidator.validate(file);
         String ext = resolveExtension(file);
         String workspaceId = com.shortvideoscripagent.xhsagentyunying.common.api.WorkspaceContext.requireWorkspaceId();
         String objectKey = "covers/" + workspaceId + "/" + userId + "/" + UUID.randomUUID().toString().replace("-", "") + ext;

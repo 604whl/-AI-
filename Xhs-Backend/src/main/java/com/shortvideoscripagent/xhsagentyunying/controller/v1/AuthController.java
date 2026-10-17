@@ -10,6 +10,7 @@ import com.shortvideoscripagent.xhsagentyunying.auth.dto.TokenRefreshResponse;
 import com.shortvideoscripagent.xhsagentyunying.auth.dto.UpdateProfileRequest;
 import com.shortvideoscripagent.xhsagentyunying.auth.dto.UserProfileVo;
 import com.shortvideoscripagent.xhsagentyunying.auth.dto.UserUsageVo;
+import com.shortvideoscripagent.xhsagentyunying.infra.ratelimit.RateLimited;
 import com.shortvideoscripagent.xhsagentyunying.service.UserQuotaService;
 import com.shortvideoscripagent.xhsagentyunying.common.api.ApiResponse;
 import com.shortvideoscripagent.xhsagentyunying.common.api.RequestContext;
@@ -34,11 +35,13 @@ public class AuthController {
     private final UserQuotaService userQuotaService;
 
     @PostMapping("/login")
+    @RateLimited(key = "login:${ip}", limit = 5, window = 60, dimension = "ip")
     public ApiResponse<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ApiResponse.ok(authService.login(request));
     }
 
     @PostMapping("/register")
+    @RateLimited(key = "register:${ip}", limit = 3, window = 3600, dimension = "ip")
     public ApiResponse<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ApiResponse.ok(authService.register(request));
     }

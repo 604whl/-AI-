@@ -9,6 +9,7 @@ package com.shortvideoscripagent.xhsagentyunying.common.api;
 public final class WorkspaceContext {
 
     private static final ThreadLocal<String> WORKSPACE_ID = new ThreadLocal<>();
+    private static final ThreadLocal<Long> USER_ID = new ThreadLocal<>();
 
     private WorkspaceContext() {
     }
@@ -19,6 +20,14 @@ public final class WorkspaceContext {
 
     public static String getWorkspaceId() {
         return WORKSPACE_ID.get();
+    }
+
+    public static void setUserId(Long userId) {
+        USER_ID.set(userId);
+    }
+
+    public static Long getUserId() {
+        return USER_ID.get();
     }
 
     public static String requireWorkspaceId() {
@@ -33,5 +42,6 @@ public final class WorkspaceContext {
 
     public static void clear() {
         WORKSPACE_ID.remove();
+        USER_ID.remove();
     }
 }

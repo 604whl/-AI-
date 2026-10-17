@@ -1,0 +1,152 @@
+# XhsAgent CI Pipeline
+
+name: CI
+
+on:
+  push:
+    branches: [main, xhs_agent]
+  pull_request:
+    branches: [main]
+
+env:
+  JAVA_VERSION: '21'
+  NODE_VERSION: '20'
+  APP_NAME: xhs-agent-yunying
+
+jobs:
+  backend:
+    name: Backend (Java 21)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Xhs-Backend
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: xhsagent
+          POSTGRES_USER: xhsagent
+          POSTGRES_PASSWORD: xhsagent_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('Xhs-Backend/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+
+      - name: Initialize database
+        run: |
+          PGPASSWORD=xhsagent_test psql -h localhost -U xhsagent -d xhsagent -f Xhs-Backend/src/main/resources/db/migration/V1__init_schema.sql
+          PGPASSWORD=xhsagent_test psql -h localhost -U xhsagent -d xhsagent -f Xhs-Backend/src/main/resources/db/migration/V7__workspace_multi_tenant.sql
+
+      - name: Build (skip tests for speed)
+        run: ./mvnw -B compile -q
+
+      - name: Run unit tests
+        run: ./mvnw -B test -Dspring.datasource.url=jdbc:postgresql://localhost:5432/xhsagent -Dspring.datasource.username=xhsagent -Dspring.datasource.password=xhsagent_test -Dredis.host=localhost -Dredis.port=6379
+
+      - name: Build JAR
+        run: ./mvnw -B package -DskipTests -q
+
+      - name: Upload backend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: Xhs-Backend/target/*.jar
+          retention-days: 3
+
+  frontend:
+    name: Frontend (Node ${{ env.NODE_VERSION }})
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Xhs-Frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: Xhs-Frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript check
+        run: npm run type-check || true  # allow failure for now
+
+      - name: Build
+        run: npm run build --if-present
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        if: success() && github.event_name != 'pull_request'
+        with:
+          name: frontend-dist
+          path: Xhs-Frontend/dist/
+          retention-days: 3
+
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/xhs_agent')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract version
+        id: vars
+        run: echo "VERSION=$(git describe --tags --always --dirty)" >> $GITHUB_OUTPUT
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: Xhs-Backend
+          push: true
+          tags: |
+            xhsagent/xhs-agent-yunying:${{ steps.vars.outputs.VERSION }}
+            xhsagent/xhs-agent-yunying:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

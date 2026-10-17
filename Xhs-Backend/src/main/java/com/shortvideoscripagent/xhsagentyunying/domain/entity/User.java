@@ -26,6 +26,12 @@ public class User {
 
     private String agentPreferences;
 
+    /** 连续密码错误次数 */
+    private Integer failedAttempts;
+
+    /** 账号锁定截止时间（NULL = 未锁定） */
+    private OffsetDateTime lockedUntil;
+
     private OffsetDateTime createdAt;
 
     private OffsetDateTime updatedAt;

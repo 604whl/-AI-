@@ -19,6 +19,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -65,12 +67,27 @@ public class AuthService {
         return buildAuthResponse(user, workspace);
     }
 
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         String email = normalizeEmail(request.getEmail());
         User user = findByEmail(email);
         if (user == null || !BCrypt.checkpw(request.getPassword(), user.getPasswordHash())) {
+            // 记录失败次数
+            if (user != null) {
+                recordFailedAttempt(user);
+            }
             throw new BusinessException(CODE_UNAUTHORIZED, "邮箱或密码错误");
         }
+
+        // 账号锁定检查
+        if (isLocked(user)) {
+            log.warn("Login blocked: user {} is locked until {}", user.getId(), user.getLockedUntil());
+            throw new BusinessException(423, "account_locked");
+        }
+
+        // 登录成功：重置失败计数
+        resetFailedAttempts(user);
+
         // 老用户兜底：登录时若还没 workspace，立刻补建
         Workspace workspace = workspaceService.ensureDefaultWorkspace(user.getId());
         return buildAuthResponse(user, workspace);
@@ -220,5 +237,47 @@ public class AuthService {
             return null;
         }
         return value.trim();
+    }
+
+    /**
+     * 账号锁定检查：检查 failed_attempts 和 locked_until。
+     */
+    private boolean isLocked(User user) {
+        if (user.getLockedUntil() != null) {
+            if (OffsetDateTime.now().isBefore(user.getLockedUntil())) {
+                return true;
+            }
+            // 已过锁定时间，自动解锁
+            user.setLockedUntil(null);
+            user.setFailedAttempts(0);
+            userMapper.updateById(user);
+        }
+        return false;
+    }
+
+    /**
+     * 记录登录失败：失败 5 次后锁定账号 15 分钟。
+     */
+    private void recordFailedAttempt(User user) {
+        int attempts = (user.getFailedAttempts() == null ? 0 : user.getFailedAttempts()) + 1;
+        user.setFailedAttempts(attempts);
+        if (attempts >= 5) {
+            user.setLockedUntil(OffsetDateTime.now().plusMinutes(15));
+            log.warn("User {} locked due to {} failed attempts", user.getId(), attempts);
+        }
+        user.setUpdatedAt(OffsetDateTime.now());
+        userMapper.updateById(user);
+    }
+
+    /**
+     * 登录成功后重置失败计数。
+     */
+    private void resetFailedAttempts(User user) {
+        if (user.getFailedAttempts() != null && user.getFailedAttempts() > 0) {
+            user.setFailedAttempts(0);
+            user.setLockedUntil(null);
+            user.setUpdatedAt(OffsetDateTime.now());
+            userMapper.updateById(user);
+        }
     }
 }

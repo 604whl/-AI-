@@ -1,0 +1,14 @@
+# 排除不需要的文件，减小 Docker 构建上下文
+.git/
+.gitignore
+.vscode/
+*.md
+docs/
+target/
+*.class
+*.jar
+.idea/
+*.log
+.DS_Store
+Xhs-Frontend/node_modules/
+Xhs-Frontend/dist/

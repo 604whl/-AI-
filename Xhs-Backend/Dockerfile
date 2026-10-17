@@ -1,40 +1,43 @@
-# Multi-stage build for XhsAgent backend
-# Stage 1: Build the application
-FROM eclipse-temurin:21-jdk AS build
-WORKDIR /workspace
+# syntax=docker/dockerfile:1
 
-# 缓存依赖层
-COPY pom.xml mvnw ./
-COPY .mvn .mvn
-RUN ./mvnw -B -ntp dependency:go-offline || true
+# ============================================================
+# Stage 1: Builder — 编译 + 依赖下载
+# ============================================================
+FROM maven:3.9-eclipse-temurin-21-alpine AS builder
 
-# 复制源码并打包（跳过测试，避免运行时数据库连不上导致构建失败）
-COPY src src
-RUN ./mvnw -B -ntp -DskipTests package
-
-# Stage 2: Runtime
-FROM eclipse-temurin:21-jre
 WORKDIR /app
 
-# 时区与中文支持
-ENV TZ=Asia/Shanghai \
-    LANG=C.UTF-8 \
-    LC_ALL=C.UTF-8 \
-    JAVA_TOOL_OPTIONS="-XX:+UseG1GC -XX:MaxRAMPercentage=75.0 -Dfile.encoding=UTF-8"
+# 利用 Docker layer cache：先复制 pom，再下载依赖
+COPY pom.xml .
+RUN mvn dependency:go-offline -B -q || true
 
-# 非 root 运行
-RUN groupadd --system app && useradd --system --gid app --create-home --home-dir /app app
+# 复制源码并编译
+COPY src ./src
+RUN mvn package -B -DskipTests -q
 
-COPY --from=build /workspace/target/*.jar /app/app.jar
-RUN chown -R app:app /app
+# ============================================================
+# Stage 2: Runtime — 仅运行时依赖
+# ============================================================
+FROM eclipse-temurin:21-jre-alpine
 
-USER app
+# 安全：非 root 运行
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
 
-# Spring Boot Actuator 健康检查
-EXPOSE 8125
+WORKDIR /app
 
-# 生产 profile 必须显式设置；启动失败立即退出，避免错误部署
+# 只复制 JAR 包和必要资源
+COPY --from=builder /app/target/*.jar app.jar
+COPY --from=builder /app/src/main/resources ./resources
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD wget -qO- http://localhost:8080/api/actuator/health/liveness || exit 1
+
+EXPOSE 8080
+
+# JVM 优化（Alpine musl libc 兼容）
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Djava.security.egd=file:/dev/./urandom"
 ENV SPRING_PROFILES_ACTIVE=prod
 
-# 启动入口
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

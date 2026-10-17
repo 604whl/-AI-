@@ -28,6 +28,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     );
 
     private final AuthService authService;
+    private final ApiKeyService apiKeyService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -43,20 +44,25 @@ public class AuthInterceptor implements HandlerInterceptor {
         }
 
         String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
-            writeUnauthorized(response);
-            return false;
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            String token = authorization.substring("Bearer ".length()).trim();
+            Long userId = authService.resolveUserIdFromAccessToken(token);
+            if (userId != null) {
+                RequestContext.setUserId(userId);
+                return true;
+            }
         }
 
-        String token = authorization.substring("Bearer ".length()).trim();
-        Long userId = authService.resolveUserIdFromAccessToken(token);
-        if (userId == null) {
-            writeUnauthorized(response);
-            return false;
+        // X-API-Key: workspace API Key（API Key 无用户态，跳过用户鉴权）
+        String apiKeyHeader = request.getHeader(ApiKeyAuthenticationFilter.HEADER_API_KEY);
+        if (apiKeyHeader != null && !apiKeyHeader.isBlank()) {
+            // API Key 认证在 ApiKeyAuthenticationFilter 中完成
+            // 此处只做标记，允许通过
+            return true;
         }
 
-        RequestContext.setUserId(userId);
-        return true;
+        writeUnauthorized(response);
+        return false;
     }
 
     private String resolvePath(HttpServletRequest request) {
