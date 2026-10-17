@@ -8,6 +8,11 @@
         <el-menu-item index="/analysis/new">{{ t('nav.analysisNew') }}</el-menu-item>
         <el-menu-item index="/titles">{{ t('nav.titles') }}</el-menu-item>
         <el-menu-item index="/template">{{ t('nav.template') }}</el-menu-item>
+        <el-sub-menu index="review">
+          <template #title>{{ t('nav.review') }}</template>
+          <el-menu-item index="/review/queue">{{ t('review.queueTitle') }}</el-menu-item>
+          <el-menu-item index="/review/submissions">{{ t('review.mySubmissionsTitle') }}</el-menu-item>
+        </el-sub-menu>
         <el-menu-item index="/history">{{ t('nav.history') }}</el-menu-item>
         <el-menu-item index="/settings">{{ t('nav.settings') }}</el-menu-item>
       </el-menu>

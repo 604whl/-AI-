@@ -51,6 +51,8 @@ public class ContentAssetService {
     private final ContentAssetVersionMapper versionMapper;
     private final ContentAssetMediaMapper mediaMapper;
     private final WorkspaceService workspaceService;
+    private final ReviewService reviewService;
+    private final RiskAssessmentService riskAssessmentService;
     private final StringRedisTemplate redisTemplate;
 
     // ── 创建（内部/Worker 调用，无 WorkspaceContext）────────────────────────────────
@@ -329,22 +331,34 @@ public class ContentAssetService {
 
     /**
      * 提交审核：draft → in_review。
-     * 预留给 P0-6 审核流。
+     * 委托给 ReviewService 处理审核任务创建、风险评估和状态机迁移。
      */
     @Transactional
     public AssetResponse submitReview(Long userId, UUID assetId) {
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
         requireEditorRole(userId, workspaceId);
-
         ContentAsset asset = requireOwnedAsset(userId, assetId, workspaceId);
         if (!asset.canSubmitReview()) {
             throw new BusinessException(CODE_CONFLICT, "cannot_submit_review_from_status: " + asset.getStatus());
         }
-        validateStatusTransition(asset.getStatus(), ContentAsset.STATUS_IN_REVIEW);
-        asset.setStatus(ContentAsset.STATUS_IN_REVIEW);
-        asset.setUpdatedAt(OffsetDateTime.now());
-        assetMapper.updateById(asset);
 
+        // 风险评估（不阻塞提交流程）
+        RiskAssessmentService.RiskResult riskResult;
+        try {
+            riskResult = riskAssessmentService.assessAsset(assetId);
+        } catch (Exception e) {
+            log.warn("Risk assessment failed for asset {}, proceeding without risk data: {}",
+                    assetId, e.getMessage());
+            riskResult = new RiskAssessmentService.RiskResult(0, List.of(), false);
+        }
+
+        // 委托审核服务处理完整流程（创建 ReviewTask + 状态机迁移）
+        reviewService.submitForReview(
+                assetId, userId,
+                riskResult.riskScore(), riskResult.riskTags(), riskResult.isHighRisk());
+
+        // 重新查询最新资产状态返回
+        asset = assetMapper.selectById(assetId);
         return toResponse(asset);
     }
 
