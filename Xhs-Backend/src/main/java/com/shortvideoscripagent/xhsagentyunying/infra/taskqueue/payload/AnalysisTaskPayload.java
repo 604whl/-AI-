@@ -24,4 +24,7 @@ public class AnalysisTaskPayload {
     private String promptVersion;
     private String modelProvider;
     private String modelName;
+    // P0-3: 用于 ContentAsset draft 创建
+    private Long userId;
+    private String workspaceId;
 }

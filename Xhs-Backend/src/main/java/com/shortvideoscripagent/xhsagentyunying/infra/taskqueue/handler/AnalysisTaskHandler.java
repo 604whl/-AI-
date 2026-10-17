@@ -15,11 +15,13 @@ import com.shortvideoscripagent.xhsagentyunying.domain.entity.AnalysisReport;
 import com.shortvideoscripagent.xhsagentyunying.domain.entity.AnalysisTask;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.AnalysisReportMapper;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.AnalysisTaskMapper;
+import com.shortvideoscripagent.xhsagentyunying.dto.asset.AssetCreateRequest;
 import com.shortvideoscripagent.xhsagentyunying.infra.taskqueue.TaskHandler;
 import com.shortvideoscripagent.xhsagentyunying.quota.AtomicQuotaGuard;
 import com.shortvideoscripagent.xhsagentyunying.quota.QuotaCheckResult;
 import com.shortvideoscripagent.xhsagentyunying.quota.QuotaExceededException;
 import com.shortvideoscripagent.xhsagentyunying.quota.QuotaRefundService;
+import com.shortvideoscripagent.xhsagentyunying.service.ContentAssetService;
 import com.shortvideoscripagent.xhsagentyunying.service.analysis.AnalysisProgressEvent;
 import com.shortvideoscripagent.xhsagentyunying.service.analysis.AnalysisStreamHub;
 import jakarta.annotation.Resource;
@@ -78,6 +80,10 @@ public class AnalysisTaskHandler implements TaskHandler {
     private AtomicQuotaGuard atomicQuotaGuard;
     @Autowired
     private QuotaRefundService quotaRefundService;
+    @Autowired
+    private ContentAssetService contentAssetService;
+    @Autowired
+    private com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceService workspaceService;
 
     @Resource(name = "aiExecutor")
     private Executor aiExecutor;
@@ -192,6 +198,14 @@ public class AnalysisTaskHandler implements TaskHandler {
 
             publishProgress(taskId, "completed", "finished", "分析完成", null, null, processingMs);
             log.info("Analysis task completed: {} in {}ms (quota consumed ledgerId={})", taskId, processingMs, finalLedgerId);
+
+            // P0-3: 分析成功时自动创建 ContentAsset draft
+            try {
+                createDraftAssetFromAnalysis(taskId, payload, workspaceId);
+            } catch (Exception draftEx) {
+                // 资产创建失败不影响任务完成，只记录日志
+                log.warn("Failed to create draft asset for task {}: {}", taskId, draftEx.getMessage());
+            }
 
         } catch (Exception ex) {
             log.error("Analysis task failed: {}", taskId, ex);
@@ -337,4 +351,63 @@ public class AnalysisTaskHandler implements TaskHandler {
     }
 
     private record AnalysisResult(Map<String, Object> report, Map<String, Object> coverAnalysis) {}
+
+    /**
+     * P0-3: 分析成功后自动创建 ContentAsset draft。
+     * 使用 workspaceId 对应的成员 userId 作为 owner。
+     */
+    private void createDraftAssetFromAnalysis(String taskId, Map<String, Object> payload, java.util.UUID workspaceId) {
+        Long ownerId = null;
+        try {
+            // 尝试从 payload 提取 userId
+            Object userIdObj = payload.get("userId");
+            if (userIdObj != null) {
+                ownerId = Long.parseLong(String.valueOf(userIdObj));
+            }
+        } catch (Exception ignored) {
+        }
+        if (ownerId == null) {
+            // 兜底：从 workspace 第一个成员
+            try {
+                ownerId = workspaceService.getFirstMemberUserId(workspaceId.toString());
+            } catch (Exception ignored2) {
+            }
+        }
+        if (ownerId == null) {
+            log.warn("Cannot determine ownerId for draft asset on task {}, skipping", taskId);
+            return;
+        }
+
+        AssetCreateRequest req = new AssetCreateRequest();
+        req.setTitle(extractTitle(payload));
+        req.setBody(String.valueOf(payload.getOrDefault("body", "")));
+        req.setPersona(String.valueOf(payload.getOrDefault("persona", "agency")));
+        req.setScenario(String.valueOf(payload.getOrDefault("scenario", "draft")));
+        req.setSourceTaskId(taskId);
+        req.setPlatform(String.valueOf(payload.getOrDefault("platform", "xiaohongshu")));
+        try {
+            contentAssetService.createDraftInternal(ownerId, workspaceId, req);
+            log.info("Draft asset created for task {}", taskId);
+        } catch (Exception ex) {
+            log.warn("Failed to create draft asset for task {}: {}", taskId, ex.getMessage());
+        }
+    }
+
+    private String extractTitle(Map<String, Object> payload) {
+        Object titleObj = payload.get("title");
+        if (titleObj != null && !String.valueOf(titleObj).isBlank()) {
+            String title = String.valueOf(titleObj).trim();
+            // 取第一行作为 asset 标题
+            int newline = title.indexOf('\n');
+            return newline > 0 ? title.substring(0, newline) : title;
+        }
+        Object bodyObj = payload.get("body");
+        if (bodyObj != null) {
+            String body = String.valueOf(bodyObj).trim();
+            int newline = body.indexOf('\n');
+            String firstLine = newline > 0 ? body.substring(0, newline) : body;
+            return firstLine.length() > 50 ? firstLine.substring(0, 50) + "…" : firstLine;
+        }
+        return "未命名笔记";
+    }
 }

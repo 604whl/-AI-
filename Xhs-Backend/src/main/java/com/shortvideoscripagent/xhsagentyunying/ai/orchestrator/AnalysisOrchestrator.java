@@ -19,6 +19,7 @@ import com.shortvideoscripagent.xhsagentyunying.domain.entity.AnalysisReport;
 import com.shortvideoscripagent.xhsagentyunying.domain.entity.AnalysisTask;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.AnalysisReportMapper;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.AnalysisTaskMapper;
+import com.shortvideoscripagent.xhsagentyunying.dto.asset.AssetCreateRequest;
 import com.shortvideoscripagent.xhsagentyunying.infra.taskqueue.TaskQueueProducer;
 import com.shortvideoscripagent.xhsagentyunying.infra.taskqueue.payload.AnalysisTaskPayload;
 import com.shortvideoscripagent.xhsagentyunying.service.analysis.AnalysisProgressEvent;
@@ -56,6 +57,7 @@ public class AnalysisOrchestrator {
     private final AppAiProperties appProperties;
     private final AiRuntimePolicy aiRuntimePolicy;
     private final AnalysisStreamHub analysisStreamHub;
+    private final com.shortvideoscripagent.xhsagentyunying.service.ContentAssetService contentAssetService;
 
     // P0-1: 可选的任务队列（条件注入）
     @Autowired(required = false)
@@ -108,6 +110,9 @@ public class AnalysisOrchestrator {
         p.setPromptVersion(task.getPromptVersion());
         p.setModelProvider(task.getModelProvider());
         p.setModelName(task.getModelName());
+        // P0-3: 用于 ContentAsset draft 创建
+        p.setUserId(task.getUserId());
+        p.setWorkspaceId(task.getWorkspaceId());
         return p;
     }
 
@@ -153,6 +158,13 @@ public class AnalysisOrchestrator {
             publishProgress(task, "completed", "finished", "分析完成");
 
             log.info("Analysis task completed: {} in {}ms", taskId, task.getProcessingMs());
+
+            // P0-3: 分析成功时自动创建 ContentAsset draft
+            try {
+                createDraftAssetFromAnalysis(task, result.report());
+            } catch (Exception draftEx) {
+                log.warn("Failed to create draft asset for task {}: {}", taskId, draftEx.getMessage());
+            }
         } catch (Exception ex) {
             log.error("Analysis task failed: {}", taskId, ex);
             if (ex.getCause() instanceof TimeoutException || ex instanceof TimeoutException) {
@@ -295,5 +307,39 @@ public class AnalysisOrchestrator {
     }
 
     private record AnalysisResult(Map<String, Object> report, Map<String, Object> coverAnalysis) {
+    }
+
+    /**
+     * P0-3: 分析成功后自动创建 ContentAsset draft。
+     */
+    private void createDraftAssetFromAnalysis(AnalysisTask task, Map<String, Object> report) {
+        try {
+            AssetCreateRequest req = new AssetCreateRequest();
+            req.setTitle(extractTitleFromTask(task));
+            req.setBody(task.getBody() != null ? task.getBody() : "");
+            req.setPersona(task.getPersona() != null ? task.getPersona() : "agency");
+            req.setScenario(task.getScenario() != null ? task.getScenario() : "draft");
+            req.setSourceTaskId(task.getId());
+            req.setPlatform("xiaohongshu");
+            contentAssetService.createDraft(task.getUserId(), req);
+            log.info("Draft asset created for task {}", task.getId());
+        } catch (Exception ex) {
+            log.warn("Failed to create draft asset for task {}: {}", task.getId(), ex.getMessage());
+        }
+    }
+
+    private String extractTitleFromTask(AnalysisTask task) {
+        if (task.getTitle() != null && !task.getTitle().isBlank()) {
+            String title = task.getTitle().trim();
+            int newline = title.indexOf('\n');
+            return newline > 0 ? title.substring(0, Math.min(newline, 255)) : title;
+        }
+        if (task.getBody() != null) {
+            String body = task.getBody().trim();
+            int newline = body.indexOf('\n');
+            String firstLine = newline > 0 ? body.substring(0, newline) : body;
+            return firstLine.length() > 50 ? firstLine.substring(0, 50) + "…" : firstLine;
+        }
+        return "未命名笔记";
     }
 }
