@@ -8,8 +8,9 @@ import com.shortvideoscripagent.xhsagentyunying.quota.domain.entity.WorkspaceQuo
 import com.shortvideoscripagent.xhsagentyunying.quota.domain.mapper.WorkspaceQuotaMapper;
 import com.shortvideoscripagent.xhsagentyunying.service.UserQuotaService;
 import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceGuards;
+import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceRole;
+import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceService;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +30,7 @@ public class WorkspaceQuotaController {
     private final UserQuotaService userQuotaService;
     private final QuotaLedgerService quotaLedgerService;
     private final WorkspaceQuotaMapper workspaceQuotaMapper;
+    private final WorkspaceService workspaceService;
 
     /**
      * 查询当前 workspace 的配额状态。
@@ -126,11 +128,20 @@ public class WorkspaceQuotaController {
     }
 
     private void requireOwnerOrAdmin(String workspaceId) {
-        // TODO: 集成角色检查（ADMIN/OWNER）
+        // P0-2: 集成角色检查（ADMIN/OWNER）
         requireWorkspaceAccess(workspaceId);
+        Long userId = com.shortvideoscripagent.xhsagentyunying.common.api.RequestContext.getUserIdOrNull();
+        if (userId == null) {
+            throw new BusinessException(40301, "unauthorized");
+        }
+        WorkspaceRole role = workspaceService.findRole(userId, workspaceId);
+        if (role == null || !role.atLeast(WorkspaceRole.ADMIN)) {
+            throw new BusinessException(40301, "quota_update_forbidden");
+        }
     }
 
-    @Data
+    // ── DTOs ────────────────────────────────────────────────────────────────
+
     public static class QuotaResponse {
         private String workspaceId;
         private int dailyQuota;
@@ -146,10 +157,18 @@ public class WorkspaceQuotaController {
             this.remaining = remaining;
             this.resetAt = resetAt;
         }
+
+        public String getWorkspaceId() { return workspaceId; }
+        public int getDailyQuota() { return dailyQuota; }
+        public int getUsed() { return used; }
+        public int getRemaining() { return remaining; }
+        public OffsetDateTime getResetAt() { return resetAt; }
     }
 
-    @Data
     public static class UpdateQuotaRequest {
         private Integer dailyQuota;
+
+        public Integer getDailyQuota() { return dailyQuota; }
+        public void setDailyQuota(Integer dailyQuota) { this.dailyQuota = dailyQuota; }
     }
 }
