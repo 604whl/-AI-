@@ -25,6 +25,10 @@ public class AssetResponse {
     private String industry;
     private String status;
     private UUID sourceTaskId;
+
+    /** P0-4: 关联的模板 ID */
+    private UUID templateId;
+
     private String platform;
     private String accountId;
     private Integer currentVersion;

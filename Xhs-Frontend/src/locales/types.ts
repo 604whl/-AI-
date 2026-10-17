@@ -28,6 +28,7 @@ export interface LocaleMessages {
     chat: string
     analysisNew: string
     titles: string
+    template: string
     history: string
     settings: string
     headerTitle: string
@@ -515,5 +516,81 @@ export interface LocaleMessages {
     toolGetHotTopics: string
     toolIndustryCalendar: string
     toolGetUserProfile: string
+  }
+  template: {
+    title: string
+    subtitle: string
+    create: string
+    edit: string
+    createSuccess: string
+    saveSuccess: string
+    publishSuccess: string
+    archiveSuccess: string
+    duplicateSuccess: string
+    scopeOfficial: string
+    scopeWorkspace: string
+    scopePersonal: string
+    scopeHint: string
+    scope: string
+    category: string
+    categoryPlaceholder: string
+    categoryAll: string
+    scenario: string
+    scenarioPlaceholder: string
+    persona: string
+    personaPlaceholder: string
+    titleField: string
+    titlePlaceholder: string
+    bodyTemplate: string
+    bodyTemplatePlaceholder: string
+    variables: string
+    variablesHint: string
+    addVariable: string
+    extractFromBody: string
+    extractedVariables: string
+    preview: string
+    previewVars: string
+    previewResult: string
+    defaultSettings: string
+    defaultGoal: string
+    defaultTone: string
+    publish: string
+    duplicate: string
+    archive: string
+    applyTemplate: string
+    applySuccess: string
+    total: string
+    noRecords: string
+    uses: string
+    goal: {
+      high_conversion: string
+      engagement: string
+      brand_awareness: string
+    }
+    tone: {
+      friendly: string
+      professional: string
+      casual: string
+      motivational: string
+    }
+    personaOptions: {
+      agency: string
+      mentor: string
+      senior: string
+    }
+    categories: {
+      career_fair: string
+      interview: string
+      visa: string
+      job_hunt: string
+      career_development: string
+      salary: string
+      networking: string
+    }
+    pickerTitle: string
+    confirmSelect: string
+    pleaseSelect: string
+    loadMore: string
+    apply: string
   }
 }

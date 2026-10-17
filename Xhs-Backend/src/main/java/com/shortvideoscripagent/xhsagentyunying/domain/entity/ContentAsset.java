@@ -51,6 +51,9 @@ public class ContentAsset {
     /** 关联的分析任务 ID（可选） */
     private UUID sourceTaskId;
 
+    /** P0-4: 关联的模板 ID（创建草稿时可选择模板） */
+    private UUID templateId;
+
     /** 目标平台：xiaohongshu / douyin / weibo */
     private String platform;
 

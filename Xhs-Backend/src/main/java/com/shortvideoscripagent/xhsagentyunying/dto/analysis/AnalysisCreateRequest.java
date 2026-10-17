@@ -30,4 +30,7 @@ public class AnalysisCreateRequest {
 
     @Valid
     private CompetitorContextDto competitorContext;
+
+    /** P0-4: 关联的模板 ID（可选，用于在分析时加载模板上下文） */
+    private String templateId;
 }

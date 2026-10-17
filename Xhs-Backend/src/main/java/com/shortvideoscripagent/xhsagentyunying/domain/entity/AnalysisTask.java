@@ -61,4 +61,7 @@ public class AnalysisTask {
     private OffsetDateTime deadLetterAt;
 
     private String workerId;
+
+    /** P0-4: 关联的模板 ID（分析时可选择模板作为参考上下文） */
+    private String templateId;
 }

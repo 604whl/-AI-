@@ -120,7 +120,6 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { useWorkspaceChange } from '@/composables/useWorkspaceChange'
 import {
-  createAsset,
   deleteAsset,
   fetchAssets,
 } from '@/api/asset'

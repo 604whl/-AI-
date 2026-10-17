@@ -27,6 +27,9 @@ public class AssetCreateRequest {
     /** 关联的分析任务 ID（可选） */
     private String sourceTaskId;
 
+    /** P0-4: 关联的模板 ID（可选，创建资产时可选择模板） */
+    private String templateId;
+
     /** 目标平台 */
     private String platform;
 

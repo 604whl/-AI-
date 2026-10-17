@@ -103,6 +103,11 @@ public class TitleService {
         if (request.getPersona() == null || request.getPersona().isBlank()) {
             request.setPersona(task.getPersona());
         }
+        // P0-4: 如果请求没有指定 templateId，则从分析任务继承
+        if ((request.getTemplateId() == null || request.getTemplateId().isBlank())
+                && task.getTemplateId() != null) {
+            request.setTemplateId(task.getTemplateId());
+        }
         return request;
     }
 

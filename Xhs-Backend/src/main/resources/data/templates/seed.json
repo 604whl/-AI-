@@ -1,0 +1,90 @@
+[
+  {
+    "code": "career_fair_first_post",
+    "category": "career_fair",
+    "scenario": "first_post",
+    "persona": "mentor",
+    "title": "校招会场初体验｜这些坑真的没人提前告诉你",
+    "bodyTemplate": "第一次参加校招大型招聘会，整理了一些实战经验分享给大家，希望能帮到正在求职的你们👇\n\n✅ 会前准备\n- 提前在官网/小程序确认参展企业名单，筛选出目标公司\n- 准备好精简版简历（1页），多打印几份备用\n- 准备好30秒自我介绍，包括：专业背景 + 实习经历 + 投递意向\n\n✅ 现场攻略\n- 建议从外围企业开始投，人少效率高\n- 每家企业控制在5-8分钟，深入聊1-2个岗位\n- 现场要微信/加招聘群，方便后续跟进\n\n✅ 避坑提示\n- ⚠️ 不要海投，精准投递效果更好\n- ⚠️ 不要只盯着大厂，中小厂也是好选择\n- ⚠️ 记得带充电宝，扫码填表很耗电\n\n{{cta_message}}\n\n#校招 #招聘会 #求职经验 #留学生求职 #秋招",
+    "variables": ["cta_message"],
+    "defaultGoal": "engagement",
+    "defaultTone": "friendly"
+  },
+  {
+    "code": "internship_interview_share",
+    "category": "interview",
+    "scenario": "interview_share",
+    "persona": "mentor",
+    "title": "实习面试复盘｜这几个问题高频出现但很多人答不好",
+    "bodyTemplate": "最近收到很多同学私信问面试经验，整理了一下我自己在面试中遇到的高频问题，分享给大家～\n\n📌 高频问题清单\n\n1️⃣ 【自我介绍】\n不要只说名字学校！重点是：为什么你适合这个岗位 + 1个最有说服力的经历\n\n2️⃣ 【项目经历】\n用STAR法则：Situation-Task-Action-Result\n重点讲你解决了什么问题，不是项目本身是什么\n\n3️⃣ 【优势劣势】\n优势要结合岗位JD具体说，劣势要展示自我认知和改进\n\n4️⃣ 【职业规划】\n别说"想当领导"，说3年内的可落地目标\n\n5️⃣ 【问面试官的问题】\n必问：这个岗位最大的挑战是什么？\n加分问：团队氛围和协作方式\n\n💡 面试小技巧\n- 眼神要自然，不要死盯一个方向\n- 语速适中，紧张时放慢反而显得稳重\n- 遇到不会的问题，诚实说"这个问题我还需要学习"比瞎编强\n\n{{encouragement}}\n\n有其他问题欢迎评论区留言～\n\n#实习 #面试技巧 #求职 #北美求职 #留学生活",
+    "variables": ["encouragement"],
+    "defaultGoal": "engagement",
+    "defaultTone": "supportive"
+  },
+  {
+    "code": "cpt_opt_extension_guide",
+    "category": "visa",
+    "scenario": "policy_guide",
+    "persona": "senior",
+    "title": "CPT/OPT快到期了？这份续期指南请收好（含时间线）",
+    "bodyTemplate": "⚠️ 很多同学因为不了解政策错过了OPT申请窗口，今天来详细说说CPT和OPT的续期注意事项⚠️\n\n📋 OPT 延期（STEM Extension）\n\n申请条件：\n- STEM专业（F-1签证）\n- 已用完首次OPT（12个月）\n- 雇主已加入E-Verify系统\n\n申请时间线：\n- 🔴 必须在当前OPT到期前90天内提交\n- 🔴 EAD卡审批通常需要90-150天\n- ⚠️ 建议提前准备，别卡在最后一周\n\n材料清单：\n□ I-765表格（最新版本）\n□ I-20（新版，需雇主签字）\n□ 护照首页复印件\n□ 之前的EAD卡复印件\n□ 2张符合规格的照片\n□ STEM专业认证（STEM Degree CIP代码）\n\n💰 费用明细\n- I-765申请费：$410\n- 打指模服务：$30\n- 建议加急处理：$1,500（如需要）\n\n📌 CPT 注意事项\n- Part-time CPT不影响OPT申请\n- Full-time CPT超过1年可能影响OPT资格\n- 实习结束后记得更新I-20\n\n{{disclaimer}}\n\n提醒：政策时有变动，建议在USCIS官网确认最新信息。如有疑问，咨询学校国际学生办公室。\n\n#OPT #CPT #STEM #F1签证 #留学生就业 #北美求职",
+    "variables": ["disclaimer"],
+    "defaultGoal": "engagement",
+    "defaultTone": "professional"
+  },
+  {
+    "code": "h1b_lottery_result",
+    "category": "visa",
+    "scenario": "lottery_result",
+    "persona": "senior",
+    "title": "H1B抽签结果出了，没中的同学还有这些路可以走",
+    "bodyTemplate": "今天H1B抽签结果公布，有人欢喜有人愁。没抽中的同学不要灰心，以下几条路可以考虑：\n\n🔄 Plan B 方案\n\n1️⃣ 【Day 1 CPT】\n- 适合想继续深造+保留身份的同学\n- 注意选择靠谱学校，避免USCIS审查风险\n- 推荐：部分STEM硕士项目\n\n2️⃣ 【L1签证】\n- 需要有1年海外工作经验\n- 先去其他国家工作一年再申请\n\n3️⃣ 【O1签证】\n- 适合在专业领域有突出成就的同学\n- 需要律师协助准备材料\n\n4️⃣ 【继续用OPT工作】\n- 非STEM专业：最多用完2年\n- STEM专业：最多用完3年（STEM Extension）\n\n5️⃣ 【申请绿卡EB-2/EB-3】\n- PERM劳工证 → I-140 → 排期\n- 周期较长，但身份更稳定\n\n6️⃣ 【加拿大/欧洲机会】\n- 加拿大有相对友好的工签政策\n- 欧洲也有不少科技公司提供工签\n\n💬 说在最后\n\nH1B只是留在美国的一种方式，不是唯一出路。不管选哪条路，都要提前规划，祝大家都能找到适合自己的方案。\n\n{{call_to_action}}\n\n#H1B #抽签 #留学生就业 #OPT #北美求职 #移民",
+    "variables": ["call_to_action"],
+    "defaultGoal": "engagement",
+    "defaultTone": "motivational"
+  },
+  {
+    "code": "new_grad_job_hunt",
+    "category": "job_hunt",
+    "scenario": "diary",
+    "persona": "mentor",
+    "title": "应届生求职日记📝 第{{month}}个月，找工比的不是速度",
+    "bodyTemplate": "我是{{name}}，商科研究生，今年5月毕业。记录一下我的求职过程，希望给同样在路上的你一点参考。\n\n📅 第{{month}}个月进度\n\n📊 投递情况\n- 总投递：{{total_applications}}份\n- 已回复：{{received_replies}}家\n- 面试邀请：{{interview_count}}个\n- Offer：{{offer_count}}个\n\n🔍 这个月的感悟\n\n1. 【海投真的不如精准投】\n前两周海投了100份，回复率不到5%。后来研究JD，针对性改简历，回复率提高到了15%+。\n\n2. 【Networking真的有用】\nLinkedIn上reach out了15个校友，其中3个给了内推机会。主动一点，机会真的多很多。\n\n3. 【调整心态太重要了】\n被拒是常态。第23封拒信之后我休息了一周，重新调整状态再出发。\n\n📝 面试复盘（本月最难忘的一次）\n{{interview_reflection}}\n\n🎯 下个月目标\n- 把内推成功率提高到50%\n- 每周做2次mock interview\n- 学习行业知识，准备case study\n\n{{closing_message}}\n\n有求职搭子想一起组队打卡的评论区见～\n\n#应届生 #求职日记 #留学生求职 #北美求职 #找工记录",
+    "variables": ["name", "month", "total_applications", "received_replies", "interview_count", "offer_count", "interview_reflection", "closing_message"],
+    "defaultGoal": "engagement",
+    "defaultTone": "casual"
+  },
+  {
+    "code": "career_switch_advice",
+    "category": "career_development",
+    "scenario": "advice",
+    "persona": "senior",
+    "title": "转行建议｜从金融转Tech，我做了这三件事",
+    "bodyTemplate": "收到很多私信问转行的事，干脆写一篇分享。我是学Finance的，去年成功转到Tech做PM，总结了几个关键点：\n\n🛠️ 转行前必做的3件事\n\n1️⃣ 【搞清楚为什么转】\n不是看别人转就转，要问自己：\n- 现在的工作让你痛苦的是什么？\n- 新行业吸引你的是什么？\n- 你愿意为转行付出多少时间成本？\n\n2️⃣ 【补足硬技能差距】\n转Tech不一定非要会写代码，但要懂：\n- 数据分析基础（SQL/Python入门）\n- 产品思维（用户调研、需求分析）\n- 技术术语（能和工程师无障碍沟通）\n\n3️⃣ 【用项目证明能力】\n没有经验就用项目说话：\n- 在GitHub上参与开源项目\n- 做个人side project\n- 帮小公司做免费/低价咨询\n\n📊 转行Timeline参考\n- 第1-3个月：学基础+做项目\n- 第4-6个月：优化简历+network\n- 第7-9个月：密集投递\n- 第10-12个月：拿到offer\n\n💼 我的成功经验\n{{success_story}}\n\n⚠️ 几个忠告\n- 不要裸辞转行，财务压力会影响判断\n- 不要忽视行业人脉，很多机会靠内推\n- 不要只盯着大厂startup也能学到很多\n\n{{cta_section}}\n\n#转行 #职业发展 #Tech #留学生就业 #CareerSwitch",
+    "variables": ["success_story", "cta_section"],
+    "defaultGoal": "engagement",
+    "defaultTone": "professional"
+  },
+  {
+    "code": "mock_interview_qa",
+    "category": "interview",
+    "scenario": "mock_qa",
+    "persona": "agency",
+    "title": "模拟面试Q&A精华整理｜这些问题你真的会答吗？",
+    "bodyTemplate": "帮大家整理了最近模拟面试中错误率最高的几道题，来看看你会怎么答👇\n\n═══════════════════════════\n\n📋 Q1：Tell me about yourself\n\n❌ 错误示范：\n\"I graduated from {{school}} with a degree in {{major}}...\"\n（从出生开始讲，平铺直叙，没有亮点）\n\n✅ 正确思路：\n\"I'm a {{year}}-year {{role}} professional who specializes in {{skill}}. In my recent role at {{company}}, I led a project that delivered {{achievement}}. I'm now looking for a role where I can {{goal}}...\"\n\n═══════════════════════════\n\n📋 Q2：What's your biggest weakness?\n\n❌ 错误示范：\n\"I'm a perfectionist and work too hard\"\n（太假，面试官一眼看穿）\n\n✅ 正确思路：\n\"One area I've been working on is {{real_weakness}}. I've recently started {{improvement_action}} to address this...\"\n\n═══════════════════════════\n\n📋 Q3：Why this company?\n\n❌ 错误示范：\n\"Because it's a great company and I admire your products\"\n（任何公司都能这么说，没有针对性）\n\n✅ 正确思路：\n\"I've been following {{company}}'s recent {{specific_initiative}} and I'm particularly drawn to {{specific_reason}}. My background in {{your_background}} aligns well with the {{specific_role}} team's focus on {{team_focus}}...\"\n\n═══════════════════════════\n\n📋 Q4：Where do you see yourself in 5 years?\n\n❌ 错误示范：\n\"In a management position\"\n（太笼统，没有个人特色）\n\n✅ 正确思路：\n\"In 5 years, I see myself {{specific_goal}}. To get there, I'm currently working on {{current_effort}}, and I believe {{company}} is the ideal environment to help me achieve this because {{company_fit}}...\"\n\n═══════════════════════════\n\n📌 免费福利\n评论区留言「模拟面试」，私信送你我整理的50道高频Behavioral Questions答案模板～\n\n{{bottom_cta}}\n\n#面试 #求职 #BehavioralQuestions #北美求职 #InterviewPrep",
+    "variables": ["school", "major", "year", "role", "skill", "company", "achievement", "goal", "real_weakness", "improvement_action", "specific_initiative", "specific_reason", "your_background", "specific_role", "team_focus", "specific_goal", "current_effort", "company_fit", "bottom_cta"],
+    "defaultGoal": "engagement",
+    "defaultTone": "professional"
+  },
+  {
+    "code": "offer_comparison",
+    "category": "job_hunt",
+    "scenario": "decision",
+    "persona": "mentor",
+    "title": "同时拿到{{company_a}}和{{company_b}}的Offer怎么选？",
+    "bodyTemplate": "终于到了甜蜜的烦恼环节！同时拿到{{company_a}}和{{company_b}}的Offer，整理了一份对比分析，给同样在纠结的同学参考👇\n\n🏢 Offer 对比表\n\n│ 对比维度 │ {{company_a}} │ {{company_b}} │\n│---------|-------------|-------------│\n│ 薪资 │ {{salary_a}} │ {{salary_b}} │\n│ 奖金 │ {{bonus_a}} │ {{bonus_b}} │\n│ 股票/RSU │ {{equity_a}} │ {{equity_b}} │\n│ 地点 │ {{location_a}} │ {{location_b}} │\n│ 远程政策 │ {{remote_a}} │ {{remote_b}} │\n│ 成长空间 │ ⭐⭐⭐⭐ │ ⭐⭐⭐⭐⭐ │\n│ Work-Life Balance │ ⭐⭐⭐⭐⭐ │ ⭐⭐⭐ │\n\n💡 几个决策维度分享\n\n1️⃣ 【薪资 vs 成长】\n如果两家公司薪资差距不大，选能让你成长更快的。但如果差距超过30%，就要权衡了。\n\n2️⃣ 【大厂 vs 小厂】\n大厂：体系成熟、title响亮、跳板好使\n小厂：成长快、能接触全链路、股权潜力大\n\n3️⃣ 【直属老板比公司重要】\n跟对老板，烂公司也能有成长；跟错老板，好公司也会很累。\n\n4️⃣ 【城市/生活成本】\n同样的薪资，在SF和在Austin的实际购买力差很多。算清楚到手真实收入。\n\n📌 我的最终选择逻辑\n\n{{decision_logic}}\n\n💬 评论区聊聊\n你们会怎么选？留言说说你的决策标准～\n\n{{cta_invite}}\n\n#Offer比较 #求职 #职场选择 #留学生就业 #北美求职",
+    "variables": ["company_a", "company_b", "salary_a", "salary_b", "bonus_a", "bonus_b", "equity_a", "equity_b", "location_a", "location_b", "remote_a", "remote_b", "decision_logic", "cta_invite"],
+    "defaultGoal": "engagement",
+    "defaultTone": "friendly"
+  }
+]

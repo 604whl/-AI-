@@ -27,4 +27,7 @@ public class AnalysisDetailResponse {
     private Map<String, Object> failure;
     private Map<String, Object> report;
     private Map<String, Object> coverAnalysis;
+
+    /** P0-4: 关联的模板 ID */
+    private String templateId;
 }

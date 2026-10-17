@@ -28,4 +28,7 @@ public class TitleGenerateRequest {
 
     @Pattern(regexp = "agency|mentor|senior", message = "invalid_persona")
     private String persona;
+
+    /** P0-4: 关联的模板 ID（可选，用于在标题生成时加载模板上下文） */
+    private String templateId;
 }

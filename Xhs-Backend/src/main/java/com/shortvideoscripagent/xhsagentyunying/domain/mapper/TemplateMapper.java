@@ -31,7 +31,7 @@ public interface TemplateMapper extends BaseMapper<Template> {
               AND (
                 (t.scope = 'OFFICIAL')
                 OR (t.scope = 'WORKSPACE' AND t.workspace_id = #{workspaceId})
-                OR (t.scope = 'PERSONAL' AND t.owner_user_id = #{ownerUserId}::uuid)
+                OR (t.scope = 'PERSONAL' AND t.owner_user_id = #{ownerUserId})
               )
               AND (#{category} IS NULL OR #{category} = '' OR t.category = #{category})
             ORDER BY t.use_count DESC, t.updated_at DESC

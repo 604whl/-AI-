@@ -67,6 +67,7 @@ public class ContentAssetService {
             throw new BusinessException(CODE_BAD_REQUEST, "owner_id_required");
         }
         UUID sourceTaskId = parseTaskId(request.getSourceTaskId());
+        UUID templateId = parseTaskId(request.getTemplateId());
         OffsetDateTime now = OffsetDateTime.now();
 
         ContentAsset asset = new ContentAsset();
@@ -80,6 +81,7 @@ public class ContentAssetService {
         asset.setIndustry(request.getIndustry());
         asset.setStatus(ContentAsset.STATUS_DRAFT);
         asset.setSourceTaskId(sourceTaskId);
+        asset.setTemplateId(templateId);
         asset.setPlatform(request.getPlatform());
         asset.setAccountId(request.getAccountId());
         asset.setCurrentVersion(1);
@@ -105,6 +107,7 @@ public class ContentAssetService {
 
         UUID wsUuid = parseUuid(workspaceId, "workspace_id");
         UUID sourceTaskId = parseTaskId(request.getSourceTaskId());
+        UUID templateId = parseTaskId(request.getTemplateId());
         OffsetDateTime now = OffsetDateTime.now();
 
         ContentAsset asset = new ContentAsset();
@@ -118,6 +121,7 @@ public class ContentAssetService {
         asset.setIndustry(request.getIndustry());
         asset.setStatus(ContentAsset.STATUS_DRAFT);
         asset.setSourceTaskId(sourceTaskId);
+        asset.setTemplateId(templateId);
         asset.setPlatform(request.getPlatform());
         asset.setAccountId(request.getAccountId());
         asset.setCurrentVersion(1);
@@ -538,6 +542,7 @@ public class ContentAssetService {
                 .industry(asset.getIndustry())
                 .status(asset.getStatus())
                 .sourceTaskId(asset.getSourceTaskId())
+                .templateId(asset.getTemplateId())
                 .platform(asset.getPlatform())
                 .accountId(asset.getAccountId())
                 .currentVersion(asset.getCurrentVersion())

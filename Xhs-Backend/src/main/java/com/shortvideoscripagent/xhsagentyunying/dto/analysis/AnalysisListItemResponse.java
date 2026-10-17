@@ -18,4 +18,7 @@ public class AnalysisListItemResponse {
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private Map<String, Object> report;
+
+    /** P0-4: 关联的模板 ID */
+    private String templateId;
 }

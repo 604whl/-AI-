@@ -110,6 +110,7 @@ public class AnalysisAppService {
         task.setModelName(aiRuntimePolicy.primaryChatModel());
         task.setCreatedAt(now);
         task.setUpdatedAt(now);
+        task.setTemplateId(request.getTemplateId());
         taskMapper.insert(task);
         analysisStreamHub.publish(toProgressEvent(task));
 
@@ -424,6 +425,7 @@ public class AnalysisAppService {
                 .failure(failure)
                 .report(reportMap)
                 .coverAnalysis(resolveCoverAnalysis(task, report, reportMap))
+                .templateId(task.getTemplateId())
                 .build();
     }
 
@@ -443,6 +445,7 @@ public class AnalysisAppService {
                 .createdAt(task.getCreatedAt())
                 .updatedAt(task.getUpdatedAt())
                 .report(listReport)
+                .templateId(task.getTemplateId())
                 .build();
     }
 

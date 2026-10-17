@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS app.template (
     id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     scope            VARCHAR(16) NOT NULL,  -- OFFICIAL / WORKSPACE / PERSONAL
     workspace_id     UUID        REFERENCES app.workspace(id) ON DELETE CASCADE,
-    owner_user_id   UUID        REFERENCES app.users(id),
+    owner_user_id   BIGINT      REFERENCES app.users(id),
     category         VARCHAR(64) NOT NULL,
     scenario         VARCHAR(64),
     persona          VARCHAR(64),
@@ -29,10 +29,10 @@ CREATE TABLE IF NOT EXISTS app.template (
     )
 );
 
-CREATE INDEX IF NOT EXISTS idx_template_scope   ON app.template (scope, status);
+CREATE INDEX IF NOT EXISTS idx_template_scope    ON app.template (scope, status);
 CREATE INDEX IF NOT EXISTS idx_template_workspace ON app.template (workspace_id, status);
 CREATE INDEX IF NOT EXISTS idx_template_owner    ON app.template (owner_user_id, status);
-CREATE INDEX IF NOT EXISTS idx_template_category  ON app.template (category);
+CREATE INDEX IF NOT EXISTS idx_template_category ON app.template (category);
 
 -- 2. template_version 表：模板版本历史（快照）
 CREATE TABLE IF NOT EXISTS app.template_version (
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS app.template_version (
     version_no    INT         NOT NULL,
     snapshot      JSONB       NOT NULL,  -- 完整模板快照，含所有字段
     published_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    published_by  UUID        REFERENCES app.users(id),
+    published_by  BIGINT      REFERENCES app.users(id),
     UNIQUE (template_id, version_no)
 );
 
@@ -53,9 +53,9 @@ CREATE TABLE IF NOT EXISTS app.template_apply_log (
     template_id   UUID        NOT NULL REFERENCES app.template(id) ON DELETE CASCADE,
     asset_id      UUID        REFERENCES app.content_asset(id) ON DELETE SET NULL,
     workspace_id  UUID        NOT NULL REFERENCES app.workspace(id) ON DELETE CASCADE,
-    user_id       UUID        NOT NULL REFERENCES app.users(id),
+    user_id       BIGINT      NOT NULL REFERENCES app.users(id),
     created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_apply_log_template ON app.template_apply_log (template_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_apply_log_template  ON app.template_apply_log (template_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_apply_log_workspace ON app.template_apply_log (workspace_id, created_at DESC);
