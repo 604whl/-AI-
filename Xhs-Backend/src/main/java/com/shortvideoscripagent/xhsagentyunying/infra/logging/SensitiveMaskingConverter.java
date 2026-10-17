@@ -26,6 +26,7 @@ public class SensitiveMaskingConverter extends CompositeConverter<ILoggingEvent>
      * 匹配敏感字段 key=value 模式。
      * 支持：key: value、key=value、key = value 等格式。
      * 不区分大小写。
+     * 注意：value 段允许逗号（用于匹配包含逗号的完整 JWT/JSON 段）。
      */
     private static final Pattern SENSITIVE_PATTERN = Pattern.compile(
             "(?i)"                                    // case insensitive
@@ -36,7 +37,7 @@ public class SensitiveMaskingConverter extends CompositeConverter<ILoggingEvent>
                     + "|x.auth|x-token|x-session"
                     + ")"                              // sensitive key name
                     + "\\s*[:=]\\s*"                   // separator
-                    + "([^\\s,&;\\n\\r]+)",            // capture value (no whitespace/special chars)
+                    + "([^\\s&;\\n\\r]+)",            // capture value (allow comma, exclude &;\n\r)
             Pattern.CASE_INSENSITIVE
     );
 
@@ -47,29 +48,43 @@ public class SensitiveMaskingConverter extends CompositeConverter<ILoggingEvent>
         if (in == null || in.isEmpty()) {
             return in;
         }
-        // 脱敏处理
-        String masked = SENSITIVE_PATTERN.matcher(in).replaceAll("$1: ***MASKED***");
-        // 额外兜底：直接 mask 已知的 key 字符串
+        String masked = in;
+        // 第一步：直接处理"Authorization: Bearer <JWT>"模式（JWT 段可能含逗号，需要独立处理）
+        masked = maskAuthorizationBearerJwt(masked);
+        // 第二步：用通用 key=value 模式脱敏（保守，不含空格）
+        masked = SENSITIVE_PATTERN.matcher(masked).replaceAll("$1: ***MASKED***");
+        // 第三步：兜底处理剩余的已知 key 字符串
         masked = maskKnownPatterns(masked);
         return masked;
     }
 
     /**
+     * 直接处理"Authorization: Bearer <完整 JWT>"模式。
+     * 完整 JWT 段可能含逗号，通用正则无法一次匹配，需要在 SENSITIVE_PATTERN 之前先处理。
+     */
+    private String maskAuthorizationBearerJwt(String input) {
+        // 匹配 "Authorization: Bearer xxx.yyy.zzz"，xxx/yyy/zzz 可含逗号、下划线、短横线
+        return input.replaceAll(
+                "(?i)(authorization\\s*[:=]\\s*)Bearer\\s+([A-Za-z0-9_\\-]+(?:[.,][A-Za-z0-9_\\-]+)*\\.[A-Za-z0-9_\\-]+(?:[.,][A-Za-z0-9_\\-]+)*\\.[A-Za-z0-9_\\-]+(?:[.,][A-Za-z0-9_\\-]+)*)",
+                "$1Bearer ***MASKED***");
+    }
+
+    /**
      * 已知高风险模式的兜底 mask。
-     * 例如 JWT token 结构：Bearer eyJhbGci...
      */
     private String maskKnownPatterns(String input) {
-        // JWT Bearer token
-        input = input.replaceAll("(?i)Bearer\\s+([A-Za-z0-9_\\-]+\\.[A-Za-z0-9_\\-]+\\.[A-Za-z0-9_\\-]+)",
+        // 纯 Bearer token（不含 Authorization: 前缀，例如裸 JWT 输出）
+        input = input.replaceAll(
+                "(?i)\\bBearer\\s+([A-Za-z0-9_\\-]+(?:[.,][A-Za-z0-9_\\-]+)*\\.[A-Za-z0-9_\\-]+(?:[.,][A-Za-z0-9_\\-]+)*\\.[A-Za-z0-9_\\-]+(?:[.,][A-Za-z0-9_\\-]+)*)",
                 "Bearer ***MASKED***");
         // x-api-key header style
         input = input.replaceAll("(?i)x-api-key['\"]?\\s*[:=]\\s*['\"]?([A-Za-z0-9_\\-]+)['\"]?",
                 "X-API-Key: ***MASKED***");
-        // xhs_sk_ prefix API keys (Stripe-like)
+        // xhs_sk_ prefix API keys
         input = input.replaceAll("(?i)xhs_sk_[A-Za-z0-9]{20,}",
                 "xhs_sk_***MASKED***");
-        // Generic sk_live / sk_test API keys
-        input = input.replaceAll("(?i)sk_(live|test)_[A-Za-z0-9]{20,}",
+        // 泛化：任何 sk_<UPPER>_<value> 形式的 key 都脱敏（live/test/prod/sandbox 等）
+        input = input.replaceAll("(?i)sk_[A-Z][A-Z0-9]*_[A-Za-z0-9]{20,}",
                 "sk_***MASKED***");
         return input;
     }
