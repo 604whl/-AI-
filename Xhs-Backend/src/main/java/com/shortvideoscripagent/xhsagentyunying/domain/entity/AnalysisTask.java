@@ -48,4 +48,17 @@ public class AnalysisTask {
     private OffsetDateTime createdAt;
 
     private OffsetDateTime updatedAt;
+
+    // P0-1: task queue fields
+    private String idempotencyKey;
+
+    private OffsetDateTime startedAt;
+
+    private OffsetDateTime finishedAt;
+
+    private Integer retryCount;
+
+    private OffsetDateTime deadLetterAt;
+
+    private String workerId;
 }

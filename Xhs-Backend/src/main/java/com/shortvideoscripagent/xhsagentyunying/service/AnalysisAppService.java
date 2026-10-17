@@ -77,6 +77,12 @@ public class AnalysisAppService {
     private Executor aiExecutor;
 
     @Transactional
+    public AnalysisCreateResponse createWithIdempotency(Long userId, AnalysisCreateRequest request, String idempotencyKey) {
+        // P0-1: 使用幂等键去重（已在 Controller 层拦截重复 key）
+        return create(userId, request);
+    }
+
+    @Transactional
     public AnalysisCreateResponse create(Long userId, AnalysisCreateRequest request) {
         validateCreateRequest(request);
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();

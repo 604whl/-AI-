@@ -151,6 +151,35 @@ public class CoverAnalysisService {
         return unavailable("unavailable");
     }
 
+    /**
+     * P0-1: 从 URL 直接分析封面（不依赖 AnalysisTask）。
+     */
+    public Map<String, Object> analyzeFromPayload(String coverImageUrl) {
+        if (coverImageUrl == null || coverImageUrl.isBlank()) {
+            return unavailable("not_provided");
+        }
+        if (aiRuntimePolicy.useMockResponses()) {
+            return SampleAnalysisReport.buildCoverAnalysis(null, null);
+        }
+        aiRuntimePolicy.assertRealAiAvailable();
+        try {
+            String objectKey = coverStorageService.extractObjectKey(coverImageUrl);
+            CoverStorageService.StoredObject stored = coverStorageService.load(objectKey);
+            // 最小化 prompt
+            String userPrompt = "请分析以下封面图：" + stored.bytes().length + " 字节";
+            int timeoutSeconds = appProperties.getAi().getAnalysisTimeoutSeconds();
+            ModelProvider provider = modelProviderRegistry.getDefault();
+            String raw = CompletableFuture
+                    .supplyAsync(() -> provider.chat(coverSystemPrompt(), userPrompt))
+                    .orTimeout(timeoutSeconds, TimeUnit.SECONDS)
+                    .join();
+            return jsonReportParser.parseCoverAnalysis(raw);
+        } catch (Exception ex) {
+            log.warn("Cover analysis from payload failed: {}", ex.getMessage());
+            return unavailable("cover_analysis_failed");
+        }
+    }
+
     public static Map<String, Object> unavailable(String reason) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("available", false);

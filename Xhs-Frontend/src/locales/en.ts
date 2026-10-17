@@ -386,6 +386,11 @@ const en: LocaleMessages = {
     saveSuccess: 'Settings saved',
     saveFailed: 'Failed to save settings',
   },
+  admin: {
+    retryFromDlq: 'Retry from DLQ',
+    retryFromDlqSuccess: 'Task re-queued successfully',
+    retryFromDlqFailed: 'Retry failed, please try again',
+  },
   persona: {
     agency: 'Brand / agency',
     mentor: 'Creator IP',

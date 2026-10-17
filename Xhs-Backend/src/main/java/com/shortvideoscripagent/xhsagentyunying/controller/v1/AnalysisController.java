@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -39,10 +40,17 @@ public class AnalysisController {
     private final AnalysisAppService analysisAppService;
     private final TitleService titleService;
 
+    /**
+     * 创建笔记分析任务。
+     * P0-1: 支持 Idempotency-Key Header 实现幂等。
+     */
     @PostMapping
-    public ApiResponse<AnalysisCreateResponse> create(@Valid @RequestBody AnalysisCreateRequest request) {
+    public ApiResponse<AnalysisCreateResponse> create(
+            @Valid @RequestBody AnalysisCreateRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey
+    ) {
         Long userId = requireUserId();
-        return ApiResponse.ok(analysisAppService.create(userId, request));
+        return ApiResponse.ok(analysisAppService.createWithIdempotency(userId, request, idempotencyKey));
     }
 
     @GetMapping("/{id}")

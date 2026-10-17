@@ -81,30 +81,76 @@ public class PromptEngine {
     }
 
     public String buildAnalysisUserPrompt(AnalysisTask task, String ragContext) {
+        return buildAnalysisUserPromptFromPayload(
+                com.shortvideoscripagent.xhsagentyunying.infra.taskqueue.payload.AnalysisTaskPayload.builder()
+                        .scenario(task.getScenario())
+                        .persona(task.getPersona())
+                        .title(task.getTitle())
+                        .body(task.getBody())
+                        .coverImageUrl(task.getCoverImageUrl())
+                        .publishedMetrics(task.getPublishedMetrics())
+                        .competitorContext(task.getCompetitorContext())
+                        .build(),
+                ragContext
+        );
+    }
+
+    /**
+     * P0-1: 从 AnalysisTaskPayload 构建分析 prompt。
+     */
+    public String buildAnalysisUserPromptFromPayload(
+            com.shortvideoscripagent.xhsagentyunying.infra.taskqueue.payload.AnalysisTaskPayload payload,
+            String ragContext
+    ) {
         StringBuilder sb = new StringBuilder();
-        sb.append("【分析场景】").append(scenarioLabel(task.getScenario())).append('\n');
-        sb.append("【运营人设】").append(personaLabel(task.getPersona())).append('\n');
-        if (task.getTitle() != null && !task.getTitle().isBlank()) {
-            sb.append("【标题】\n").append(task.getTitle().trim()).append('\n');
+        sb.append("【分析场景】").append(scenarioLabel(payload.getScenario())).append('\n');
+        sb.append("【运营人设】").append(personaLabel(payload.getPersona())).append('\n');
+        if (payload.getTitle() != null && !payload.getTitle().isBlank()) {
+            sb.append("【标题】\n").append(payload.getTitle().trim()).append('\n');
         }
-        if (task.getBody() != null && !task.getBody().isBlank()) {
-            sb.append("【正文】\n").append(task.getBody().trim()).append('\n');
+        if (payload.getBody() != null && !payload.getBody().isBlank()) {
+            sb.append("【正文】\n").append(payload.getBody().trim()).append('\n');
         }
-        if (task.getCoverImageUrl() != null && !task.getCoverImageUrl().isBlank()) {
-            sb.append("【封面】用户已上传封面图，系统将单独进行视觉分析；CTR 维度须结合标题与正文，并在 ctr.reason 中体现封面相关判断（无需输出 coverAnalysis 字段）。\n");
+        if (payload.getCoverImageUrl() != null && !payload.getCoverImageUrl().isBlank()) {
+            sb.append("【封面】用户已上传封面图，系统将单独进行视觉分析；CTR 维度须结合标题与正文，并在 ctr.reason 中体现封面相关判断。\n");
         } else {
             sb.append("【封面】无，CTR 仅评标题与正文，须在 ctr.reason 注明「未含封面」。\n");
         }
-        appendPublishedMetrics(sb, task);
-        appendCompetitorContext(sb, task);
-        if ("competitor".equals(task.getScenario())) {
-            sb.append("【竞品学习】须输出 borrowPoints（可借鉴点 3-5 条）与 doNotCopy（勿照搬点 2-4 条），禁止洗稿整篇。\n");
+        if (payload.getPublishedMetrics() != null && !payload.getPublishedMetrics().isBlank()) {
+            sb.append("【已发互动数据】\n").append(payload.getPublishedMetrics()).append('\n');
+        }
+        if (payload.getCompetitorContext() != null && !payload.getCompetitorContext().isBlank()) {
+            sb.append("【竞品对标信息】\n").append(payload.getCompetitorContext()).append('\n');
+        }
+        if ("competitor".equals(payload.getScenario())) {
+            sb.append("【竞品学习】须输出 borrowPoints 与 doNotCopy，禁止洗稿整篇。\n");
         }
         if (ragContext != null && !ragContext.isBlank()) {
             sb.append("\n【参考案例（RAG）】\n").append(ragContext).append('\n');
         }
         sb.append("\n请输出完整 JSON 分析报告。");
         return sb.toString();
+    }
+
+    /**
+     * P0-1: 从 Map (payload) 构建分析 prompt。
+     */
+    @SuppressWarnings("unchecked")
+    public String buildAnalysisUserPromptFromPayload(Map<String, Object> payload, String ragContext) {
+        com.shortvideoscripagent.xhsagentyunying.infra.taskqueue.payload.AnalysisTaskPayload p =
+                new com.shortvideoscripagent.xhsagentyunying.infra.taskqueue.payload.AnalysisTaskPayload();
+        p.setTaskId(payload.get("taskId") != null ? String.valueOf(payload.get("taskId")) : null);
+        p.setScenario(payload.get("scenario") != null ? String.valueOf(payload.get("scenario")) : "agency");
+        p.setPersona(payload.get("persona") != null ? String.valueOf(payload.get("persona")) : "agency");
+        p.setTitle(payload.get("title") != null ? String.valueOf(payload.get("title")) : null);
+        p.setBody(payload.get("body") != null ? String.valueOf(payload.get("body")) : null);
+        p.setCoverImageUrl(payload.get("coverImageUrl") != null ? String.valueOf(payload.get("coverImageUrl")) : null);
+        p.setPublishedMetrics(payload.get("publishedMetrics") != null ? String.valueOf(payload.get("publishedMetrics")) : null);
+        p.setCompetitorContext(payload.get("competitorContext") != null ? String.valueOf(payload.get("competitorContext")) : null);
+        p.setPromptVersion(payload.get("promptVersion") != null ? String.valueOf(payload.get("promptVersion")) : null);
+        p.setModelProvider(payload.get("modelProvider") != null ? String.valueOf(payload.get("modelProvider")) : null);
+        p.setModelName(payload.get("modelName") != null ? String.valueOf(payload.get("modelName")) : null);
+        return buildAnalysisUserPromptFromPayload(p, ragContext);
     }
 
     public String buildOptimizeDraftUserPrompt(AnalysisTask task, Map<String, Object> report, String tone, int maxLength) {

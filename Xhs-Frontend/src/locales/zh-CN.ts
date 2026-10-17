@@ -383,6 +383,11 @@ const zhCN: LocaleMessages = {
     saveSuccess: '设置已保存',
     saveFailed: '保存失败',
   },
+  admin: {
+    retryFromDlq: '从死信重试',
+    retryFromDlqSuccess: '任务已重新入队',
+    retryFromDlqFailed: '重试失败，请稍后重试',
+  },
   persona: {
     agency: '品牌/机构号',
     mentor: '创作者/IP',

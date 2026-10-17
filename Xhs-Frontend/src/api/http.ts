@@ -45,6 +45,13 @@ http.interceptors.request.use((config) => {
       config.headers['X-Workspace-Id'] = workspaceId
     }
   }
+  // P0-1: 自动注入 Idempotency-Key，用于 POST/PUT/PATCH 请求幂等
+  const method = (config.method ?? '').toUpperCase()
+  if (['POST', 'PUT', 'PATCH'].includes(method)) {
+    if (!config.headers['Idempotency-Key']) {
+      config.headers['Idempotency-Key'] = crypto.randomUUID()
+    }
+  }
   return config
 })
 

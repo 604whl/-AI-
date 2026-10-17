@@ -61,6 +61,15 @@
         <el-button type="primary" :loading="reanalyzeRunning" @click="handleReanalyze">
           {{ t('history.reanalyze') }}
         </el-button>
+        <!-- P0-1: DLQ 状态显示重试按钮 -->
+        <el-button
+          v-if="isDeadLetter(detail?.status)"
+          type="warning"
+          :loading="dlqRetryRunning"
+          @click="handleDlqRetry"
+        >
+          {{ t('admin.retryFromDlq') }}
+        </el-button>
         <el-button @click="reload">{{ t('report.retry') }}</el-button>
         <el-button @click="router.push('/')">{{ t('report.backHome') }}</el-button>
       </template>
@@ -170,6 +179,7 @@ import {
   type BodyGenerateResponse,
   type OptimizeDraftResponse,
 } from '@/api/analysis'
+import http from '@/api/http'
 import ContentTypeTags from '@/components/workbench/ContentTypeTags.vue'
 import BodyGenerateDrawer from '@/components/report/BodyGenerateDrawer.vue'
 import StructureBreakdownPanel from '@/components/workbench/StructureBreakdownPanel.vue'
@@ -194,6 +204,7 @@ const analysisId = computed(() => String(route.params.id ?? ''))
 const { detail, loading, polling, progressMessage, isPending, isCompleted, isFailed, insight, reload } =
   useAnalysisReport(analysisId)
 const { running: reanalyzeRunning, runReanalyze } = useReanalyze()
+const dlqRetryRunning = ref(false)
 
 const draftDrawerVisible = ref(false)
 const draftLoading = ref(false)
@@ -230,6 +241,11 @@ function statusTagType(status: AnalysisStatus): 'success' | 'warning' | 'danger'
     failed: 'danger',
   }
   return map[status]
+}
+
+// P0-1: DLQ 状态检测（dead_letter 状态）
+function isDeadLetter(status: AnalysisStatus | undefined): boolean {
+  return status === 'failed' && detail.value?.failure?.reason === 'dead_letter'
 }
 
 async function copyReport() {
@@ -311,6 +327,21 @@ async function loadGenerateBody(payload: BodyGenerateRequest) {
 async function handleReanalyze() {
   if (!analysisId.value) return
   await runReanalyze(analysisId.value)
+}
+
+// P0-1: 从 DLQ 重试任务
+async function handleDlqRetry() {
+  if (!analysisId.value) return
+  dlqRetryRunning.value = true
+  try {
+    await http.post(`/admin/tasks/${analysisId.value}/retry`)
+    ElMessage.success(t('admin.retryFromDlqSuccess'))
+    await reload()
+  } catch {
+    ElMessage.error(t('admin.retryFromDlqFailed'))
+  } finally {
+    dlqRetryRunning.value = false
+  }
 }
 
 function resolveErrorMessage(err: unknown, fallback: string) {

@@ -160,6 +160,25 @@ app:
     ingest:
       embed-on-ingest: true
       embedding-batch-size: 16
+  task-queue:
+    # 是否启用 Redis Streams 任务队列，默认 false（走旧的 @Async 兜底）
+    enabled: false
+    stream-key: xhs:tasks:stream
+    dlq-key: xhs:tasks:dlq
+    consumer-group: xhs-workers
+    max-retry: 3
+    # 指数退避秒数序列
+    retry-backoff: 1,2,4
+    # Worker 唯一标识，默认取 HOSTNAME 环境变量
+    worker-id: ${HOSTNAME:worker-1}
+    # XREADGROUP 阻塞超时
+    poll-timeout: 5s
+    # 心跳超时秒数（超过此时间无心跳视为 worker 死亡）
+    heartbeat-timeout-seconds: 30
+    # 幂等键保留天数
+    idempotency-key-ttl-days: 90
+    # 任务恢复扫描间隔（毫秒）
+    recovery-scan-interval-ms: 60000
   storage:
     type: ${STORAGE_TYPE:local}
     minio:

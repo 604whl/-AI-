@@ -23,6 +23,20 @@ public final class SampleAnalysisReport {
         );
     }
 
+    /**
+     * P0-1: 从 Map payload 构建 SampleReport。
+     */
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> buildFromPayload(Map<String, Object> payload) {
+        return build(
+                String.valueOf(payload.getOrDefault("title", "")),
+                String.valueOf(payload.getOrDefault("body", "")),
+                String.valueOf(payload.getOrDefault("persona", "agency")),
+                String.valueOf(payload.getOrDefault("scenario", "draft")),
+                payload.get("coverImageUrl") != null && !String.valueOf(payload.get("coverImageUrl")).isBlank()
+        );
+    }
+
     public static Map<String, Object> build(String title, String body, String persona) {
         return build(title, body, persona, "draft", false);
     }

@@ -13,16 +13,20 @@ import com.shortvideoscripagent.xhsagentyunying.ai.rag.RagQuery;
 import com.shortvideoscripagent.xhsagentyunying.ai.rag.RagRetriever;
 import com.shortvideoscripagent.xhsagentyunying.common.exception.BusinessException;
 import com.shortvideoscripagent.xhsagentyunying.config.AppAiProperties;
+import com.shortvideoscripagent.xhsagentyunying.config.TaskQueueProperties;
 import com.shortvideoscripagent.xhsagentyunying.domain.compliance.ComplianceChecker;
 import com.shortvideoscripagent.xhsagentyunying.domain.entity.AnalysisReport;
 import com.shortvideoscripagent.xhsagentyunying.domain.entity.AnalysisTask;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.AnalysisReportMapper;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.AnalysisTaskMapper;
+import com.shortvideoscripagent.xhsagentyunying.infra.taskqueue.TaskQueueProducer;
+import com.shortvideoscripagent.xhsagentyunying.infra.taskqueue.payload.AnalysisTaskPayload;
 import com.shortvideoscripagent.xhsagentyunying.service.analysis.AnalysisProgressEvent;
 import com.shortvideoscripagent.xhsagentyunying.service.analysis.AnalysisStreamHub;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
@@ -53,11 +57,65 @@ public class AnalysisOrchestrator {
     private final AiRuntimePolicy aiRuntimePolicy;
     private final AnalysisStreamHub analysisStreamHub;
 
+    // P0-1: 可选的任务队列（条件注入）
+    @Autowired(required = false)
+    private TaskQueueProducer taskQueueProducer;
+
+    @Autowired(required = false)
+    private TaskQueueProperties taskQueueProperties;
+
     @Resource(name = "aiExecutor")
     private Executor aiExecutor;
 
-    @Async("analysisExecutor")
+    /**
+     * P0-1: 任务调度入口。
+     * 根据配置选择 Redis Streams 队列或旧的 @Async 模式。
+     */
     public void analyzeAsync(String taskId) {
+        if (taskQueueProperties != null && taskQueueProperties.isEnabled() && taskQueueProducer != null) {
+            // Redis Streams 模式：构建 payload 并投递
+            AnalysisTask task = taskMapper.selectById(taskId);
+            if (task != null) {
+                try {
+                    AnalysisTaskPayload payload = toPayload(task);
+                    String payloadJson = objectMapper.writeValueAsString(payload);
+                    taskQueueProducer.enqueue("ANALYSIS", taskId, payloadJson, 1);
+                    // 更新状态为 queued
+                    task.setStatus("queued");
+                    task.setUpdatedAt(OffsetDateTime.now());
+                    taskMapper.updateById(task);
+                } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
+                    log.error("Failed to serialize payload for task {}", taskId, ex);
+                    throw new BusinessException(50002, "payload_serialization_failed");
+                }
+            }
+        } else {
+            // 旧的 @Async 模式
+            analyzeAsyncDirect(taskId);
+        }
+    }
+
+    private AnalysisTaskPayload toPayload(AnalysisTask task) {
+        AnalysisTaskPayload p = new AnalysisTaskPayload();
+        p.setTaskId(task.getId());
+        p.setScenario(task.getScenario());
+        p.setPersona(task.getPersona());
+        p.setTitle(task.getTitle());
+        p.setBody(task.getBody());
+        p.setCoverImageUrl(task.getCoverImageUrl());
+        p.setPublishedMetrics(task.getPublishedMetrics());
+        p.setCompetitorContext(task.getCompetitorContext());
+        p.setPromptVersion(task.getPromptVersion());
+        p.setModelProvider(task.getModelProvider());
+        p.setModelName(task.getModelName());
+        return p;
+    }
+
+    /**
+     * 旧的直接 @Async 模式（默认，兼容未启用 task-queue 时）。
+     */
+    @Async("analysisExecutor")
+    public void analyzeAsyncDirect(String taskId) {
         log.info("Analysis task queued: {}", taskId);
         long startedAt = System.currentTimeMillis();
 
