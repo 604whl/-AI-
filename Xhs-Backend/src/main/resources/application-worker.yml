@@ -1,0 +1,9 @@
+# syntax=docker/dockerfile:1
+
+# ============================================================
+# Worker runtime profile config
+# Worker 节点：不暴露 HTTP，健康检查关闭，Redis Streams 消费
+# ============================================================
+spring:
+  main:
+    web-application-type: none
