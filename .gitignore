@@ -1,0 +1,6 @@
+# Root-level gitignore
+*.log
+backend-*.log
+frontend.log
+compile.log
+Xhs-Backend/data/uploads/

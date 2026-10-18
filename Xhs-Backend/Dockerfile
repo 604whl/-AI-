@@ -20,6 +20,9 @@ RUN mvn package -B -DskipTests -q
 # ============================================================
 FROM eclipse-temurin:21-jre-alpine
 
+# 安装健康检查依赖（wget/curl）
+RUN apk add --no-cache wget curl
+
 # 安全：非 root 运行
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser
@@ -31,10 +34,10 @@ COPY --from=builder /app/target/*.jar app.jar
 COPY --from=builder /app/src/main/resources ./resources
 
 # 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD wget -qO- http://localhost:8080/api/actuator/health/liveness || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD wget -qO- http://localhost:8125/api/actuator/health/liveness || exit 1
 
-EXPOSE 8080
+EXPOSE 8125
 
 # JVM 优化（Alpine musl libc 兼容）
 ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Djava.security.egd=file:/dev/./urandom"
