@@ -1,6 +1,7 @@
 package com.shortvideoscripagent.xhsagentyunying.common.exception;
 
 import com.shortvideoscripagent.xhsagentyunying.common.api.ApiResponse;
+import com.shortvideoscripagent.xhsagentyunying.common.exception.PlatformConnectorUnavailableException;
 import com.shortvideoscripagent.xhsagentyunying.infra.upload.VirusFoundException;
 import com.shortvideoscripagent.xhsagentyunying.infra.upload.VirusScanUnavailableException;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -25,6 +26,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleBusiness(BusinessException ex) {
         HttpStatus status = mapHttpStatus(ex.getCode());
         return ResponseEntity.status(status).body(ApiResponse.fail(ex.getCode(), ex.getMessage()));
+    }
+
+    /**
+     * M0-5：平台连接器不可用，返回 503 Service Unavailable。
+     */
+    @ExceptionHandler(PlatformConnectorUnavailableException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePlatformConnectorUnavailable(
+            PlatformConnectorUnavailableException ex) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ApiResponse.fail(ex.getCode(), ex.getMessage()));
     }
 
     @ExceptionHandler(VirusFoundException.class)
