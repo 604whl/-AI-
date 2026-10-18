@@ -27,7 +27,6 @@ import com.shortvideoscripagent.xhsagentyunying.dto.analysis.OptimizeDraftReques
 import com.shortvideoscripagent.xhsagentyunying.dto.analysis.OptimizeDraftResponse;
 import com.shortvideoscripagent.xhsagentyunying.dto.analysis.PaginatedResponse;
 import com.shortvideoscripagent.xhsagentyunying.quota.QuotaLedgerService;
-import com.shortvideoscripagent.xhsagentyunying.quota.QuotaRefundService;
 import com.shortvideoscripagent.xhsagentyunying.service.analysis.AnalysisProgressEvent;
 import com.shortvideoscripagent.xhsagentyunying.service.analysis.AnalysisStreamHub;
 import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceGuards;
@@ -77,7 +76,6 @@ public class AnalysisAppService {
     private final AiRuntimePolicy aiRuntimePolicy;
     private final AnalysisStreamHub analysisStreamHub;
     private final QuotaLedgerService quotaLedgerService;
-    private final QuotaRefundService quotaRefundService;
 
     @Resource(name = "aiExecutor")
     private Executor aiExecutor;
@@ -186,40 +184,27 @@ public class AnalysisAppService {
 
         aiRuntimePolicy.assertRealAiAvailable();
 
-        // D1-M0-4: 扣费守卫 — try 块第一句；额度不足抛业务异常，不走 catch 退款路径
-        var quotaResult = userQuotaService.consumeOptimizeDraftQuota(userId, id);
-        UUID ledgerId = quotaResult.ledgerId();
+        String tone = request.getTone() == null ? "default" : request.getTone();
+        int maxLength = request.getMaxLength() > 0 ? request.getMaxLength() : 1200;
+        String userPrompt = promptEngine.buildOptimizeDraftUserPrompt(task, report, tone, maxLength);
+        String raw = callModel(promptEngine.systemPrompt(), userPrompt);
+        Map<String, Object> draft = jsonReportParser.parseOptimizeDraft(raw);
+        complianceChecker.mergeIntoReport(draft, String.valueOf(draft.get("optimizedTitle")), String.valueOf(draft.get("optimizedBody")));
 
-        try {
-            String tone = request.getTone() == null ? "default" : request.getTone();
-            int maxLength = request.getMaxLength() > 0 ? request.getMaxLength() : 1200;
-            String userPrompt = promptEngine.buildOptimizeDraftUserPrompt(task, report, tone, maxLength);
-            String raw = callModel(promptEngine.systemPrompt(), userPrompt);
-            Map<String, Object> draft = jsonReportParser.parseOptimizeDraft(raw);
-            complianceChecker.mergeIntoReport(draft, String.valueOf(draft.get("optimizedTitle")), String.valueOf(draft.get("optimizedBody")));
-
-            String body = String.valueOf(draft.get("optimizedBody"));
-            String optimizedTitle = request.isIncludeTitle()
-                    ? truncateTitle(String.valueOf(draft.get("optimizedTitle")))
-                    : truncateTitle(task.getTitle());
-            return OptimizeDraftResponse.builder()
-                    .analysisId(id)
-                    .optimizedTitle(optimizedTitle)
-                    .optimizedBody(body)
-                    .structureOutline(castStringList(draft.get("structureOutline")))
-                    .cta(String.valueOf(draft.getOrDefault("cta", "")))
-                    .complianceWarnings(castWarningList(draft.get("complianceWarnings")))
-                    .promptVersion(PromptEngine.RUBRIC_VERSION)
-                    .wordCount(body.length())
-                    .build();
-        } catch (BusinessException ex) {
-            // 业务异常（参数错误、权限等）：不退款，向上抛
-            throw ex;
-        } catch (Exception ex) {
-            // LLM / 解析 / 合规等非预期异常：冲正已扣额度
-            quotaRefundService.refund(ledgerId, "optimize-draft-llm-error:" + ex.getMessage());
-            throw new BusinessException(CODE_AI_UNAVAILABLE, "ai_service_error");
-        }
+        String body = String.valueOf(draft.get("optimizedBody"));
+        String optimizedTitle = request.isIncludeTitle()
+                ? truncateTitle(String.valueOf(draft.get("optimizedTitle")))
+                : truncateTitle(task.getTitle());
+        return OptimizeDraftResponse.builder()
+                .analysisId(id)
+                .optimizedTitle(optimizedTitle)
+                .optimizedBody(body)
+                .structureOutline(castStringList(draft.get("structureOutline")))
+                .cta(String.valueOf(draft.getOrDefault("cta", "")))
+                .complianceWarnings(castWarningList(draft.get("complianceWarnings")))
+                .promptVersion(PromptEngine.RUBRIC_VERSION)
+                .wordCount(body.length())
+                .build();
     }
 
     public BodyGenerateResponse generateBody(Long userId, String id, BodyGenerateRequest request) {
