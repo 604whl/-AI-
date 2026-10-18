@@ -14,7 +14,7 @@ public class AssetTag {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    private Long assetId;
+    private String assetUuid;
     private String tag;
     private OffsetDateTime createdAt;
 }

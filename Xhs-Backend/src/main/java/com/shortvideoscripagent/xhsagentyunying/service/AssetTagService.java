@@ -4,11 +4,11 @@ import java.util.List;
 
 public interface AssetTagService {
 
-    void setTags(Long assetId, Long workspaceId, List<String> tags);
+    void setTags(String assetUuid, Long workspaceId, List<String> tags);
 
-    List<String> getTags(Long assetId, Long workspaceId);
+    List<String> getTags(String assetUuid, Long workspaceId);
 
-    List<Long> findAssetIdsByTag(String tag, Long workspaceId);
+    List<String> findAssetUuidsByTag(String tag, Long workspaceId);
 
-    List<Long> findAssetIdsByAnyTag(List<String> tags, Long workspaceId);
+    List<String> findAssetUuidsByAnyTag(List<String> tags, Long workspaceId);
 }

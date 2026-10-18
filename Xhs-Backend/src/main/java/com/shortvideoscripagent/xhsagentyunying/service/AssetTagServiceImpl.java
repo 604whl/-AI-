@@ -2,6 +2,7 @@ package com.shortvideoscripagent.xhsagentyunying.service;
 
 import com.shortvideoscripagent.xhsagentyunying.common.exception.BusinessException;
 import com.shortvideoscripagent.xhsagentyunying.domain.entity.AssetTag;
+import com.shortvideoscripagent.xhsagentyunying.domain.entity.ContentAsset;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.AssetTagMapper;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.ContentAssetMapper;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -26,45 +28,45 @@ public class AssetTagServiceImpl implements AssetTagService {
 
     @Override
     @Transactional
-    public void setTags(Long assetId, Long workspaceId, List<String> tags) {
-        validateAssetOwnership(assetId, workspaceId);
+    public void setTags(String assetUuid, Long workspaceId, List<String> tags) {
+        validateAssetOwnership(assetUuid, workspaceId);
         List<String> normalized = normalizeTags(tags);
         if (normalized.size() > MAX_TAGS_PER_ASSET) {
             throw new BusinessException(CODE_BAD_REQUEST,
                     "too_many_tags: max " + MAX_TAGS_PER_ASSET + " per asset");
         }
-        assetTagMapper.deleteByAssetId(assetId);
+        assetTagMapper.deleteByAssetUuid(assetUuid);
         for (String tag : normalized) {
             AssetTag at = new AssetTag();
-            at.setAssetId(assetId);
+            at.setAssetUuid(assetUuid);
             at.setTag(tag);
             at.setCreatedAt(OffsetDateTime.now());
             assetTagMapper.insert(at);
         }
-        log.info("Tags set for asset {}: {}", assetId, normalized);
+        log.info("Tags set for asset {}: {}", assetUuid, normalized);
     }
 
     @Override
-    public List<String> getTags(Long assetId, Long workspaceId) {
-        validateAssetOwnership(assetId, workspaceId);
-        List<String> tags = assetTagMapper.selectTagsByAssetId(assetId);
+    public List<String> getTags(String assetUuid, Long workspaceId) {
+        validateAssetOwnership(assetUuid, workspaceId);
+        List<String> tags = assetTagMapper.selectTagsByAssetUuid(assetUuid);
         return tags != null ? tags : List.of();
     }
 
     @Override
-    public List<Long> findAssetIdsByTag(String tag, Long workspaceId) {
+    public List<String> findAssetUuidsByTag(String tag, Long workspaceId) {
         if (tag == null || tag.isBlank()) {
             return List.of();
         }
-        List<Long> candidateIds = assetTagMapper.selectAssetIdsByTag(tag.toLowerCase().trim());
-        if (candidateIds == null || candidateIds.isEmpty()) {
+        List<String> candidates = assetTagMapper.selectAssetUuidsByTag(tag.toLowerCase().trim());
+        if (candidates == null || candidates.isEmpty()) {
             return List.of();
         }
-        return filterByWorkspace(candidateIds, workspaceId);
+        return filterByWorkspace(candidates, workspaceId);
     }
 
     @Override
-    public List<Long> findAssetIdsByAnyTag(List<String> tags, Long workspaceId) {
+    public List<String> findAssetUuidsByAnyTag(List<String> tags, Long workspaceId) {
         if (tags == null || tags.isEmpty()) {
             return List.of();
         }
@@ -77,15 +79,24 @@ public class AssetTagServiceImpl implements AssetTagService {
         if (normalized.isEmpty()) {
             return List.of();
         }
-        List<Long> candidateIds = assetTagMapper.selectAssetIdsByAnyTag(normalized);
-        if (candidateIds == null || candidateIds.isEmpty()) {
+        List<String> candidates = assetTagMapper.selectAssetUuidsByAnyTag(normalized);
+        if (candidates == null || candidates.isEmpty()) {
             return List.of();
         }
-        return filterByWorkspace(candidateIds, workspaceId);
+        return filterByWorkspace(candidates, workspaceId);
     }
 
-    private void validateAssetOwnership(Long assetId, Long workspaceId) {
-        if (assetId == null) {
+    private void validateAssetOwnership(String assetUuid, Long workspaceId) {
+        if (assetUuid == null || assetUuid.isBlank()) {
+            throw new BusinessException(CODE_NOT_FOUND, "asset_not_found");
+        }
+        ContentAsset asset = assetMapper.selectById(UUID.fromString(assetUuid));
+        if (asset == null) {
+            throw new BusinessException(CODE_NOT_FOUND, "asset_not_found");
+        }
+        long wsLeast = asset.getWorkspaceId().getLeastSignificantBits();
+        long wsHash = (long) asset.getWorkspaceId().hashCode();
+        if (wsLeast != workspaceId && wsHash != workspaceId) {
             throw new BusinessException(CODE_NOT_FOUND, "asset_not_found");
         }
     }
@@ -103,18 +114,25 @@ public class AssetTagServiceImpl implements AssetTagService {
                 .toList();
     }
 
-    private List<Long> filterByWorkspace(List<Long> assetIds, Long workspaceId) {
-        if (assetIds == null || assetIds.isEmpty()) {
+    private List<String> filterByWorkspace(List<String> assetUuids, Long workspaceId) {
+        if (assetUuids == null || assetUuids.isEmpty()) {
             return List.of();
         }
-        return assetMapper.selectBatchIds(assetIds).stream()
-                .filter(asset -> asset.getWorkspaceId() != null)
+        return assetUuids.stream()
+                .map(uuid -> {
+                    try { return UUID.fromString(uuid); }
+                    catch (Exception e) { return null; }
+                })
+                .filter(uuid -> uuid != null)
+                .map(uuid -> assetMapper.selectById(uuid))
+                .filter(asset -> asset != null && asset.getWorkspaceId() != null)
                 .filter(asset -> {
                     long wsLeast = asset.getWorkspaceId().getLeastSignificantBits();
                     long wsHash = (long) asset.getWorkspaceId().hashCode();
                     return wsLeast == workspaceId || wsHash == workspaceId;
                 })
-                .map(asset -> asset.getId().getLeastSignificantBits())
+                .map(ContentAsset::getId)
+                .map(UUID::toString)
                 .toList();
     }
 }
