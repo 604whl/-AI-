@@ -3,6 +3,7 @@ package com.shortvideoscripagent.xhsagentyunying.domain.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
@@ -60,7 +61,15 @@ public class ContentAsset {
     /** 平台账号 ID */
     private String accountId;
 
-    /** 当前版本号，每次更新 +1 */
+    /**
+     * 当前版本号：乐观锁 + 业务版本号合并字段。
+     * <p>
+     * MyBatis-Plus @Version 在 updateById 时会：
+     * 1) UPDATE ... SET current_version = current_version + 1 WHERE id = #{id} AND current_version = #{oldVersion}
+     * 2) 影响行数为 0 时抛 OptimisticLockingFailureException
+     * 业务侧原本手动维护 currentVersion += 1 的逻辑被该机制替代。
+     */
+    @Version
     private Integer currentVersion;
 
     /** 创建时间 */
