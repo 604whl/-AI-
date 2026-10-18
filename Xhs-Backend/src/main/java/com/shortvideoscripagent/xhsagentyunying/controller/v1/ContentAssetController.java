@@ -9,7 +9,6 @@ import com.shortvideoscripagent.xhsagentyunying.service.ContentAssetService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -145,16 +144,16 @@ public class ContentAssetController {
     // ── 多媒体附件 ─────────────────────────────────────────────────────────
 
     /**
-     * 添加媒体附件（M0-2：病毒扫描前置于 MinIO 写入）。
+     * 添加媒体附件。
      */
     @PostMapping("/{id}/media")
     public ApiResponse<AssetResponse> addMedia(
             @PathVariable String id,
-            @RequestParam("file") MultipartFile file
+            @Valid @RequestBody AssetMediaRequest request
     ) {
         Long userId = requireUserId();
         UUID assetId = parseUuid(id);
-        return ApiResponse.ok(contentAssetService.addMedia(assetId, file, userId));
+        return ApiResponse.ok(contentAssetService.addMedia(assetId, request, userId));
     }
 
     /**

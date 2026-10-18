@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.shortvideoscripagent.xhsagentyunying.common.api.WorkspaceContext;
 import com.shortvideoscripagent.xhsagentyunying.common.exception.BusinessException;
-import com.shortvideoscripagent.xhsagentyunying.config.AppStorageProperties;
 import com.shortvideoscripagent.xhsagentyunying.domain.entity.ContentAsset;
 import com.shortvideoscripagent.xhsagentyunying.domain.entity.ContentAssetMedia;
 import com.shortvideoscripagent.xhsagentyunying.domain.entity.ContentAssetVersion;
@@ -14,22 +13,15 @@ import com.shortvideoscripagent.xhsagentyunying.domain.mapper.ContentAssetMediaM
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.ContentAssetVersionMapper;
 import com.shortvideoscripagent.xhsagentyunying.dto.analysis.PaginatedResponse;
 import com.shortvideoscripagent.xhsagentyunying.dto.asset.*;
-import com.shortvideoscripagent.xhsagentyunying.infra.upload.FileValidator;
 import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceGuards;
 import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceRole;
 import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceService;
-import io.minio.BucketExistsArgs;
-import io.minio.MakeBucketArgs;
-import io.minio.MinioClient;
-import io.minio.PutObjectArgs;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.InputStream;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.*;
@@ -63,8 +55,6 @@ public class ContentAssetService {
     private final ReviewService reviewService;
     private final RiskAssessmentService riskAssessmentService;
     private final StringRedisTemplate redisTemplate;
-    private final FileValidator fileValidator;
-    private final AppStorageProperties storageProperties;
 
     // ── 创建（内部/Worker 调用，无 WorkspaceContext）────────────────────────────────
 
@@ -384,43 +374,27 @@ public class ContentAssetService {
     // ── 多媒体附件 ──────────────────────────────────────────────────────────
 
     /**
-     * 添加媒体附件（M0-2：病毒扫描前置，上传流程：
-     * MultipartFile → FileValidator（含 ClamAvScanner）→ MinIO 写入 → DB 元数据）。
+     * 添加媒体附件。
      */
     @Transactional
-    public AssetResponse addMedia(UUID assetId, MultipartFile file, Long userId) {
+    public AssetResponse addMedia(UUID assetId, AssetMediaRequest request, Long userId) {
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
         ContentAsset asset = requireOwnedAsset(userId, assetId, workspaceId);
 
-        // 1. 综合校验（魔数 + 大小 + 分辨率 + 病毒扫描）
-        fileValidator.validate(file);
+        ContentAssetMedia media = new ContentAssetMedia();
+        media.setId(UUID.randomUUID());
+        media.setAssetId(assetId);
+        media.setMediaType(request.getMediaType());
+        media.setObjectKey(request.getObjectKey());
+        media.setRole(request.getRole() != null ? request.getRole() : ContentAssetMedia.ROLE_ATTACHMENT);
+        media.setSortOrder(request.getSortOrder() != null ? request.getSortOrder() : 0);
+        media.setWidth(request.getWidth());
+        media.setHeight(request.getHeight());
+        media.setFileSize(request.getFileSize());
+        media.setCreatedAt(OffsetDateTime.now());
+        mediaMapper.insert(media);
 
-        // 2. 生成 objectKey 并上传 MinIO（扫描通过后才写）
-        String objectKey = buildObjectKey(assetId, file);
-
-        try {
-            uploadToMinio(objectKey, file);
-
-            // 3. 写入 DB 元数据（MinIO 写入成功后才记录）
-            ContentAssetMedia media = new ContentAssetMedia();
-            media.setId(UUID.randomUUID());
-            media.setAssetId(assetId);
-            media.setMediaType(detectMediaType(file.getContentType()));
-            media.setObjectKey(objectKey);
-            media.setRole(detectMediaRole(file.getContentType()));
-            media.setSortOrder(0);
-            media.setWidth(null);
-            media.setHeight(null);
-            media.setFileSize(file.getSize());
-            media.setCreatedAt(OffsetDateTime.now());
-            mediaMapper.insert(media);
-
-            return toResponse(asset);
-        } catch (Exception ex) {
-            // MinIO 写入失败时不上报异常，保持 DB 干净
-            log.error("Failed to upload media {} for asset {}: {}", objectKey, assetId, ex.getMessage());
-            throw new BusinessException(50004, "storage_error");
-        }
+        return toResponse(asset);
     }
 
     /**
@@ -643,78 +617,5 @@ public class ContentAssetService {
             throw new BusinessException(CODE_BAD_REQUEST, message);
         }
         return trimmed;
-    }
-
-    // ── MinIO 上传辅助（供 addMedia 使用）─────────────────────────────────
-
-    /**
-     * 生成 objectKey：media/{workspaceId}/{assetId}/{uuid}{ext}
-     */
-    private String buildObjectKey(UUID assetId, MultipartFile file) {
-        String workspaceId = WorkspaceContext.requireWorkspaceId();
-        String ext = resolveExtension(file);
-        return "media/" + workspaceId + "/" + assetId + "/"
-                + UUID.randomUUID().toString().replace("-", "") + ext;
-    }
-
-    /**
-     * 上传文件到 MinIO（bucket 不存在时自动创建）。
-     */
-    private void uploadToMinio(String objectKey, MultipartFile file) throws Exception {
-        AppStorageProperties.Minio minio = storageProperties.getMinio();
-        MinioClient client = MinioClient.builder()
-                .endpoint(minio.getEndpoint())
-                .credentials(minio.getAccessKey(), minio.getSecretKey())
-                .build();
-        boolean exists = client.bucketExists(BucketExistsArgs.builder().bucket(minio.getBucket()).build());
-        if (!exists) {
-            client.makeBucket(MakeBucketArgs.builder().bucket(minio.getBucket()).build());
-        }
-        try (InputStream input = file.getInputStream()) {
-            client.putObject(PutObjectArgs.builder()
-                    .bucket(minio.getBucket())
-                    .object(objectKey)
-                    .stream(input, file.getSize(), -1)
-                    .contentType(file.getContentType())
-                    .build());
-        }
-    }
-
-    private String resolveExtension(MultipartFile file) {
-        String contentType = file.getContentType();
-        if (contentType == null) {
-            return ".bin";
-        }
-        return switch (contentType.toLowerCase()) {
-            case "image/png" -> ".png";
-            case "image/webp" -> ".webp";
-            case "image/gif" -> ".gif";
-            case "video/mp4" -> ".mp4";
-            case "video/quicktime" -> ".mov";
-            default -> ".bin";
-        };
-    }
-
-    private String detectMediaType(String contentType) {
-        if (contentType == null) {
-            return "file";
-        }
-        if (contentType.startsWith("image/")) {
-            return "image";
-        }
-        if (contentType.startsWith("video/")) {
-            return "video";
-        }
-        return "file";
-    }
-
-    private String detectMediaRole(String contentType) {
-        if (contentType == null) {
-            return ContentAssetMedia.ROLE_ATTACHMENT;
-        }
-        if (contentType.startsWith("image/")) {
-            return ContentAssetMedia.ROLE_MAIN;
-        }
-        return ContentAssetMedia.ROLE_ATTACHMENT;
     }
 }
