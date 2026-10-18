@@ -7,7 +7,6 @@ import com.shortvideoscripagent.xhsagentyunying.common.exception.BusinessExcepti
 import com.shortvideoscripagent.xhsagentyunying.domain.entity.ContentAsset;
 import com.shortvideoscripagent.xhsagentyunying.domain.entity.ContentAssetMedia;
 import com.shortvideoscripagent.xhsagentyunying.domain.entity.ContentAssetVersion;
-import org.springframework.dao.OptimisticLockingFailureException;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.ContentAssetMapper;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.ContentAssetMediaMapper;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.ContentAssetVersionMapper;
@@ -188,14 +187,6 @@ public class ContentAssetService {
         ContentAsset asset = requireOwnedAsset(editorId, assetId, workspaceId);
         if (!asset.isEditable()) {
             throw new BusinessException(CODE_CONFLICT, "asset_not_editable");
-        }
-
-        // 乐观锁校验：若调用方指定了 expectedVersion，必须匹配 currentVersion
-        if (request.getExpectedVersion() != null
-                && !request.getExpectedVersion().equals(asset.getCurrentVersion())) {
-            throw new OptimisticLockingFailureException(
-                    "Version conflict: expected " + request.getExpectedVersion()
-                    + " but found " + asset.getCurrentVersion());
         }
 
         String autosaveKey = AUTOSAVE_KEY_PREFIX + assetId;

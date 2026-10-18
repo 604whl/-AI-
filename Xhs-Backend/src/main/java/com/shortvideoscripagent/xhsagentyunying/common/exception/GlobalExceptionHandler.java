@@ -3,7 +3,6 @@ package com.shortvideoscripagent.xhsagentyunying.common.exception;
 import com.shortvideoscripagent.xhsagentyunying.common.api.ApiResponse;
 import com.shortvideoscripagent.xhsagentyunying.infra.upload.VirusFoundException;
 import com.shortvideoscripagent.xhsagentyunying.infra.upload.VirusScanUnavailableException;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -19,7 +18,6 @@ public class GlobalExceptionHandler {
 
     private static final int CODE_VIRUS = 4001;
     private static final int CODE_VIRUS_SCAN_UNAVAILABLE = 4003;
-    private static final int CODE_VERSION_CONFLICT = 40910;
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusiness(BusinessException ex) {
@@ -37,12 +35,6 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponse<Void> handleVirusScanUnavailable(VirusScanUnavailableException ex) {
         return ApiResponse.fail(CODE_VIRUS_SCAN_UNAVAILABLE, "virus_scan_unavailable");
-    }
-
-    @ExceptionHandler(OptimisticLockingFailureException.class)
-    public ResponseEntity<ApiResponse<Void>> handleOptimisticLock(OptimisticLockingFailureException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(ApiResponse.fail(CODE_VERSION_CONFLICT, "version_conflict"));
     }
 
     private HttpStatus mapHttpStatus(int code) {
