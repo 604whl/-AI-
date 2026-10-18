@@ -35,6 +35,7 @@ public class UserQuotaService {
     public static final String ACTION_AGENT_MESSAGE = "CHAT";
     public static final String ACTION_WEB_SEARCH = "WEB_SEARCH";
     public static final String ACTION_BODY_GENERATION = "BODY";
+    public static final String ACTION_OPTIMIZE_DRAFT = "OPTIMIZE_DRAFT";
 
     private static final int CODE_QUOTA_EXCEEDED = 42901;
     private static final int CODE_AGENT_QUOTA_EXCEEDED = 42904;
@@ -121,6 +122,22 @@ public class UserQuotaService {
             throw new BusinessException(CODE_BODY_QUOTA_EXCEEDED, "body_quota_exceeded");
         }
         writeLegacyUsageLog(userId, workspaceId, ACTION_BODY_GENERATION, taskId);
+    }
+
+    /**
+     * D1-M0-4: 扣减优化稿额度。
+     * 失败时不抛异常，返回 ledgerId 以便调用方在 LLM 异常时自行退款。
+     */
+    public QuotaCheckResult consumeOptimizeDraftQuota(Long userId, String taskId) {
+        String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
+        UUID refId = taskId != null ? UUID.fromString(taskId) : null;
+
+        QuotaCheckResult result = atomicQuotaGuard.tryConsume(workspaceId, ACTION_OPTIMIZE_DRAFT, refId, "optimize-draft");
+        if (!result.isOk()) {
+            throw new BusinessException(CODE_BODY_QUOTA_EXCEEDED, "optimize_draft_quota_exceeded");
+        }
+        writeLegacyUsageLog(userId, workspaceId, ACTION_OPTIMIZE_DRAFT, taskId);
+        return result;
     }
 
     @Transactional
