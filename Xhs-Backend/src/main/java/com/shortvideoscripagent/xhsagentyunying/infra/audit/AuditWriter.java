@@ -5,6 +5,7 @@ import com.shortvideoscripagent.xhsagentyunying.common.api.WorkspaceContext;
 import com.shortvideoscripagent.xhsagentyunying.domain.entity.AuditEvent;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.AuditEventMapper;
 import com.shortvideoscripagent.xhsagentyunying.infra.metrics.BusinessMetrics;
+import com.shortvideoscripagent.xhsagentyunying.service.admin.PlatformAdminService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -28,6 +29,7 @@ public class AuditWriter {
 
     private final AuditEventMapper auditEventMapper;
     private final BusinessMetrics metrics;
+    private final PlatformAdminService platformAdminService;
 
     /**
      * 异步记录一次操作。
@@ -62,8 +64,14 @@ public class AuditWriter {
             event.setWorkspaceId(WorkspaceContext.getWorkspaceId());
             Long uid = RequestContext.getUserId();
             event.setActorUserId(uid == null ? null : String.valueOf(uid));
+
+            // 平台管理员的操作记录为 PLATFORM 类型
+            String finalResourceType = resourceType;
+            if (uid != null && platformAdminService.isPlatformAdmin(uid)) {
+                finalResourceType = "PLATFORM";
+            }
             event.setAction(action);
-            event.setResourceType(resourceType);
+            event.setResourceType(finalResourceType);
             event.setResourceId(resourceId);
             event.setMetadata(metadata == null ? new HashMap<>() : metadata);
             event.setIp(RequestContext.getRequestIp());

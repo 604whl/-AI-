@@ -1,5 +1,7 @@
 # 阿里云生产环境示例（密钥走环境变量 / KMS）
 spring:
+  profiles:
+    active: prod
   datasource:
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
@@ -28,6 +30,18 @@ app:
       model: ${DEEPSEEK_CHAT_MODEL:deepseek-chat}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:https://your-frontend-domain.com}
+  # 病毒扫描配置
+  upload:
+    virus-scan:
+      enabled: ${VIRUS_SCAN_ENABLED:true}
+      host: ${CLAMAV_HOST:clamav}
+      port: ${CLAMAV_PORT:3310}
+      timeout-ms: ${CLAMAV_TIMEOUT_MS:5000}
+  health:
+    minio:
+      timeout-ms: 2000
+    ai:
+      timeout-ms: 2000
 
 # 生产环境开放 actuator health 的 details（仅内网访问）
 management:
@@ -36,3 +50,14 @@ management:
       show-details: always
       probes:
         enabled: true
+  health:
+    db:
+      enabled: true
+    redis:
+      enabled: true
+    diskspace:
+      enabled: true
+    minio:
+      enabled: true
+    ai:
+      enabled: true

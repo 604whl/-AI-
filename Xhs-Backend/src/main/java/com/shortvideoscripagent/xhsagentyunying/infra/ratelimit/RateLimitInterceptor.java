@@ -2,6 +2,7 @@ package com.shortvideoscripagent.xhsagentyunying.infra.ratelimit;
 
 import com.shortvideoscripagent.xhsagentyunying.common.api.RequestContext;
 import com.shortvideoscripagent.xhsagentyunying.common.api.WorkspaceContext;
+import com.shortvideoscripagent.xhsagentyunying.common.exception.BusinessException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import java.util.Collections;
 public class RateLimitInterceptor implements HandlerInterceptor {
 
     private static final int CODE_RATELIMITED = 42901;
+    private static final int CODE_WORKSPACE_REQUIRED = 40003;
 
     private final StringRedisTemplate redisTemplate;
     private final DefaultRedisScript<Long> script = buildScript();
@@ -58,7 +60,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         }
 
         String dimension = annotation.dimension();
-        String keySuffix = resolveKey(annotation.key(), request, hm);
+        String keySuffix = resolveKey(annotation, annotation.key(), request);
         String limitKey = buildRedisKey(dimension, keySuffix);
         int limit = annotation.limit();
         int window = annotation.window();
@@ -83,6 +85,8 @@ public class RateLimitInterceptor implements HandlerInterceptor {
                 response.getWriter().flush();
                 return false;
             }
+        } catch (BusinessException e) {
+            throw e; // P1-1: propagate workspace_id_required
         } catch (Exception e) {
             log.error("Rate limit check error: {}", e.getMessage());
             // Redis 异常时降级放行，避免影响核心流程
@@ -90,11 +94,16 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         return true;
     }
 
-    private String resolveKey(String keyPrefix, HttpServletRequest request, HandlerMethod hm) {
+    private String resolveKey(RateLimited annotation, String keyPrefix, HttpServletRequest request) {
         String resolved = keyPrefix;
         Long userId = RequestContext.getUserId();
         String workspaceId = WorkspaceContext.getWorkspaceId();
         String clientIp = getClientIp(request);
+
+        // P1-1: fail-closed when dimension=workspace but workspaceId is null
+        if ("workspace".equals(annotation.dimension()) && workspaceId == null) {
+            throw new BusinessException(CODE_WORKSPACE_REQUIRED, "workspace_id_required");
+        }
 
         // 支持 ${userId}、${workspaceId}、${ip} 占位符替换
         if (resolved.contains("${userId}") && userId != null) {

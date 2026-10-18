@@ -14,7 +14,9 @@ import java.util.Map;
  * 设计目标：
  * <ul>
  *   <li>避免"忘记设 profile 就直接以 local 启动"被部署到公网后留下 localhost JWT 密钥、localhost CORS 等隐患。</li>
- *   <li>本地开发保留兼容：通过 {@code XHS_ALLOW_DEFAULT_PROFILE=true}（例如 CI 单元测试）放行默认 profile。</li>
+ *   <li>本地开发保留兼容：设置 {@code SPRING_PROFILES_ACTIVE=local} 即可正常启动。</li>
+ *   <li>CI / 单元测试场景：设置 {@code XHS_ALLOW_DEFAULT_PROFILE=true}（或环境变量
+ *       {@code xhs.allow-default-profile=true}）可绕过强制校验。</li>
  * </ul>
  * <p>
  * 注册方式：META-INF/spring.factories（旧）或 spring.factories 替代品。

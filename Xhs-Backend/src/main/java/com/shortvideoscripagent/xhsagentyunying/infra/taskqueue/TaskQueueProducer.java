@@ -24,7 +24,7 @@ import java.util.Map;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "app.task-queue.enabled", havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(name = "app.task-queue.enabled", havingValue = "true", matchIfMissing = true)
 public class TaskQueueProducer {
 
     private final StringRedisTemplate redisTemplate;

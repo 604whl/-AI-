@@ -5,6 +5,7 @@ import com.shortvideoscripagent.xhsagentyunying.common.api.RequestContext;
 import com.shortvideoscripagent.xhsagentyunying.common.exception.BusinessException;
 import com.shortvideoscripagent.xhsagentyunying.dto.title.TitleGenerateRequest;
 import com.shortvideoscripagent.xhsagentyunying.dto.title.TitleGenerateResponse;
+import com.shortvideoscripagent.xhsagentyunying.infra.ratelimit.RateLimited;
 import com.shortvideoscripagent.xhsagentyunying.service.TitleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class TitlesController {
     private final TitleService titleService;
 
     @PostMapping
+    @RateLimited(key = "ai:titles:${workspaceId}", limit = 100, window = 86400, dimension = "workspace")
     public ApiResponse<TitleGenerateResponse> generate(@Valid @RequestBody TitleGenerateRequest request) {
         Long userId = requireUserId();
         return ApiResponse.ok(titleService.generate(userId, request));

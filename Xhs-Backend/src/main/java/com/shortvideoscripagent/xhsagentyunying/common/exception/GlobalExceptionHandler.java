@@ -1,6 +1,8 @@
 package com.shortvideoscripagent.xhsagentyunying.common.exception;
 
 import com.shortvideoscripagent.xhsagentyunying.common.api.ApiResponse;
+import com.shortvideoscripagent.xhsagentyunying.infra.upload.VirusFoundException;
+import com.shortvideoscripagent.xhsagentyunying.infra.upload.VirusScanUnavailableException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -14,10 +16,25 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final int CODE_VIRUS = 4001;
+    private static final int CODE_VIRUS_SCAN_UNAVAILABLE = 4003;
+
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusiness(BusinessException ex) {
         HttpStatus status = mapHttpStatus(ex.getCode());
         return ResponseEntity.status(status).body(ApiResponse.fail(ex.getCode(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(VirusFoundException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiResponse<Void> handleVirusFound(VirusFoundException ex) {
+        return ApiResponse.fail(CODE_VIRUS, "virus_detected");
+    }
+
+    @ExceptionHandler(VirusScanUnavailableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiResponse<Void> handleVirusScanUnavailable(VirusScanUnavailableException ex) {
+        return ApiResponse.fail(CODE_VIRUS_SCAN_UNAVAILABLE, "virus_scan_unavailable");
     }
 
     private HttpStatus mapHttpStatus(int code) {

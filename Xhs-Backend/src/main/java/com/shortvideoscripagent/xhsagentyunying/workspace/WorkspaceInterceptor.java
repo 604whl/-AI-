@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -32,6 +33,9 @@ public class WorkspaceInterceptor implements HandlerInterceptor {
     private static final int CODE_UNAUTHORIZED = 40101;
     private static final int CODE_FORBIDDEN = 40301;
 
+    /**
+     * 精确路径白名单（不区分 HTTP 方法）。
+     */
     private static final Set<String> WORKSPACE_EXEMPT_PATHS = Set.of(
             "/v1/auth/login",
             "/v1/auth/register",
@@ -43,16 +47,39 @@ public class WorkspaceInterceptor implements HandlerInterceptor {
             "/v1/health",
             "/actuator/health",
             "/v1/system/dict",
-            "/v1/system/industries"
+            "/v1/system/industries",
+            "/v1/platform/admin"
     );
 
-    private static final Set<String> WORKSPACE_EXEMPT_PREFIXES = Set.of(
-            "/swagger-ui",
-            "/v3/api-docs",
-            "/doc.html",
-            "/webjars/",
-            "/mcp"
+    /**
+     * 前缀白名单 + 允许的 HTTP 方法列表。
+     * 用途：解决同一前缀下不同方法需要不同待遇的场景（如 /v1/files/cover/ 仅 GET 豁免）。
+     */
+    private static final List<PathMethodRule> EXEMPT_RULES = List.of(
+            new PathMethodRule("/swagger-ui",       Set.of("GET", "HEAD")),
+            new PathMethodRule("/v3/api-docs",      Set.of("GET", "HEAD")),
+            new PathMethodRule("/doc.html",         Set.of("GET", "HEAD")),
+            new PathMethodRule("/webjars/",         Set.of("GET", "HEAD")),
+            new PathMethodRule("/mcp",              Set.of("GET", "HEAD")),
+            new PathMethodRule("/v1/platform/",     Set.of("GET", "POST", "PUT", "DELETE", "PATCH")),
+            // 封面下载 GET /v1/files/cover/{objectKey} 豁免，POST /v1/files/cover（上传）需要 workspace 注入
+            new PathMethodRule("/v1/files/cover/", Set.of("GET", "HEAD"))
     );
+
+    /**
+     * 按路径前缀 + HTTP 方法匹配的白名单规则。
+     *
+     * @param path    路径前缀
+     * @param methods 允许豁免的 HTTP 方法集合（不区分大小写）
+     */
+    public record PathMethodRule(String path, Set<String> methods) {
+        public boolean matches(String uri, String method) {
+            if (method == null) {
+                return false;
+            }
+            return uri.startsWith(path) && methods.contains(method.toUpperCase());
+        }
+    }
 
     private final WorkspaceService workspaceService;
     private final ObjectMapper objectMapper;
@@ -60,7 +87,8 @@ public class WorkspaceInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         String path = resolvePath(request);
-        if (isExempt(path)) {
+        String method = request.getMethod();
+        if (isExempt(path, method)) {
             return true;
         }
 
@@ -96,16 +124,11 @@ public class WorkspaceInterceptor implements HandlerInterceptor {
         WorkspaceContext.clear();
     }
 
-    private boolean isExempt(String path) {
+    private boolean isExempt(String path, String method) {
         if (WORKSPACE_EXEMPT_PATHS.contains(path)) {
             return true;
         }
-        for (String prefix : WORKSPACE_EXEMPT_PREFIXES) {
-            if (path.startsWith(prefix)) {
-                return true;
-            }
-        }
-        return false;
+        return EXEMPT_RULES.stream().anyMatch(r -> r.matches(path, method));
     }
 
     private String resolvePath(HttpServletRequest request) {

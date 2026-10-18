@@ -2,6 +2,7 @@ package com.shortvideoscripagent.xhsagentyunying.controller.v1;
 
 import com.shortvideoscripagent.xhsagentyunying.common.api.ApiResponse;
 import com.shortvideoscripagent.xhsagentyunying.common.api.RequestContext;
+import com.shortvideoscripagent.xhsagentyunying.common.api.WorkspaceContext;
 import com.shortvideoscripagent.xhsagentyunying.common.exception.BusinessException;
 import com.shortvideoscripagent.xhsagentyunying.dto.analysis.PaginatedResponse;
 import com.shortvideoscripagent.xhsagentyunying.dto.chat.ChatMessageItemResponse;
@@ -9,6 +10,7 @@ import com.shortvideoscripagent.xhsagentyunying.dto.chat.ChatMessageResponse;
 import com.shortvideoscripagent.xhsagentyunying.dto.chat.ChatMessageSendRequest;
 import com.shortvideoscripagent.xhsagentyunying.dto.chat.ChatSessionCreateRequest;
 import com.shortvideoscripagent.xhsagentyunying.dto.chat.ChatSessionResponse;
+import com.shortvideoscripagent.xhsagentyunying.infra.ratelimit.RateLimited;
 import com.shortvideoscripagent.xhsagentyunying.service.ChatAppService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +49,7 @@ public class ChatController {
         return ApiResponse.ok(chatAppService.listSessions(userId, page, size));
     }
 
+    @RateLimited(key = "ai:chat:${workspaceId}", limit = 100, window = 86400, dimension = "workspace")
     @PostMapping("/sessions/{sessionId}/messages")
     public ApiResponse<ChatMessageResponse> sendMessage(
             @PathVariable String sessionId,
@@ -59,6 +62,7 @@ public class ChatController {
     /**
      * SSE 流式对话：推送 Agent 步骤、工具调用进度与回复正文增量。
      */
+    @RateLimited(key = "ai:chat:${workspaceId}", limit = 100, window = 86400, dimension = "workspace")
     @PostMapping(value = "/sessions/{sessionId}/messages/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter sendMessageStream(
             @PathVariable String sessionId,

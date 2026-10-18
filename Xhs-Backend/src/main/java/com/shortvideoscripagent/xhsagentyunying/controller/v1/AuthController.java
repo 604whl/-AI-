@@ -47,6 +47,7 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
+    @RateLimited(key = "auth:refresh:${ip}", limit = 30, window = 3600, dimension = "ip")
     public ApiResponse<TokenRefreshResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         return ApiResponse.ok(authService.refresh(request.getRefreshToken()));
     }

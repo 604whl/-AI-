@@ -14,6 +14,7 @@ import com.shortvideoscripagent.xhsagentyunying.dto.analysis.OptimizeDraftRespon
 import com.shortvideoscripagent.xhsagentyunying.dto.analysis.PaginatedResponse;
 import com.shortvideoscripagent.xhsagentyunying.dto.title.TitleGenerateRequest;
 import com.shortvideoscripagent.xhsagentyunying.dto.title.TitleGenerateResponse;
+import com.shortvideoscripagent.xhsagentyunying.infra.ratelimit.RateLimited;
 import com.shortvideoscripagent.xhsagentyunying.infra.taskqueue.TaskCancellationService;
 import com.shortvideoscripagent.xhsagentyunying.service.AnalysisAppService;
 import com.shortvideoscripagent.xhsagentyunying.service.TitleService;
@@ -47,6 +48,7 @@ public class AnalysisController {
      * P0-1: 支持 Idempotency-Key Header 实现幂等。
      */
     @PostMapping
+    @RateLimited(key = "ai:analysis:${workspaceId}", limit = 100, window = 86400, dimension = "workspace")
     public ApiResponse<AnalysisCreateResponse> create(
             @Valid @RequestBody AnalysisCreateRequest request,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey
@@ -102,6 +104,7 @@ public class AnalysisController {
     }
 
     @PostMapping("/{id}/optimize-draft")
+    @RateLimited(key = "ai:analysis:${workspaceId}", limit = 100, window = 86400, dimension = "workspace")
     public ApiResponse<OptimizeDraftResponse> optimizeDraft(
             @PathVariable String id,
             @RequestBody(required = false) OptimizeDraftRequest request
@@ -112,6 +115,7 @@ public class AnalysisController {
     }
 
     @PostMapping("/{id}/titles")
+    @RateLimited(key = "ai:titles:${workspaceId}", limit = 100, window = 86400, dimension = "workspace")
     public ApiResponse<TitleGenerateResponse> generateTitles(
             @PathVariable String id,
             @Valid @RequestBody TitleGenerateRequest request
@@ -122,6 +126,7 @@ public class AnalysisController {
     }
 
     @PostMapping("/{id}/body")
+    @RateLimited(key = "ai:body:${workspaceId}", limit = 100, window = 86400, dimension = "workspace")
     public ApiResponse<BodyGenerateResponse> generateBody(
             @PathVariable String id,
             @Valid @RequestBody BodyGenerateRequest request
