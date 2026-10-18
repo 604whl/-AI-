@@ -4,6 +4,7 @@ import com.shortvideoscripagent.xhsagentyunying.common.api.ApiResponse;
 import com.shortvideoscripagent.xhsagentyunying.common.api.RequestContext;
 import com.shortvideoscripagent.xhsagentyunying.common.exception.BusinessException;
 import com.shortvideoscripagent.xhsagentyunying.dto.analysis.PaginatedResponse;
+import com.shortvideoscripagent.xhsagentyunying.dto.asset.AssetResponse;
 import com.shortvideoscripagent.xhsagentyunying.dto.template.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -138,7 +139,10 @@ public class TemplateController {
 
     /**
      * 应用模板到资产（渲染 + 记录 apply_log + use_count++）。
-     * body: { "assetId": "uuid", "variables": {...} }
+     * <p>
+     * M0-3 扩展：body 可选传入 createAsset=true，自动创建草稿资产并返回。
+     *
+     * body: { "assetId": "uuid", "variables": {...}, "createAsset": true }
      */
     @PostMapping("/{id}/apply")
     public ApiResponse<TemplateApplyResponse> apply(
@@ -151,14 +155,19 @@ public class TemplateController {
         Map<String, String> variables = body != null
                 ? (Map<String, String>) body.get("variables")
                 : Map.of();
+        // M0-3: createAsset 开关，默认 false 向后兼容
+        Boolean createAsset = body != null ? (Boolean) body.get("createAsset") : null;
+        boolean doCreateAsset = Boolean.TRUE.equals(createAsset);
 
         UUID assetId = assetIdStr != null ? UUID.fromString(assetIdStr) : null;
-        TemplateService.TemplateApplyResult result = templateService.apply(userId, id, assetId, variables);
+        TemplateService.TemplateApplyResult result = templateService.apply(
+                userId, id, assetId, variables, doCreateAsset);
 
         return ApiResponse.ok(TemplateApplyResponse.builder()
                 .templateId(id.toString())
                 .body(result.body())
                 .useCount(result.updatedUseCount())
+                .asset(result.asset())  // M0-3: createAsset=true 时有值，否则 null
                 .build());
     }
 

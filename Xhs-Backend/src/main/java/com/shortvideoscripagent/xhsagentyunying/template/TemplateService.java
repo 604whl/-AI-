@@ -13,7 +13,10 @@ import com.shortvideoscripagent.xhsagentyunying.domain.mapper.TemplateApplyLogMa
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.TemplateMapper;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.TemplateVersionMapper;
 import com.shortvideoscripagent.xhsagentyunying.dto.analysis.PaginatedResponse;
+import com.shortvideoscripagent.xhsagentyunying.dto.asset.AssetCreateRequest;
+import com.shortvideoscripagent.xhsagentyunying.dto.asset.AssetResponse;
 import com.shortvideoscripagent.xhsagentyunying.dto.template.*;
+import com.shortvideoscripagent.xhsagentyunying.service.ContentAssetService;
 import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceGuards;
 import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceRole;
 import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceService;
@@ -50,6 +53,7 @@ public class TemplateService {
     private final TemplateVersionMapper versionMapper;
     private final TemplateApplyLogMapper applyLogMapper;
     private final WorkspaceService workspaceService;
+    private final ContentAssetService contentAssetService;
     private final ObjectMapper objectMapper;
 
     // ── 查询 ──────────────────────────────────────────────────────────────
@@ -364,14 +368,23 @@ public class TemplateService {
     /**
      * 将模板应用到资产：渲染 + 写 apply_log + use_count++。
      * <p>
-     * 返回渲染后的正文（供调用方写入 content_asset.body）。
+     * M0-3 扩展：若 createAsset=true，自动创建草稿资产并返回 AssetResponse。
+     * 整个 apply（含 createAsset）保持原子性：createAsset 失败则 apply 失败。
+     *
+     * @param userId       当前用户 ID
+     * @param templateId   模板 ID
+     * @param assetId      目标资产 ID（可选，关联到 apply_log）
+     * @param variables    渲染变量
+     * @param createAsset  是否同时创建草稿资产（默认 false，向后兼容）
+     * @return 渲染结果 + 更新后的 useCount，可选包含新建的 AssetResponse
      */
     @Transactional
     public TemplateApplyResult apply(
             Long userId,
             UUID templateId,
             UUID assetId,
-            Map<String, String> variables
+            Map<String, String> variables,
+            boolean createAsset
     ) {
         Template t = templateMapper.selectById(templateId);
         if (t == null) {
@@ -403,7 +416,18 @@ public class TemplateService {
         // 重新查询最新 use_count
         Template updated = templateMapper.selectById(templateId);
 
-        return new TemplateApplyResult(rendered.getBody(), updated.getUseCount());
+        // M0-3：若 createAsset=true，自动创建草稿资产
+        AssetResponse assetResponse = null;
+        if (createAsset) {
+            AssetCreateRequest assetReq = new AssetCreateRequest();
+            assetReq.setTitle(t.getTitle() != null ? t.getTitle() : "Untitled");
+            assetReq.setBody(rendered.getBody());
+            assetReq.setTemplateId(templateId.toString());
+            // createDraft 会自动校验 workspace 权限并写入正确的 workspaceId
+            assetResponse = contentAssetService.createDraft(userId, assetReq);
+        }
+
+        return new TemplateApplyResult(rendered.getBody(), updated.getUseCount(), assetResponse);
     }
 
     // ── 统计 ──────────────────────────────────────────────────────────────
@@ -603,6 +627,10 @@ public class TemplateService {
 
     // ── 内部结果类 ────────────────────────────────────────────────────────
 
-    /** apply() 的内部返回结果 */
-    public record TemplateApplyResult(String body, Integer updatedUseCount) {}
+    /**
+     * apply() 的内部返回结果（M0-3 扩展：可选包含新建的 AssetResponse）。
+     * <p>
+     * asset 为 null 表示未启用 createAsset 或创建失败（失败时整体抛异常，不会返回）。
+     */
+    public record TemplateApplyResult(String body, Integer updatedUseCount, AssetResponse asset) {}
 }
