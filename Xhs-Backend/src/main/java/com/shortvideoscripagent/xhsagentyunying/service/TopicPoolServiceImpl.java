@@ -9,6 +9,7 @@ import com.shortvideoscripagent.xhsagentyunying.domain.entity.TopicPool;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.ContentAssetMapper;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.ContentAssetVersionMapper;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.TopicPoolMapper;
+import com.shortvideoscripagent.xhsagentyunying.domain.topic.TopicDedupeKey;
 import com.shortvideoscripagent.xhsagentyunying.dto.asset.AssetCreateRequest;
 import com.shortvideoscripagent.xhsagentyunying.dto.topic.TopicBulkImportRequest;
 import com.shortvideoscripagent.xhsagentyunying.dto.topic.TopicBulkImportResponse;
@@ -60,10 +61,19 @@ public class TopicPoolServiceImpl implements TopicPoolService {
     @Override
     @Transactional
     public TopicDto create(Long workspaceId, Long userId, TopicCreateRequest req) {
+        // Deduplication check: same workspace + source + normalized title → 409
+        String normalizedTitle = TopicDedupeKey.normalize(req.getTitle());
+        String source = req.getSource() != null ? req.getSource().trim() : "";
+        TopicPool existing = topicMapper.selectByDedupeKey(workspaceId, source, normalizedTitle);
+        if (existing != null) {
+            throw new BusinessException(CODE_CONFLICT,
+                    "topic_duplicate: existingTopicId=" + existing.getId());
+        }
+
         TopicPool topic = new TopicPool();
         topic.setWorkspaceId(workspaceId);
         topic.setTitle(req.getTitle().trim());
-        topic.setSource(req.getSource().trim());
+        topic.setSource(source);
         topic.setHeatScore(req.getHeatScore() != null ? req.getHeatScore() : 0);
         topic.setTags(req.getTags());
         topic.setTargetPersona(req.getTargetPersona());

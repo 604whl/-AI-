@@ -1,6 +1,7 @@
 package com.shortvideoscripagent.xhsagentyunying.domain.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -37,6 +38,13 @@ public class TopicPool {
     private OffsetDateTime updatedAt;
 
     private LocalDate scheduledDate;
+
+    /**
+     * Normalized title for deduplication lookup.
+     * Not persisted to DB directly; populated by V40 migration or set during insert.
+     */
+    @TableField(exist = false)
+    private String normalizedTitle;
 
     public static final String STATUS_ACTIVE = "active";
     public static final String STATUS_USED = "used";
