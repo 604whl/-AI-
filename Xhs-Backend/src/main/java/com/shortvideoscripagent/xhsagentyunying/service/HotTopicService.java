@@ -1,5 +1,7 @@
 package com.shortvideoscripagent.xhsagentyunying.service;
 
+import com.shortvideoscripagent.xhsagentyunying.dto.hottopic.HotTopicTrendResponse;
+
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -25,6 +27,15 @@ public interface HotTopicService {
      * 分页查询热门话题列表。
      */
     PageResult<HotTopicDto> list(String platform, String category, Boolean promoted, int page, int size);
+
+    /**
+     * 计算指定话题在时间窗口内的热度趋势。
+     *
+     * @param title       原始标题（会规范化后匹配）
+     * @param windowDays  时间窗口天数（1-30）
+     * @return 趋势数据
+     */
+    HotTopicTrendResponse computeTrend(String title, int windowDays);
 
     record HotTopicDto(
             Long id,
