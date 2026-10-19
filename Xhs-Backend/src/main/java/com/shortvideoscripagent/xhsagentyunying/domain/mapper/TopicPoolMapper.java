@@ -49,19 +49,4 @@ public interface TopicPoolMapper extends BaseMapper<TopicPool> {
             @Param("source") String source
     );
 
-    /**
-     * Find existing topic by dedupe key (workspace + source + normalized_title column).
-     * Returns null if not found.
-     */
-    @Select("""
-            SELECT * FROM app.topic_pool
-            WHERE workspace_id = #{workspaceId}
-              AND source = #{source}
-              AND normalized_title = #{normalizedTitle}
-            LIMIT 1
-            """)
-    TopicPool selectByDedupeKey(
-            @Param("workspaceId") Long workspaceId,
-            @Param("source") String source,
-            @Param("normalizedTitle") String normalizedTitle);
 }
