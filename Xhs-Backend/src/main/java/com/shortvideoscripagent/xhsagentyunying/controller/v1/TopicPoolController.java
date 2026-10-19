@@ -3,6 +3,8 @@ package com.shortvideoscripagent.xhsagentyunying.controller.v1;
 import com.shortvideoscripagent.xhsagentyunying.common.api.ApiResponse;
 import com.shortvideoscripagent.xhsagentyunying.common.api.RequestContext;
 import com.shortvideoscripagent.xhsagentyunying.common.exception.BusinessException;
+import com.shortvideoscripagent.xhsagentyunying.dto.topic.TopicBulkImportRequest;
+import com.shortvideoscripagent.xhsagentyunying.dto.topic.TopicBulkImportResponse;
 import com.shortvideoscripagent.xhsagentyunying.dto.topic.TopicCreateRequest;
 import com.shortvideoscripagent.xhsagentyunying.dto.topic.TopicDto;
 import com.shortvideoscripagent.xhsagentyunying.dto.topic.TopicListResponse;
@@ -65,6 +67,16 @@ public class TopicPoolController {
                 id, Long.parseLong(workspaceId), userId,
                 request.getPlatform(), request.getCategory());
         return ApiResponse.ok(result);
+    }
+
+    @PostMapping("/bulk-import")
+    public ApiResponse<TopicBulkImportResponse> bulkImport(
+            @Valid @RequestBody TopicBulkImportRequest request
+    ) {
+        Long userId = requireUserId();
+        String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
+        return ApiResponse.ok(topicPoolService.bulkImport(
+                Long.parseLong(workspaceId), userId, request));
     }
 
     private Long requireUserId() {

@@ -10,10 +10,13 @@ import com.shortvideoscripagent.xhsagentyunying.domain.mapper.ContentAssetMapper
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.ContentAssetVersionMapper;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.TopicPoolMapper;
 import com.shortvideoscripagent.xhsagentyunying.dto.asset.AssetCreateRequest;
+import com.shortvideoscripagent.xhsagentyunying.dto.topic.TopicBulkImportRequest;
+import com.shortvideoscripagent.xhsagentyunying.dto.topic.TopicBulkImportResponse;
 import com.shortvideoscripagent.xhsagentyunying.dto.topic.TopicCreateRequest;
 import com.shortvideoscripagent.xhsagentyunying.dto.topic.TopicDto;
 import com.shortvideoscripagent.xhsagentyunying.dto.topic.TopicListResponse;
 import com.shortvideoscripagent.xhsagentyunying.dto.topic.TopicUpdateRequest;
+import com.shortvideoscripagent.xhsagentyunying.util.topic.TopicNormalize;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -197,6 +200,77 @@ public class TopicPoolServiceImpl implements TopicPoolService {
                 .createdAt(topic.getCreatedAt())
                 .updatedAt(topic.getUpdatedAt())
                 .scheduledDate(topic.getScheduledDate())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public TopicBulkImportResponse bulkImport(Long workspaceId, Long userId, TopicBulkImportRequest request) {
+        List<TopicDto> created = new java.util.ArrayList<>();
+        List<TopicBulkImportResponse.SkippedItem> skipped = new java.util.ArrayList<>();
+
+        String defaultSource = request.getDefaultSource();
+        if (defaultSource == null || defaultSource.isBlank()) {
+            defaultSource = "ai_search";
+        }
+        String defaultTargetPersona = request.getDefaultTargetPersona();
+
+        for (TopicBulkImportRequest.TopicCreateItem item : request.getItems()) {
+            String title = item.getTitle();
+
+            // Validation: empty or > 256 chars -> invalid
+            if (title == null || title.isBlank() || title.trim().length() > 256) {
+                skipped.add(TopicBulkImportResponse.SkippedItem.builder()
+                        .title(title != null ? title : "")
+                        .reason("invalid")
+                        .build());
+                continue;
+            }
+
+            String source = item.getSource();
+            if (source == null || source.isBlank()) {
+                source = defaultSource;
+            }
+
+            // Deduplication check using normalized title + source
+            String normalizedTitle = TopicNormalize.normalizeTitle(title);
+            boolean exists = topicMapper.existsByNormalizedTitleAndSource(workspaceId, normalizedTitle, source);
+            if (exists) {
+                skipped.add(TopicBulkImportResponse.SkippedItem.builder()
+                        .title(title)
+                        .reason("duplicate")
+                        .build());
+                continue;
+            }
+
+            // Build TopicCreateRequest and call existing create()
+            TopicCreateRequest createReq = new TopicCreateRequest();
+            createReq.setTitle(title);
+            createReq.setSource(source);
+            createReq.setHeatScore(item.getHeatScore());
+            createReq.setTags(item.getTags());
+            createReq.setTargetPersona(
+                    item.getTargetPersona() != null ? item.getTargetPersona() : defaultTargetPersona);
+            createReq.setScheduledDate(item.getScheduledDate());
+
+            try {
+                TopicDto createdTopic = create(workspaceId, userId, createReq);
+                created.add(createdTopic);
+            } catch (Exception e) {
+                log.warn("Failed to create topic '{}' in workspace {}: {}", title, workspaceId, e.getMessage());
+                skipped.add(TopicBulkImportResponse.SkippedItem.builder()
+                        .title(title)
+                        .reason("existed")
+                        .build());
+            }
+        }
+
+        return TopicBulkImportResponse.builder()
+                .created(created)
+                .skipped(skipped)
+                .totalRequested(request.getItems().size())
+                .totalCreated(created.size())
+                .totalSkipped(skipped.size())
                 .build();
     }
 }

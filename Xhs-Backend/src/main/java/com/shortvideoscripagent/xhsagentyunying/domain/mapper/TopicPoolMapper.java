@@ -32,4 +32,36 @@ public interface TopicPoolMapper extends BaseMapper<TopicPool> {
               AND (#{status} IS NULL OR #{status} = '' OR status = #{status})
             """)
     long countByWorkspace(@Param("workspaceId") Long workspaceId, @Param("status") String status);
+
+    /**
+     * Check if a topic with normalized title + source already exists in workspace.
+     * Used for bulk import deduplication (LOWER + TRIM equivalent in SQL).
+     */
+    @Select("""
+            SELECT COUNT(*) > 0 FROM app.topic_pool
+            WHERE workspace_id = #{workspaceId}
+              AND LOWER(TRIM(title)) = LOWER(TRIM(#{normalizedTitle}))
+              AND LOWER(TRIM(source)) = LOWER(TRIM(#{source}))
+            """)
+    boolean existsByNormalizedTitleAndSource(
+            @Param("workspaceId") Long workspaceId,
+            @Param("normalizedTitle") String normalizedTitle,
+            @Param("source") String source
+    );
+
+    /**
+     * Find existing topic by dedupe key (workspace + source + normalized_title column).
+     * Returns null if not found.
+     */
+    @Select("""
+            SELECT * FROM app.topic_pool
+            WHERE workspace_id = #{workspaceId}
+              AND source = #{source}
+              AND normalized_title = #{normalizedTitle}
+            LIMIT 1
+            """)
+    TopicPool selectByDedupeKey(
+            @Param("workspaceId") Long workspaceId,
+            @Param("source") String source,
+            @Param("normalizedTitle") String normalizedTitle);
 }
