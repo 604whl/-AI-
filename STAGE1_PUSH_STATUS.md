@@ -36,11 +36,11 @@ git push origin xhs_agent 触发了 GitHub 的 secret-scanning push protection:
   - Xhs-Backend/src/test/java/.../SensitiveMaskingConverterTest.java:171
 
 阻塞原因：commit 775e8d2 中的 SensitiveMaskingConverterTest.java 包含占位字符串:
-- String input = 'X-API-Key: sk_live_abcdefghijklmnopqrstuvwxyz';
-- String input1 = 'key: sk_live_abcdefghijklmnopqrstuvwxyz';
-- String input2 = 'key: sk_test_abcdefghijklmnopqrstuvwxyz';
+- String input = 'X-API-Key: sk_REDACTED_abcdefghijklmnopqrstuvwxyz';
+- String input1 = 'key: sk_REDACTED_abcdefghijklmnopqrstuvwxyz';
+- String input2 = 'key: sk_REDACTED_abcdefghijklmnopqrstuvwxyz';
 
-GitHub secret scanner 把 sk_live_<24位字母> 当作 Stripe live 密钥模式，即便它是测试占位。
+GitHub secret scanner 把 sk_xxx 模式当作 Stripe 密钥，即便它是测试占位。
 
 ## 解锁方式：GitHub Unblock 链接
 

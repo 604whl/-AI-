@@ -183,7 +183,7 @@ class SensitiveMaskingConverterTest {
     @Test
     @DisplayName("sk_PROD_xxx / sk_SANDBOX_xxx 应被脱敏")
     void mask_stripe_like_keys() {
-        // 使用 sk_PROD_ / sk_SANDBOX_ 而非真实 Stripe sk_live_/sk_test_，避免触发 secret scanning
+        // 使用 sk_PROD_ / sk_SANDBOX_ 占位符，避免触发 secret scanning
         String input1 = "key: sk_PROD_aaaaaaaaaaaaaaaaaaaaaa";
         String input2 = "key: sk_SANDBOX_aaaaaaaaaaaaaaaaaaaaaa";
 
