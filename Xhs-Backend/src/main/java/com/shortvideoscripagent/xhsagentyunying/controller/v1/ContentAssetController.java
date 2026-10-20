@@ -5,6 +5,7 @@ import com.shortvideoscripagent.xhsagentyunying.common.api.RequestContext;
 import com.shortvideoscripagent.xhsagentyunying.common.exception.BusinessException;
 import com.shortvideoscripagent.xhsagentyunying.dto.analysis.PaginatedResponse;
 import com.shortvideoscripagent.xhsagentyunying.dto.asset.*;
+import com.shortvideoscripagent.xhsagentyunying.service.AssetPreviewService;
 import com.shortvideoscripagent.xhsagentyunying.service.ContentAssetService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,8 @@ public class ContentAssetController {
 
     private static final int CODE_UNAUTHORIZED = 40101;
     private static final int CODE_BAD_REQUEST = 40010;
+
+    private final AssetPreviewService assetPreviewService;
 
     private final ContentAssetService contentAssetService;
 
@@ -128,6 +131,21 @@ public class ContentAssetController {
         // 校验资产所有权
         contentAssetService.getById(userId, assetId);
         return ApiResponse.ok(contentAssetService.diffVersions(assetId, v1, v2));
+    }
+
+    // ── 发布前预览 ─────────────────────────────────────────────────────────
+
+    /**
+     * 发布前预览（平台规格检查）。
+     */
+    @GetMapping("/{id}/preview")
+    public ApiResponse<AssetPreviewResponse> preview(
+            @PathVariable String id,
+            @RequestParam(defaultValue = "xiaohongshu") String platform
+    ) {
+        Long userId = requireUserId();
+        UUID assetId = parseUuid(id);
+        return ApiResponse.ok(assetPreviewService.preview(userId, assetId, platform));
     }
 
     // ── 状态机迁移 ─────────────────────────────────────────────────────────
