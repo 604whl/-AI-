@@ -25,6 +25,7 @@ import java.util.UUID;
 public class ContentAssetController {
 
     private static final int CODE_UNAUTHORIZED = 40101;
+    private static final int CODE_BAD_REQUEST = 40010;
 
     private final ContentAssetService contentAssetService;
 
@@ -168,6 +169,53 @@ public class ContentAssetController {
         UUID assetId = parseUuid(id);
         UUID mediaIdVal = parseUuid(mediaId);
         return ApiResponse.ok(contentAssetService.removeMedia(assetId, mediaIdVal, userId));
+    }
+
+    /**
+     * 更新资产标签。
+     */
+    @PatchMapping("/{id}/tags")
+    public ApiResponse<AssetResponse> updateTags(
+            @PathVariable String id,
+            @Valid @RequestBody AssetTagsRequest body
+    ) {
+        Long userId = requireUserId();
+        UUID assetId = parseUuid(id);
+
+        return ApiResponse.ok(contentAssetService.updateTags(userId, assetId,
+                body.getAddTags(), body.getRemoveTags(), body.getTags()));
+    }
+
+    /**
+     * 批量归档资产。
+     */
+    @PostMapping("/batch-archive")
+    public ApiResponse<Map<String, Object>> batchArchive(@RequestBody Map<String, Object> body) {
+        Long userId = requireUserId();
+
+        @SuppressWarnings("unchecked")
+        List<String> rawIds = body.containsKey("assetIds")
+                ? (List<String>) body.get("assetIds") : List.of();
+        if (rawIds.size() > 100) {
+            throw new BusinessException(CODE_BAD_REQUEST, "max_100_assets_per_request");
+        }
+        List<UUID> ids = rawIds.stream().map(this::parseUuid).toList();
+
+        return ApiResponse.ok(contentAssetService.batchArchive(userId, ids));
+    }
+
+    /**
+     * Autosave 专用端点（不产生版本快照）。
+     */
+    @PostMapping("/{id}/autosave")
+    public ApiResponse<AssetResponse> autosave(
+            @PathVariable String id,
+            @Valid @RequestBody AssetAutosaveRequest body
+    ) {
+        Long userId = requireUserId();
+        UUID assetId = parseUuid(id);
+        return ApiResponse.ok(contentAssetService.autosave(userId, assetId,
+                body.getTitle(), body.getBody()));
     }
 
     // ── 私有 ──────────────────────────────────────────────────────────────

@@ -404,6 +404,119 @@ public class ContentAssetService {
         return toResponse(asset);
     }
 
+    /**
+     * 更新资产标签。
+     */
+    @Transactional
+    public AssetResponse updateTags(Long userId, UUID assetId,
+                                     List<String> addTags, List<String> removeTags, List<String> replaceTags) {
+        String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
+        requireEditorRole(userId, workspaceId);
+        ContentAsset asset = requireOwnedAsset(userId, assetId, workspaceId);
+        if (!asset.isEditable()) {
+            throw new BusinessException(CODE_CONFLICT, "asset_not_editable");
+        }
+
+        List<String> currentTags = parseTags(asset.getTags());
+
+        if (replaceTags != null && !replaceTags.isEmpty()) {
+            currentTags = replaceTags.stream()
+                    .filter(t -> t != null && t.length() <= 20)
+                    .distinct()
+                    .limit(20)
+                    .toList();
+        } else {
+            if (addTags != null && !addTags.isEmpty()) {
+                for (String t : addTags) {
+                    if (t != null && !currentTags.contains(t)
+                            && currentTags.size() < 20 && t.length() <= 20) {
+                        currentTags.add(t);
+                    }
+                }
+            }
+            if (removeTags != null && !removeTags.isEmpty()) {
+                currentTags.removeAll(removeTags);
+            }
+        }
+
+        asset.setTags(toJson(currentTags));
+        asset.setUpdatedAt(OffsetDateTime.now());
+        assetMapper.updateById(asset);
+        return toResponse(asset);
+    }
+
+    /**
+     * 批量归档资产（不产生版本快照）。
+     */
+    @Transactional
+    public Map<String, Object> batchArchive(Long userId, List<UUID> assetIds) {
+        String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
+        requireEditorRole(userId, workspaceId);
+        UUID wsUuid = parseUuid(workspaceId, "workspace_id");
+
+        int archived = 0, skipped = 0;
+        List<Map<String, String>> errors = new ArrayList<>();
+
+        for (UUID assetId : assetIds) {
+            try {
+                ContentAsset asset = assetMapper.selectById(assetId);
+                if (asset == null || !asset.getWorkspaceId().equals(wsUuid)) {
+                    skipped++;
+                    continue;
+                }
+                asset.setStatus(ContentAsset.STATUS_ARCHIVED);
+                asset.setUpdatedAt(OffsetDateTime.now());
+                assetMapper.updateById(asset);
+                archived++;
+            } catch (Exception e) {
+                errors.add(Map.of("id", assetId.toString(), "error", e.getMessage()));
+            }
+        }
+        return Map.of("archived", archived, "skipped", skipped, "errors", errors);
+    }
+
+    /**
+     * Autosave 专用端点（不产生版本快照，30s 节流）。
+     */
+    @Transactional
+    public AssetResponse autosave(Long userId, UUID assetId, String title, String body) {
+        String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
+        requireEditorRole(userId, workspaceId);
+
+        ContentAsset asset = requireOwnedAsset(userId, assetId, workspaceId);
+        if (!asset.isEditable()) {
+            throw new BusinessException(CODE_CONFLICT, "asset_not_editable");
+        }
+
+        String autosaveKey = AUTOSAVE_KEY_PREFIX + assetId;
+        Long ttl = redisTemplate.getExpire(autosaveKey);
+        if (ttl != null && ttl > 0) {
+            log.debug("Autosave throttled for asset {} (ttl={}s)", assetId, ttl);
+            return toResponse(asset);
+        }
+
+        boolean dirty = false;
+        if (title != null && !title.equals(asset.getTitle())) {
+            asset.setTitle(title.trim());
+            dirty = true;
+        }
+        if (body != null && !body.equals(asset.getBody())) {
+            asset.setBody(body);
+            dirty = true;
+        }
+
+        if (!dirty) {
+            return toResponse(asset);
+        }
+
+        asset.setCurrentVersion(asset.getCurrentVersion() + 1);
+        asset.setUpdatedAt(OffsetDateTime.now());
+        assetMapper.updateById(asset);
+        redisTemplate.opsForValue().set(autosaveKey, "1", AUTOSAVE_WINDOW);
+
+        return toResponse(asset);
+    }
+
     // ── 私有辅助方法 ──────────────────────────────────────────────────────
 
     /**
@@ -527,6 +640,26 @@ public class ContentAssetService {
         return result;
     }
 
+    private List<String> parseTags(String json) {
+        if (json == null || json.isBlank()) return new ArrayList<>();
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper().readValue(json,
+                    new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            log.warn("Failed to parse tags JSON, returning empty list: {}", e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    private String toJson(List<String> tags) {
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(tags);
+        } catch (Exception e) {
+            log.warn("Failed to serialize tags list, returning empty: {}", e.getMessage());
+            return "[]";
+        }
+    }
+
     private AssetResponse toResponse(ContentAsset asset) {
         List<ContentAssetMedia> mediaList = mediaMapper.selectByAssetId(asset.getId());
         List<MediaItem> mediaItems = mediaList.stream()
@@ -562,6 +695,7 @@ public class ContentAssetService {
                 .currentVersion(asset.getCurrentVersion())
                 .createdAt(asset.getCreatedAt())
                 .updatedAt(asset.getUpdatedAt())
+                .tags(parseTags(asset.getTags()))
                 .media(mediaItems)
                 .build();
     }

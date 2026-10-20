@@ -38,6 +38,9 @@ public class AssetResponse {
     /** 关联的多媒体列表 */
     private List<MediaItem> media;
 
+    /** 多标签列表 */
+    private List<String> tags;
+
     /** 关联的分析报告摘要（可选） */
     private Map<String, Object> analysisReport;
 }

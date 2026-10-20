@@ -69,6 +69,9 @@ public class ContentAsset {
     /** 更新时间 */
     private OffsetDateTime updatedAt;
 
+    /** 多标签列表（JSON 数组，存储为 PostgreSQL jsonb 列） */
+    private String tags;
+
     // ── 状态常量 ────────────────────────────────────────────
 
     public static final String STATUS_DRAFT = "draft";
