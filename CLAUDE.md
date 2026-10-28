@@ -114,6 +114,16 @@
 
 - 阶段结束时删除 `scripts/_*.py`（一次性修复脚本），只保留可复用的 `verify-*.ps1` / `audit-*.py`。
 
+### 9. 推送远程
+
+- **一律用 `scripts/push.ps1` 推送，不要手敲 `git push`**：
+  - `pwsh -File scripts/push.ps1` —— 推送当前分支
+  - `pwsh -File scripts/push.ps1 -Branch <name>` —— 指定分支
+  - `pwsh -File scripts/push.ps1 -ForceProxy` —— 强制走已配置的代理（代理软件在跑时用）
+  - `pwsh -File scripts/push.ps1 -DryRun` —— 只打印命令，不实际推送
+- **原因**：全局 git 配了 `http.proxy = http://127.0.0.1:7897`，该端口经常未运行，直接 `git push` 会报 `Failed to connect to github.com port 443 via 127.0.0.1`。脚本会自动探测代理端口是否可用，不可用时用 `-c http.proxy=` 直连，**不修改全局 / 仓库级 git 配置**。
+- 推送完成后脚本会自动回读远程 HEAD 校验是否与本地一致，校验不一致时退出码为 1。
+
 ## 操作日志规则（强制）
 
 **每一次**对仓库有实质影响的操作，都必须在 `DEVLOG.md` 追加一行带时间戳的记录，不允许只在对话里汇报。

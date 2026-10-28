@@ -120,4 +120,7 @@
 22:44:30 | 计划 | 提交阶段三 + 全平台全品类改造（116 改动文件 + 阶段三新增文件） | xhs_agent 分支 | 待提交
 22:47:12 | 验证 | 提交成功 | 2846c2c | 311 files changed, +26782/-1797；工作区干净；mvn compile 与 vue-tsc 均 EXIT=0
 22:51:30 | 验证 | 推送到远程 origin | xhs_agent @ 604whl/-AI- | e2c719c..fab6307 成功；代理 127.0.0.1:7897 未运行，本次用 -c http.proxy= 直连绕过
+22:58:40 | 计划 | 新建推送辅助脚本 | scripts/push.ps1 | 自动探测代理端口可用性；不可用时 -c http.proxy= 直连；推送后回读远程 HEAD 校验
+22:59:20 | 验证 | 推送脚本实测 | pwsh -File scripts/push.ps1 -DryRun / 实际推送 | DryRun 正确识别代理失效并组装直连命令；实际推送 Everything up-to-date 且远程 HEAD 校验通过
+23:01:05 | 计划 | CLAUDE.md 新增「推送远程」强制规则 | CLAUDE.md 执行效率规则 9 | 一律用 scripts/push.ps1，禁止手敲 git push
  
