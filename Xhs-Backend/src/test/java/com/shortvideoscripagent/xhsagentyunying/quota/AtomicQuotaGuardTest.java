@@ -39,7 +39,7 @@ class AtomicQuotaGuardTest {
     private QuotaProperties quotaProperties;
 
     private AtomicQuotaGuard guard;
-    private UUID workspaceId;
+    private String workspaceId;
 
     @BeforeEach
     void setUp() {
@@ -49,7 +49,7 @@ class AtomicQuotaGuardTest {
                 workspaceMapper,
                 quotaProperties
         );
-        workspaceId = UUID.randomUUID();
+        workspaceId = UUID.randomUUID().toString();
     }
 
     @Test
@@ -203,11 +203,11 @@ class AtomicQuotaGuardTest {
 
     // ── helpers ─────────────────────────────────────────────────────────────
 
-    private WorkspaceQuota createQuota(UUID wsId, int daily, int used) {
+    private WorkspaceQuota createQuota(String wsId, int daily, int used) {
         return createQuota(wsId, daily, used, OffsetDateTime.now().plusDays(1));
     }
 
-    private WorkspaceQuota createQuota(UUID wsId, int daily, int used, OffsetDateTime resetAt) {
+    private WorkspaceQuota createQuota(String wsId, int daily, int used, OffsetDateTime resetAt) {
         WorkspaceQuota q = new WorkspaceQuota();
         q.setWorkspaceId(wsId);
         q.setDailyQuota(daily);

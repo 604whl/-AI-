@@ -62,7 +62,7 @@
 
 ## Project Context
 
-项目是小红书留学生求职 AI 运营助手，包含：
+项目是小红书全平台全品类 AI 内容运营助手，包含：
 
 - 后端：Spring Boot / Java 21 / Spring AI / DashScope / MyBatis-Plus / PostgreSQL + pgvector / Redis / MinIO。
 - 前端：Vue 3 / TypeScript / Vite / Element Plus / Pinia / vue-i18n。

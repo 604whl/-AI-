@@ -61,7 +61,7 @@ public class ContentAssetService {
      * 创建草稿资产（Worker 线程内部调用，不依赖 WorkspaceContext）。
      */
     @Transactional
-    public AssetResponse createDraftInternal(Long ownerId, UUID workspaceId, AssetCreateRequest request) {
+    public AssetResponse createDraftInternal(Long ownerId, String workspaceId, AssetCreateRequest request) {
         if (workspaceId == null) {
             throw new BusinessException(CODE_BAD_REQUEST, "workspace_id_required");
         }
@@ -107,14 +107,13 @@ public class ContentAssetService {
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
         requireEditorRole(ownerId, workspaceId);
 
-        UUID wsUuid = parseUuid(workspaceId, "workspace_id");
         UUID sourceTaskId = parseTaskId(request.getSourceTaskId());
         UUID templateId = parseTaskId(request.getTemplateId());
         OffsetDateTime now = OffsetDateTime.now();
 
         ContentAsset asset = new ContentAsset();
         asset.setId(UUID.randomUUID());
-        asset.setWorkspaceId(wsUuid);
+        asset.setWorkspaceId(workspaceId);
         asset.setOwnerUserId(ownerId);
         asset.setTitle(trimOrThrow(request.getTitle(), "title is required"));
         asset.setBody(request.getBody() == null ? "" : request.getBody());
@@ -132,7 +131,7 @@ public class ContentAssetService {
         assetMapper.insert(asset);
 
         // 同时创建 v1 版本快照
-        saveVersionSnapshot(asset, ownerId, "initial draft");
+        saveVersionSnapshotInternal(asset, ownerId, "initial draft");
 
         return toResponse(asset);
     }
@@ -151,11 +150,10 @@ public class ContentAssetService {
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
         int safePage = Math.max(page, 1);
         int safeSize = Math.min(Math.max(size, 1), 50);
-        long offset = (safePage - 1L) * safeSize;
 
         Page<ContentAsset> p = new Page<>(safePage, safeSize);
         IPage<ContentAsset> result = assetMapper.selectPageByWorkspace(
-                p, parseUuid(workspaceId, "workspace_id"), status, offset, safeSize);
+                p, workspaceId, status);
         long total = result.getTotal();
 
         List<AssetResponse> items = result.getRecords().stream()
@@ -452,7 +450,6 @@ public class ContentAssetService {
     public Map<String, Object> batchArchive(Long userId, List<UUID> assetIds) {
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
         requireEditorRole(userId, workspaceId);
-        UUID wsUuid = parseUuid(workspaceId, "workspace_id");
 
         int archived = 0, skipped = 0;
         List<Map<String, String>> errors = new ArrayList<>();
@@ -460,7 +457,7 @@ public class ContentAssetService {
         for (UUID assetId : assetIds) {
             try {
                 ContentAsset asset = assetMapper.selectById(assetId);
-                if (asset == null || !asset.getWorkspaceId().equals(wsUuid)) {
+                if (asset == null || !asset.getWorkspaceId().equals(workspaceId)) {
                     skipped++;
                     continue;
                 }
@@ -533,13 +530,12 @@ public class ContentAssetService {
     }
 
     private ContentAsset requireOwnedAsset(Long userId, UUID assetId, String workspaceId) {
-        UUID wsUuid = parseUuid(workspaceId, "workspace_id");
         ContentAsset asset = assetMapper.selectById(assetId);
         if (asset == null) {
             throw new BusinessException(CODE_NOT_FOUND, "asset_not_found");
         }
         // workspace 隔离检查
-        if (!asset.getWorkspaceId().equals(wsUuid)) {
+        if (!asset.getWorkspaceId().equals(workspaceId)) {
             throw new BusinessException(CODE_NOT_FOUND, "asset_not_found");
         }
         return asset;
@@ -711,14 +707,6 @@ public class ContentAssetService {
                 .editReason(v.getEditReason())
                 .createdAt(v.getCreatedAt())
                 .build();
-    }
-
-    private UUID parseUuid(String value, String field) {
-        try {
-            return UUID.fromString(value);
-        } catch (Exception e) {
-            throw new BusinessException(CODE_BAD_REQUEST, "invalid_" + field);
-        }
     }
 
     private UUID parseTaskId(String taskId) {

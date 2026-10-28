@@ -7,6 +7,7 @@ import com.shortvideoscripagent.xhsagentyunying.infra.taskqueue.DeadLetterQueue;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,7 +31,13 @@ public class AdminTaskController {
     private static final int CODE_NOT_FOUND = 40401;
 
     private final JdbcTemplate jdbcTemplate;
-    private final DeadLetterQueue deadLetterQueue;
+    /**
+     * 死信队列仅在 task-queue 启用时才有 Bean（参见
+     * {@code DeadLetterQueue} 上的 {@code @ConditionalOnProperty}）。
+     * 用 {@code ObjectProvider} 延迟获取，避免在 task-queue 未开启的
+     * profile（如单元 / 集成测试）里因缺 Bean 导致整个容器装配失败。
+     */
+    private final ObjectProvider<DeadLetterQueue> deadLetterQueue;
 
     /**
      * 查询死信队列（分页）。
@@ -107,7 +114,11 @@ public class AdminTaskController {
         }
 
         DlqRecord record = records.get(0);
-        deadLetterQueue.retryFromDlq(record.id(), record.originalTaskId(),
+        DeadLetterQueue dlq = deadLetterQueue.getIfAvailable();
+        if (dlq == null) {
+            throw new BusinessException(CODE_NOT_FOUND, "task_queue_disabled");
+        }
+        dlq.retryFromDlq(record.id(), record.originalTaskId(),
                 record.taskType(), record.payload(), record.retryCount());
 
         log.info("Admin retry triggered: taskId={} dlqId={}", taskId, record.id());

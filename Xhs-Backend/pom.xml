@@ -66,6 +66,18 @@
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
             <version>${mybatis-plus.version}</version>
         </dependency>
+        <!--
+            MyBatis-Plus 3.5.9 起将依赖 JSqlParser 的分页插件
+            （PaginationInnerInterceptor）拆到独立模块 mybatis-plus-jsqlparser，
+            不再随 starter 传递依赖。缺少该模块时 MybatisPlusConfig 中的
+            PaginationInnerInterceptor 会编译失败（表现为运行期
+            "Unresolved compilation problems"），导致所有分页接口 total 恒为 0。
+        -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-jsqlparser</artifactId>
+            <version>${mybatis-plus.version}</version>
+        </dependency>
         <!-- MinIO -->
         <dependency>
             <groupId>io.minio</groupId>

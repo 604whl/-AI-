@@ -16,7 +16,10 @@ import java.util.UUID;
 public class AssetResponse {
 
     private UUID id;
-    private UUID workspaceId;
+
+    /** Workspace ID（VARCHAR(32)，与 app.workspace.id 一致） */
+    private String workspaceId;
+
     private Long ownerUserId;
     private String title;
     private String body;

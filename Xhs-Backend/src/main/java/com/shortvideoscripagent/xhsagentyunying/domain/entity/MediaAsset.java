@@ -9,7 +9,7 @@ import java.time.OffsetDateTime;
 public class MediaAsset {
     @TableId(type = IdType.AUTO)
     private Long id;
-    private java.util.UUID workspaceId;
+    private String workspaceId;
     private Long userId;
     private java.util.UUID assetId;
     private String mediaType;

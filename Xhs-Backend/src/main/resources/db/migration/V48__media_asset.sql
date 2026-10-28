@@ -13,8 +13,8 @@ CREATE TABLE IF NOT EXISTS app.media_asset (
     height          INT,
     duration_sec    INT,                    -- 视频时长（秒）
     thumbnail_key   VARCHAR(512),            -- 缩略图 object key
-    status          VARCHAR(16) NOT NULL DEFAULT ''pending'',  -- pending / ready / failed
-    scan_status     VARCHAR(16) NOT NULL DEFAULT ''scanning'', -- scanning / clean / infected
+    status          VARCHAR(16) NOT NULL DEFAULT 'pending',  -- pending / ready / failed
+    scan_status     VARCHAR(16) NOT NULL DEFAULT 'scanning', -- scanning / clean / infected
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );

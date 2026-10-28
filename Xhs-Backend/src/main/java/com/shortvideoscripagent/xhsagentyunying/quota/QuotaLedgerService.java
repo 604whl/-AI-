@@ -28,7 +28,7 @@ public class QuotaLedgerService {
     /**
      * 分页查询 ledger 记录。
      */
-    public IPage<UsageLedger> pageByWorkspace(UUID workspaceId, String action, int page, int size) {
+    public IPage<UsageLedger> pageByWorkspace(String workspaceId, String action, int page, int size) {
         int safePage = Math.max(page, 1);
         int safeSize = Math.min(Math.max(size, 1), 100);
         LambdaQueryWrapper<UsageLedger> wrapper = new LambdaQueryWrapper<UsageLedger>()
@@ -50,7 +50,7 @@ public class QuotaLedgerService {
     /**
      * 按 refId 查询关联记录。
      */
-    public UsageLedger findByRefId(UUID workspaceId, UUID refId) {
+    public UsageLedger findByRefId(String workspaceId, UUID refId) {
         LambdaQueryWrapper<UsageLedger> wrapper = new LambdaQueryWrapper<UsageLedger>()
                 .eq(UsageLedger::getWorkspaceId, workspaceId)
                 .eq(UsageLedger::getRefId, refId)
@@ -62,7 +62,7 @@ public class QuotaLedgerService {
     /**
      * 分页查询 ledger（兼容 WorkspaceQuotaController）。
      */
-    public IPage<UsageLedger> list(UUID workspaceId, String action, String status, int page, int size) {
+    public IPage<UsageLedger> list(String workspaceId, String action, String status, int page, int size) {
         int safePage = Math.max(page, 1);
         int safeSize = Math.min(Math.max(size, 1), 100);
         LambdaQueryWrapper<UsageLedger> wrapper = new LambdaQueryWrapper<UsageLedger>()

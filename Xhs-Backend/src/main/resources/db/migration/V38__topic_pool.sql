@@ -1,5 +1,5 @@
 -- V38: topic_pool table
--- Ñ¡Ìâ³Ø£º´æ´¢Ñ¡ÌâÃû³Æ¡¢À´Ô´Æ½Ì¨¡¢ÈÈ¶È¡¢×´Ì¬ºÍ±êÇ©
+-- é€‰é¢˜æ± ï¼šå­˜å‚¨é€‰é¢˜åç§°ã€æ¥æºå¹³å°ã€çƒ­åº¦ã€çŠ¶æ€å’Œæ ‡ç­¾
 CREATE TABLE app.topic_pool (
     id BIGSERIAL PRIMARY KEY,
     workspace_id BIGINT NOT NULL,
@@ -19,6 +19,6 @@ CREATE TABLE app.topic_pool (
 CREATE INDEX idx_topic_pool_workspace_status ON app.topic_pool(workspace_id, status);
 CREATE INDEX idx_topic_pool_workspace_created ON app.topic_pool(workspace_id, created_at DESC);
 
-COMMENT ON TABLE app.topic_pool IS 'Ñ¡Ìâ³Ø£º´æ´¢´ıÑ¡/ÒÑÓÃ/¹éµµµÄÑ¡Ìâ';
-COMMENT ON COLUMN app.topic_pool.source IS 'Æ½Ì¨/Æ·ÀàÀ´Ô´£¬Èç xiaohongshu/career/study_abroad';
-COMMENT ON COLUMN app.topic_pool.target_persona IS 'Ä¿±êÈËÈº£¬Èç agency/mentor/senior';
+COMMENT ON TABLE app.topic_pool IS 'é€‰é¢˜æ± ï¼šå­˜å‚¨å¾…é€‰/å·²ç”¨/å½’æ¡£çš„é€‰é¢˜';
+COMMENT ON COLUMN app.topic_pool.source IS 'å¹³å°/å“ç±»æ¥æºï¼Œå¦‚ xiaohongshu/career/study_abroad';
+COMMENT ON COLUMN app.topic_pool.target_persona IS 'ç›®æ ‡äººç¾¤ï¼Œå¦‚ agency/mentor/senior';

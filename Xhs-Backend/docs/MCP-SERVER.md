@@ -128,7 +128,7 @@ X-Mcp-User-Id: 1
 
 | 工具名 | 说明 | 依赖配置 |
 |--------|------|----------|
-| `search_kb` | 垂类知识库 RAG 检索 | `app.rag.enabled=true` + reindex |
+| `search_kb` | 分品类知识库 RAG 检索 | `app.rag.enabled=true` + reindex |
 | `web_search` | Tavily 联网搜索 | `app.agent.tools.web-search=true` + API Key |
 | `fetch_url` | 抓取 URL 正文 | `app.agent.tools.fetch-url=true` |
 | `get_hot_topics` | 热门选题 | 默认开启 |
@@ -176,7 +176,7 @@ X-Mcp-User-Id: 1
    {
      "name": "search_kb",
      "arguments": {
-       "query": "秋招时间线",
+       "query": "收纳技巧",
        "topK": 5
      }
    }

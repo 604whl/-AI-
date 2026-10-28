@@ -14,6 +14,16 @@
           <el-menu-item index="/review/submissions">{{ t('review.mySubmissionsTitle') }}</el-menu-item>
         </el-sub-menu>
         <el-menu-item index="/history">{{ t('nav.history') }}</el-menu-item>
+        <el-sub-menu index="stage3">
+          <template #title>{{ t('nav.stage3') }}</template>
+        <el-menu-item index="/publish/schedules">{{ t('nav.publishSchedule') }}</el-menu-item>
+        <el-menu-item index="/metrics">{{ t('nav.metrics') }}</el-menu-item>
+        <el-menu-item index="/retrospectives">{{ t('nav.retrospective') }}</el-menu-item>
+        <el-menu-item index="/hot-topics">{{ t('nav.hotTopic') }}</el-menu-item>
+        <el-menu-item index="/competitors">{{ t('nav.competitor') }}</el-menu-item>
+        <el-menu-item index="/admin/kb">{{ t('nav.kbAdmin') }}</el-menu-item>
+        <el-menu-item index="/admin/connectors">{{ t('nav.connector') }}</el-menu-item>
+        </el-sub-menu>
         <el-menu-item index="/settings">{{ t('nav.settings') }}</el-menu-item>
       </el-menu>
     </el-aside>

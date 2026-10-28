@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 路径：POST /api/v1/comments/generate
  */
 @RestController
-@RequestMapping("/api/v1/comments")
+@RequestMapping("/v1/comments")
 @RequiredArgsConstructor
 public class CommentGenerateController {
 

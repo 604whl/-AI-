@@ -1,89 +1,131 @@
 [
   {
-    "code": "career_fair_first_post",
-    "category": "career_fair",
-    "scenario": "first_post",
+    "code": "beauty_sensitive_skin_guide",
+    "category": "BEAUTY",
+    "scenario": "guide",
     "persona": "mentor",
-    "title": "校招会场初体验｜这些坑真的没人提前告诉你",
-    "bodyTemplate": "第一次参加校招大型招聘会，整理了一些实战经验分享给大家，希望能帮到正在求职的你们👇\n\n✅ 会前准备\n- 提前在官网/小程序确认参展企业名单，筛选出目标公司\n- 准备好精简版简历（1页），多打印几份备用\n- 准备好30秒自我介绍，包括：专业背景 + 实习经历 + 投递意向\n\n✅ 现场攻略\n- 建议从外围企业开始投，人少效率高\n- 每家企业控制在5-8分钟，深入聊1-2个岗位\n- 现场要微信/加招聘群，方便后续跟进\n\n✅ 避坑提示\n- ⚠️ 不要海投，精准投递效果更好\n- ⚠️ 不要只盯着大厂，中小厂也是好选择\n- ⚠️ 记得带充电宝，扫码填表很耗电\n\n{{cta_message}}\n\n#校招 #招聘会 #求职经验 #留学生求职 #秋招",
-    "variables": ["cta_message"],
+    "title": "敏感肌别乱换季！这 3 项先查再买",
+    "bodyTemplate": "用了两年敏感肌产品，换季就脸红、刺痛、脱皮的姐妹真的太多了。今天把我的经验整理成一份能直接照着买的清单｜\n\n📋 买前先查这 3 项\n1. 功效成分排第几：先确认到底是保湿还是抗老，配方相差很大，别被大字标题带跑\n2. 保湿打底够不够：干皮看着“干”，很多时候其实是屏障受损，锁不住水\n3. 香精和酒精的位置：都放在成分表末尾才安心，排在前面容易刺痛\n\n📝 我的固定清单\n- 保湿：神经酰胺 / 角鲨烷这类屏障友好成分\n- 清洁：氨基酸类，无香精、无色素\n- 防晒：只留一层，脸上负担越轻越好\n\n⚠️ 一定要避免\n- 一次上脸三层以上，皮肤真的受不住\n- 追新款先在耳后测 2 天，别直接上脸\n- 一有刺痛、红肿、瘙痒立刻停用并就医\n\n{{cta_message}}\n\n#敏感肌 #换季护肤 #成分党 #护肤避雷 #新手护肤",
+    "variables": [
+      "cta_message"
+    ],
     "defaultGoal": "engagement",
     "defaultTone": "friendly"
   },
   {
-    "code": "internship_interview_share",
-    "category": "interview",
-    "scenario": "interview_share",
-    "persona": "mentor",
-    "title": "实习面试复盘｜这几个问题高频出现但很多人答不好",
-    "bodyTemplate": "最近收到很多同学私信问面试经验，整理了一下我自己在面试中遇到的高频问题，分享给大家～\n\n📌 高频问题清单\n\n1️⃣ 【自我介绍】\n不要只说名字学校！重点是：为什么你适合这个岗位 + 1个最有说服力的经历\n\n2️⃣ 【项目经历】\n用STAR法则：Situation-Task-Action-Result\n重点讲你解决了什么问题，不是项目本身是什么\n\n3️⃣ 【优势劣势】\n优势要结合岗位JD具体说，劣势要展示自我认知和改进\n\n4️⃣ 【职业规划】\n别说"想当领导"，说3年内的可落地目标\n\n5️⃣ 【问面试官的问题】\n必问：这个岗位最大的挑战是什么？\n加分问：团队氛围和协作方式\n\n💡 面试小技巧\n- 眼神要自然，不要死盯一个方向\n- 语速适中，紧张时放慢反而显得稳重\n- 遇到不会的问题，诚实说"这个问题我还需要学习"比瞎编强\n\n{{encouragement}}\n\n有其他问题欢迎评论区留言～\n\n#实习 #面试技巧 #求职 #北美求职 #留学生活",
-    "variables": ["encouragement"],
+    "code": "fashion_ootd_body_type",
+    "category": "FASHION",
+    "scenario": "guide",
+    "persona": "senior",
+    "title": "小个子别乱穿！这 3 条显高 10cm",
+    "bodyTemplate": "我身高 158，以前总觉得自己矮不适合穿裙子，每天出门前都要纠结半天。试错无数次之后，总结出这 3 条最实用的显高规则｜\n\n🧗 规则 1：高腰线要按最终宽度选\n腰线要提到穿上后腰最细的位置，不是裙子起点。起点高但腰围松垮的裙子，反而会把身高截断。\n\n🧗 规则 2：肩线宁低不高\n肩线在肩点或更低，会让腿显得更长。肩线上提或者加垫肩，都会让重心上移，视觉上直接矮一截。\n\n🧗 规则 3：配色上下呼应\n最安全的是上下两段同色系，再用包或鞋做点睛。上下撞色会把身体横向切开，显矮。\n\n📝 每天出门前的 30 秒检查\n- 腰线卡在身体哪个位置？\n- 上衣和裙子是不是重色？\n- 鞋子和裙子有没有呼应？\n\n{{cta_message}}\n\n#小个子穿搭 #显高穿搭 #日常穿搭 #穿搭技巧 #通勤穿搭",
+    "variables": [
+      "cta_message"
+    ],
     "defaultGoal": "engagement",
-    "defaultTone": "supportive"
+    "defaultTone": "friendly"
   },
   {
-    "code": "cpt_opt_extension_guide",
-    "category": "visa",
-    "scenario": "policy_guide",
+    "code": "food_cafee_weekend_route",
+    "category": "FOOD",
+    "scenario": "route",
     "persona": "senior",
-    "title": "CPT/OPT快到期了？这份续期指南请收好（含时间线）",
-    "bodyTemplate": "⚠️ 很多同学因为不了解政策错过了OPT申请窗口，今天来详细说说CPT和OPT的续期注意事项⚠️\n\n📋 OPT 延期（STEM Extension）\n\n申请条件：\n- STEM专业（F-1签证）\n- 已用完首次OPT（12个月）\n- 雇主已加入E-Verify系统\n\n申请时间线：\n- 🔴 必须在当前OPT到期前90天内提交\n- 🔴 EAD卡审批通常需要90-150天\n- ⚠️ 建议提前准备，别卡在最后一周\n\n材料清单：\n□ I-765表格（最新版本）\n□ I-20（新版，需雇主签字）\n□ 护照首页复印件\n□ 之前的EAD卡复印件\n□ 2张符合规格的照片\n□ STEM专业认证（STEM Degree CIP代码）\n\n💰 费用明细\n- I-765申请费：$410\n- 打指模服务：$30\n- 建议加急处理：$1,500（如需要）\n\n📌 CPT 注意事项\n- Part-time CPT不影响OPT申请\n- Full-time CPT超过1年可能影响OPT资格\n- 实习结束后记得更新I-20\n\n{{disclaimer}}\n\n提醒：政策时有变动，建议在USCIS官网确认最新信息。如有疑问，咨询学校国际学生办公室。\n\n#OPT #CPT #STEM #F1签证 #留学生就业 #北美求职",
-    "variables": ["disclaimer"],
+    "title": "人均 38 元逛完 4 站，这条路线直接抄",
+    "bodyTemplate": "周六想出门逛吃又不想人挤人，这条路线我实测走了两遍，全程够吃一餐，全程不用等位｜\n\n📍 路线总览\n- 第一站（10:30）：先去人少的时段占位，拍照也好看\n- 第二站（12:00）：主食时段，建议提前取号\n- 第三站（14:30）：甜品站，菜单常换，适合坐着休息\n- 第四站（16:30）：杂货铺，走一圈顺便补货\n\n💰 人均预算（实测）\n- 第一站：18 元\n- 第二站：42 元（分量足，两人可分摊）\n- 第三站：26 元\n- 第四站：35 元\n- 合计约 121 元，两人约 60 元/人\n\n📝 实测提醒\n- 周五下午全场满位，建议换到周末\n- 第三站不支持预约，可以现场取号\n\n{{cta_message}}\n\n#探店 #本地生活 #周末去哪儿 #城市walk #收藏攻略",
+    "variables": [
+      "cta_message"
+    ],
+    "defaultGoal": "engagement",
+    "defaultTone": "friendly"
+  },
+  {
+    "code": "travel_packing_light_list",
+    "category": "TRAVEL",
+    "scenario": "checklist",
+    "persona": "senior",
+    "title": "出行 8 天行李清单，照抄不踩坑",
+    "bodyTemplate": "前几次出行都是在打包前再收拾一遍，现在直接把这份用顺手的清单给你，按顺序放进箱子就行｜\n\n📝 出发前 1 天\n- 身份证、机票、银行卡、保险单（手机各留一张照片）\n- 充电宝带两枚、充电线，手机没电时还能扫码支付\n- 打印车票与酒店预订确认单\n\n📝 第 1–3 天（刚到还不熟）\n- 衣服带一套常穿款，别带全新的鞋\n- 带上折叠雨伞和一支便携防晒（别指望靠日程安排记得涂）\n- 可打印的路线图 + 住宿地址截图\n\n📝 第 4–8 天（已经摸熟）\n- 洗漱分装、毛巾、便携挂烫机\n- 换洗衣物、常备药、一次性内衣裤\n\n📝 一句话结论\n行李减重的关键不是少带，是每件都真的会用上。\n\n{{cta_message}}\n\n#旅行 #行李清单 #旅行打包 #减重出行 #旅行攻略",
+    "variables": [
+      "cta_message"
+    ],
+    "defaultGoal": "engagement",
+    "defaultTone": "friendly"
+  },
+  {
+    "code": "home_small_apartment_storage",
+    "category": "LIFESTYLE",
+    "scenario": "guide",
+    "persona": "mentor",
+    "title": "租的房子不能改？这 5 个收纳法能救命",
+    "bodyTemplate": "租房最大的痛苦：想改不能改，不改又乱。其实不需要拆墙，换个思路就能解决｜\n\n📝 1. 上方收纳：利用顶部空间\n一个 40cm 深的立架足够放两个鞋盒和一摞衣架，直接多出一整面墙的容量。\n\n📝 2. 门后收纳：挂钩而不是柜子\n挂钩适合放“一天用一次”的小物件。挂在门后拿取比翻柜子快得多。\n\n📝 3. 空间隔层：不要依赖整面墙\n用一组立柜或屏风做隔断，一个区域就能拆成两个功能区。\n\n📝 4. 动线：三步之内解决\n洗（洗手台）→ 冲（淋浴区）→ 挂（出口处），全程不碰任何身体部位。\n\n📝 5. 一个箱子封存一个区域\n收纳的真正价值在“结束”——一个箱子装满，就不再往里加东西。\n\n{{cta_message}}\n\n#收纳 #小户型 #租房改造 #家居收纳 #生活好物",
+    "variables": [
+      "cta_message"
+    ],
+    "defaultGoal": "engagement",
+    "defaultTone": "friendly"
+  },
+  {
+    "code": "knowledge_note_structure",
+    "category": "KNOWLEDGE",
+    "scenario": "method",
+    "persona": "mentor",
+    "title": "记不住的知识，先改这一个动作",
+    "bodyTemplate": "我以前也以为“看了一百篇就会了”，后来才想明白真正的问题：下次遇到同样的内容，我依然不会。\n\n后来我换了一个动作，内容留存率明显变好｜\n\n📝 原来：“看了 100 篇文章”\n改成：“每篇只回答一个问题——这里最值得学的是什么？我今天能用出来吗？”\n\n为什么这个改动有效？\n- 读的时候人在“反应”，不是在“存档”\n- 回答问题必须用自己的话写，写不出来就说明还没真懂\n- 有取舍之后，记录本身才不会被信息淹没\n\n📝 一周执行清单\n- 周一：读一篇，只摘一个可执行动作\n- 周三：换一个主题，另写 3 行不同理解\n- 周五：把写过的东西改成一句能回答别人问题的回答\n\n{{cta_message}}\n\n#学习方法 #知识管理 #个人成长 #读书笔记 #学习效率",
+    "variables": [
+      "cta_message"
+    ],
+    "defaultGoal": "engagement",
+    "defaultTone": "friendly"
+  },
+  {
+    "code": "mom_baby_sleep_routine",
+    "category": "MOM_BABY",
+    "scenario": "guide",
+    "persona": "mentor",
+    "title": "宝宝睡不香？先试这个节奏",
+    "bodyTemplate": "宝宝月子里频繁醒来，怎么哄都不行。我不会一上来就说“跟睡”，而是想把我自己试过的节奏一条条摆出来｜\n\n📝 节奏的三个关键点\n1. 光照就是时钟：固定日间和夜间的开灯时间，先把“钟”稳住，再谈睡整觉\n2. 进入流程要看反应：先准备好体温、哄睡两种回应，再一步步加入光照\n3. 回归当天状态：回归不是套用标准的“睡眠表”，而是回到宝宝熟悉的顺序\n\n📝 我的一天现场\n- 6:30 起床先拉开窗帘，不报时间\n- 7:30 先吃早餐再哄宝宝，不为赶时间跳过任何一步\n- 睡前固定“晚安三件套”：关灯、控温、白噪音里的安全感\n\n📝 一个提醒\n每个宝宝的节奏都不同，别把别人的时间表当标准。如果连续一周无法入睡或进食异常，请及时咨询儿科医生。\n\n{{cta_message}}\n\n#宝宝睡眠 #新手妈妈 #育儿日常 #哄睡 #母婴经验",
+    "variables": [
+      "cta_message"
+    ],
     "defaultGoal": "engagement",
     "defaultTone": "professional"
   },
   {
-    "code": "h1b_lottery_result",
-    "category": "visa",
-    "scenario": "lottery_result",
-    "persona": "senior",
-    "title": "H1B抽签结果出了，没中的同学还有这些路可以走",
-    "bodyTemplate": "今天H1B抽签结果公布，有人欢喜有人愁。没抽中的同学不要灰心，以下几条路可以考虑：\n\n🔄 Plan B 方案\n\n1️⃣ 【Day 1 CPT】\n- 适合想继续深造+保留身份的同学\n- 注意选择靠谱学校，避免USCIS审查风险\n- 推荐：部分STEM硕士项目\n\n2️⃣ 【L1签证】\n- 需要有1年海外工作经验\n- 先去其他国家工作一年再申请\n\n3️⃣ 【O1签证】\n- 适合在专业领域有突出成就的同学\n- 需要律师协助准备材料\n\n4️⃣ 【继续用OPT工作】\n- 非STEM专业：最多用完2年\n- STEM专业：最多用完3年（STEM Extension）\n\n5️⃣ 【申请绿卡EB-2/EB-3】\n- PERM劳工证 → I-140 → 排期\n- 周期较长，但身份更稳定\n\n6️⃣ 【加拿大/欧洲机会】\n- 加拿大有相对友好的工签政策\n- 欧洲也有不少科技公司提供工签\n\n💬 说在最后\n\nH1B只是留在美国的一种方式，不是唯一出路。不管选哪条路，都要提前规划，祝大家都能找到适合自己的方案。\n\n{{call_to_action}}\n\n#H1B #抽签 #留学生就业 #OPT #北美求职 #移民",
-    "variables": ["call_to_action"],
-    "defaultGoal": "engagement",
-    "defaultTone": "motivational"
-  },
-  {
-    "code": "new_grad_job_hunt",
-    "category": "job_hunt",
-    "scenario": "diary",
-    "persona": "mentor",
-    "title": "应届生求职日记📝 第{{month}}个月，找工比的不是速度",
-    "bodyTemplate": "我是{{name}}，商科研究生，今年5月毕业。记录一下我的求职过程，希望给同样在路上的你一点参考。\n\n📅 第{{month}}个月进度\n\n📊 投递情况\n- 总投递：{{total_applications}}份\n- 已回复：{{received_replies}}家\n- 面试邀请：{{interview_count}}个\n- Offer：{{offer_count}}个\n\n🔍 这个月的感悟\n\n1. 【海投真的不如精准投】\n前两周海投了100份，回复率不到5%。后来研究JD，针对性改简历，回复率提高到了15%+。\n\n2. 【Networking真的有用】\nLinkedIn上reach out了15个校友，其中3个给了内推机会。主动一点，机会真的多很多。\n\n3. 【调整心态太重要了】\n被拒是常态。第23封拒信之后我休息了一周，重新调整状态再出发。\n\n📝 面试复盘（本月最难忘的一次）\n{{interview_reflection}}\n\n🎯 下个月目标\n- 把内推成功率提高到50%\n- 每周做2次mock interview\n- 学习行业知识，准备case study\n\n{{closing_message}}\n\n有求职搭子想一起组队打卡的评论区见～\n\n#应届生 #求职日记 #留学生求职 #北美求职 #找工记录",
-    "variables": ["name", "month", "total_applications", "received_replies", "interview_count", "offer_count", "interview_reflection", "closing_message"],
-    "defaultGoal": "engagement",
-    "defaultTone": "casual"
-  },
-  {
-    "code": "career_switch_advice",
-    "category": "career_development",
+    "code": "career_resume_v2_story",
+    "category": "CAREER",
     "scenario": "advice",
-    "persona": "senior",
-    "title": "转行建议｜从金融转Tech，我做了这三件事",
-    "bodyTemplate": "收到很多私信问转行的事，干脆写一篇分享。我是学Finance的，去年成功转到Tech做PM，总结了几个关键点：\n\n🛠️ 转行前必做的3件事\n\n1️⃣ 【搞清楚为什么转】\n不是看别人转就转，要问自己：\n- 现在的工作让你痛苦的是什么？\n- 新行业吸引你的是什么？\n- 你愿意为转行付出多少时间成本？\n\n2️⃣ 【补足硬技能差距】\n转Tech不一定非要会写代码，但要懂：\n- 数据分析基础（SQL/Python入门）\n- 产品思维（用户调研、需求分析）\n- 技术术语（能和工程师无障碍沟通）\n\n3️⃣ 【用项目证明能力】\n没有经验就用项目说话：\n- 在GitHub上参与开源项目\n- 做个人side project\n- 帮小公司做免费/低价咨询\n\n📊 转行Timeline参考\n- 第1-3个月：学基础+做项目\n- 第4-6个月：优化简历+network\n- 第7-9个月：密集投递\n- 第10-12个月：拿到offer\n\n💼 我的成功经验\n{{success_story}}\n\n⚠️ 几个忠告\n- 不要裸辞转行，财务压力会影响判断\n- 不要忽视行业人脉，很多机会靠内推\n- 不要只盯着大厂startup也能学到很多\n\n{{cta_section}}\n\n#转行 #职业发展 #Tech #留学生就业 #CareerSwitch",
-    "variables": ["success_story", "cta_section"],
-    "defaultGoal": "engagement",
-    "defaultTone": "professional"
-  },
-  {
-    "code": "mock_interview_qa",
-    "category": "interview",
-    "scenario": "mock_qa",
-    "persona": "agency",
-    "title": "模拟面试Q&A精华整理｜这些问题你真的会答吗？",
-    "bodyTemplate": "帮大家整理了最近模拟面试中错误率最高的几道题，来看看你会怎么答👇\n\n═══════════════════════════\n\n📋 Q1：Tell me about yourself\n\n❌ 错误示范：\n\"I graduated from {{school}} with a degree in {{major}}...\"\n（从出生开始讲，平铺直叙，没有亮点）\n\n✅ 正确思路：\n\"I'm a {{year}}-year {{role}} professional who specializes in {{skill}}. In my recent role at {{company}}, I led a project that delivered {{achievement}}. I'm now looking for a role where I can {{goal}}...\"\n\n═══════════════════════════\n\n📋 Q2：What's your biggest weakness?\n\n❌ 错误示范：\n\"I'm a perfectionist and work too hard\"\n（太假，面试官一眼看穿）\n\n✅ 正确思路：\n\"One area I've been working on is {{real_weakness}}. I've recently started {{improvement_action}} to address this...\"\n\n═══════════════════════════\n\n📋 Q3：Why this company?\n\n❌ 错误示范：\n\"Because it's a great company and I admire your products\"\n（任何公司都能这么说，没有针对性）\n\n✅ 正确思路：\n\"I've been following {{company}}'s recent {{specific_initiative}} and I'm particularly drawn to {{specific_reason}}. My background in {{your_background}} aligns well with the {{specific_role}} team's focus on {{team_focus}}...\"\n\n═══════════════════════════\n\n📋 Q4：Where do you see yourself in 5 years?\n\n❌ 错误示范：\n\"In a management position\"\n（太笼统，没有个人特色）\n\n✅ 正确思路：\n\"In 5 years, I see myself {{specific_goal}}. To get there, I'm currently working on {{current_effort}}, and I believe {{company}} is the ideal environment to help me achieve this because {{company_fit}}...\"\n\n═══════════════════════════\n\n📌 免费福利\n评论区留言「模拟面试」，私信送你我整理的50道高频Behavioral Questions答案模板～\n\n{{bottom_cta}}\n\n#面试 #求职 #BehavioralQuestions #北美求职 #InterviewPrep",
-    "variables": ["school", "major", "year", "role", "skill", "company", "achievement", "goal", "real_weakness", "improvement_action", "specific_initiative", "specific_reason", "your_background", "specific_role", "team_focus", "specific_goal", "current_effort", "company_fit", "bottom_cta"],
-    "defaultGoal": "engagement",
-    "defaultTone": "professional"
-  },
-  {
-    "code": "offer_comparison",
-    "category": "job_hunt",
-    "scenario": "decision",
     "persona": "mentor",
-    "title": "同时拿到{{company_a}}和{{company_b}}的Offer怎么选？",
-    "bodyTemplate": "终于到了甜蜜的烦恼环节！同时拿到{{company_a}}和{{company_b}}的Offer，整理了一份对比分析，给同样在纠结的同学参考👇\n\n🏢 Offer 对比表\n\n│ 对比维度 │ {{company_a}} │ {{company_b}} │\n│---------|-------------|-------------│\n│ 薪资 │ {{salary_a}} │ {{salary_b}} │\n│ 奖金 │ {{bonus_a}} │ {{bonus_b}} │\n│ 股票/RSU │ {{equity_a}} │ {{equity_b}} │\n│ 地点 │ {{location_a}} │ {{location_b}} │\n│ 远程政策 │ {{remote_a}} │ {{remote_b}} │\n│ 成长空间 │ ⭐⭐⭐⭐ │ ⭐⭐⭐⭐⭐ │\n│ Work-Life Balance │ ⭐⭐⭐⭐⭐ │ ⭐⭐⭐ │\n\n💡 几个决策维度分享\n\n1️⃣ 【薪资 vs 成长】\n如果两家公司薪资差距不大，选能让你成长更快的。但如果差距超过30%，就要权衡了。\n\n2️⃣ 【大厂 vs 小厂】\n大厂：体系成熟、title响亮、跳板好使\n小厂：成长快、能接触全链路、股权潜力大\n\n3️⃣ 【直属老板比公司重要】\n跟对老板，烂公司也能有成长；跟错老板，好公司也会很累。\n\n4️⃣ 【城市/生活成本】\n同样的薪资，在SF和在Austin的实际购买力差很多。算清楚到手真实收入。\n\n📌 我的最终选择逻辑\n\n{{decision_logic}}\n\n💬 评论区聊聊\n你们会怎么选？留言说说你的决策标准～\n\n{{cta_invite}}\n\n#Offer比较 #求职 #职场选择 #留学生就业 #北美求职",
-    "variables": ["company_a", "company_b", "salary_a", "salary_b", "bonus_a", "bonus_b", "equity_a", "equity_b", "location_a", "location_b", "remote_a", "remote_b", "decision_logic", "cta_invite"],
+    "title": "第二版简历我只改了 3 行，面试率翻倍",
+    "bodyTemplate": "一句“简历要先写好”的建议太笼统了，我把自己的简历改成了两个版本做对比。第一版是按时间排序的工作清单，第二版改成了按能力重组的证据故事。\n\n📝 改动 1：顶部不再是姓名\n改成一句结论：“3 年 B2B 增长运营经验，带团队从 0 做到季度目标。”\n差别在于：HR 往下读的时候，看到这句就知道你能做什么。\n\n📝 改动 2：每段经历都带数字\n原来：“负责市场活动。”\n改为：“负责市场活动，策划 12 场活动，带来注册 3800+，活动期留存 65%。”\n\n📝 改动 3：删掉和目标无关的内容\n每删一条，就多出一行能证明你能力的内容。\n\n{{cta_message}}\n\n#简历修改 #求职 #面试技巧 #职场成长 #简历模板",
+    "variables": [
+      "cta_message"
+    ],
+    "defaultGoal": "engagement",
+    "defaultTone": "professional"
+  },
+  {
+    "code": "study_abroad_essay_outline",
+    "category": "STUDY_ABROAD",
+    "scenario": "guide",
+    "persona": "mentor",
+    "title": "文书结构没想清？这 4 段模板套上去就行",
+    "bodyTemplate": "文书写得好不好，结构真的很要命。我帮学生改过上百份，反复说的就是这四件事｜\n\n📝 第 1 段：开头一句话说清目的\n不要写“我对语言学习很感兴趣”。改成：“想学习语言学，是因为我想在非母语环境里直接获取信息。”\n一句话里有动机、有能力、有目标。\n\n📝 第 2 段：一个具体经历打底\n不要只写“参加过”。写清你具体做了什么、解决了什么问题、看到了什么可能性。\n\n📝 第 3 段：能力要有证据\n不要写“语言能力强”，写“能够独立完成 50 页文献的综述与改写”。\n\n📝 第 4 段：为什么是这所学校\n最后一段要回答“它能帮我解决什么问题”，而不是介绍学校排名。\n\n{{cta_message}}\n\n#文书写作 #留学申请 #学习计划 #个人陈述 #出国",
+    "variables": [
+      "cta_message"
+    ],
+    "defaultGoal": "engagement",
+    "defaultTone": "professional"
+  },
+  {
+    "code": "generic_story_checklist",
+    "category": "OTHER",
+    "scenario": "method",
+    "persona": "senior",
+    "title": "一个主题写 3 篇就够：我的选题清单",
+    "bodyTemplate": "写东西最难受的不是没灵感，是没结构。我自己也写了一整年才发现：多写的那几篇不是不好，是没有说清“这篇解决什么问题”。\n\n📝 我的三类选题分工\n1. 经验型：我自己做过，有成功也有失败，适用范围最广\n2. 认知型：我研究过，可以写方法和判断标准\n3. 工具型：我实际用过，可以写流程和避坑\n\n📝 动笔前先问自己三个问题\n- 这篇究竟给谁看？\n- 他看完能做什么？\n- 为什么要看我的，而不是别人的？\n\n三个问题都有答案之后，再动笔。\n\n{{cta_message}}\n\n#内容创作 #选题方法 #写作技巧 #结构化表达 #运营干货",
+    "variables": [
+      "cta_message"
+    ],
     "defaultGoal": "engagement",
     "defaultTone": "friendly"
   }

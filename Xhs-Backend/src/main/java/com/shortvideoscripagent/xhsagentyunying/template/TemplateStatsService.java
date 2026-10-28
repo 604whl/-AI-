@@ -73,7 +73,6 @@ public class TemplateStatsService {
      */
     public List<TemplateLeaderboardEntry> getLeaderboard(Long userId, int limit) {
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-        java.util.UUID wsUuid = java.util.UUID.fromString(workspaceId);
 
         // 校验用户角色（至少 VIEWER 可看）
         WorkspaceRole role = workspaceService.findRole(userId, workspaceId);
@@ -82,7 +81,7 @@ public class TemplateStatsService {
         int safeLimit = Math.min(Math.max(limit, 1), 50);
         OffsetDateTime from = OffsetDateTime.now(ZoneOffset.UTC).minusDays(30);
 
-        List<TemplateMapper.LeaderboardEntry> entries = templateMapper.selectLeaderboard(wsUuid, from, safeLimit);
+        List<TemplateMapper.LeaderboardEntry> entries = templateMapper.selectLeaderboard(workspaceId, from, safeLimit);
         return entries.stream()
                 .map(e -> TemplateLeaderboardEntry.builder()
                         .templateId(e.getTemplateId().toString())

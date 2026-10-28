@@ -67,7 +67,7 @@ public class ReviewService {
     public ReviewTaskResponse submitForReview(UUID assetId, Long submitterId,
                                               Integer riskScore, List<String> riskTags, boolean isHighRisk) {
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID wsUuid = parseUuid(workspaceId, "workspace_id");
+        String wsUuid = workspaceId;
 
         // 角色校验：EDITOR 及以上可提交
         requireEditorOrAbove(submitterId, workspaceId);
@@ -117,7 +117,7 @@ public class ReviewService {
     @Transactional
     public ReviewTaskResponse assignReviewer(UUID taskId, Long reviewerId, Long assignerId) {
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID wsUuid = parseUuid(workspaceId, "workspace_id");
+        String wsUuid = workspaceId;
 
         // 角色校验：ADMIN 或 OWNER
         requireAdminOrAbove(assignerId, workspaceId);
@@ -151,7 +151,7 @@ public class ReviewService {
     @Transactional
     public ReviewTaskResponse approve(UUID taskId, Long reviewerId, String comment) {
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID wsUuid = parseUuid(workspaceId, "workspace_id");
+        String wsUuid = workspaceId;
 
         requireReviewerOrAbove(reviewerId, workspaceId);
 
@@ -195,7 +195,7 @@ public class ReviewService {
     @Transactional
     public ReviewTaskResponse reject(UUID taskId, Long reviewerId, String comment) {
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID wsUuid = parseUuid(workspaceId, "workspace_id");
+        String wsUuid = workspaceId;
 
         requireReviewerOrAbove(reviewerId, workspaceId);
 
@@ -241,7 +241,7 @@ public class ReviewService {
     @Transactional
     public ReviewTaskResponse cancel(UUID taskId, Long userId) {
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID wsUuid = parseUuid(workspaceId, "workspace_id");
+        String wsUuid = workspaceId;
 
         ReviewTask task = requireTask(taskId, wsUuid);
 
@@ -282,7 +282,7 @@ public class ReviewService {
     public ReviewTaskResponse addComment(UUID taskId, String comment,
                                          String highlightedText, Long userId) {
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID wsUuid = parseUuid(workspaceId, "workspace_id");
+        String wsUuid = workspaceId;
 
         ReviewTask task = requireTask(taskId, wsUuid);
 
@@ -305,7 +305,7 @@ public class ReviewService {
     public PaginatedResponse<ReviewQueueItem> getQueue(
             Long reviewerId, String status, int page, int size) {
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID wsUuid = parseUuid(workspaceId, "workspace_id");
+        String wsUuid = workspaceId;
 
         int safePage = Math.max(page, 1);
         int safeSize = Math.min(Math.max(size, 1), 50);
@@ -335,7 +335,7 @@ public class ReviewService {
      */
     public PaginatedResponse<ReviewQueueItem> getMySubmissions(Long submitterId, int page, int size) {
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID wsUuid = parseUuid(workspaceId, "workspace_id");
+        String wsUuid = workspaceId;
 
         int safePage = Math.max(page, 1);
         int safeSize = Math.min(Math.max(size, 1), 50);
@@ -357,7 +357,7 @@ public class ReviewService {
      */
     public ReviewTaskResponse getById(UUID taskId, Long userId) {
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID wsUuid = parseUuid(workspaceId, "workspace_id");
+        String wsUuid = workspaceId;
 
         ReviewTask task = requireTask(taskId, wsUuid);
         List<ReviewComment> comments = commentMapper.selectByTaskId(taskId);
@@ -371,7 +371,7 @@ public class ReviewService {
      */
     public List<ReviewCommentResponse> getComments(UUID taskId) {
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID wsUuid = parseUuid(workspaceId, "workspace_id");
+        String wsUuid = workspaceId;
 
         requireTask(taskId, wsUuid);
 
@@ -397,7 +397,7 @@ public class ReviewService {
                                    Integer riskScore, List<String> riskTags) {
         try {
             String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-            UUID wsUuid = parseUuid(workspaceId, "workspace_id");
+            String wsUuid = workspaceId;
 
             ContentAsset asset = assetMapper.selectById(assetId);
             if (asset == null) {
@@ -462,7 +462,7 @@ public class ReviewService {
         }
     }
 
-    private ReviewTask requireTask(UUID taskId, UUID workspaceId) {
+    private ReviewTask requireTask(UUID taskId, String workspaceId) {
         ReviewTask task = taskMapper.selectById(taskId);
         if (task == null || !task.getWorkspaceId().equals(workspaceId)) {
             throw new BusinessException(CODE_NOT_FOUND, "review_task_not_found");
@@ -470,7 +470,7 @@ public class ReviewService {
         return task;
     }
 
-    private void migrateAssetStatus(UUID assetId, UUID workspaceId,
+    private void migrateAssetStatus(UUID assetId, String workspaceId,
                                     String from, String to) {
         ContentAsset asset = assetMapper.selectById(assetId);
         if (asset == null || !asset.getWorkspaceId().equals(workspaceId)) {

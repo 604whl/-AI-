@@ -19,7 +19,7 @@ public class ComplianceBrandWord {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    private UUID workspaceId;
+    private String workspaceId;
 
     private String ruleCode;
 

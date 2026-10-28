@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/topics")
+@RequestMapping("/v1/topics")
 @RequiredArgsConstructor
 public class TopicPoolController {
 
@@ -27,13 +27,13 @@ public class TopicPoolController {
 
     @GetMapping
     public ApiResponse<TopicListResponse> list(
-            @RequestParam Long workspaceId,
+            @RequestParam String workspaceId,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         Long userId = requireUserId();
-        WorkspaceGuards.requireMember(String.valueOf(workspaceId));
+        WorkspaceGuards.requireMember(workspaceId);
         return ApiResponse.ok(topicPoolService.list(workspaceId, status, page, size));
     }
 
@@ -41,8 +41,7 @@ public class TopicPoolController {
     public ApiResponse<TopicDto> create(@Valid @RequestBody TopicCreateRequest request) {
         Long userId = requireUserId();
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-        return ApiResponse.ok(topicPoolService.create(
-                Long.parseLong(workspaceId), userId, request));
+        return ApiResponse.ok(topicPoolService.create(workspaceId, userId, request));
     }
 
     @PatchMapping("/{id}")
@@ -52,8 +51,7 @@ public class TopicPoolController {
     ) {
         Long userId = requireUserId();
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-        return ApiResponse.ok(topicPoolService.update(
-                id, Long.parseLong(workspaceId), request));
+        return ApiResponse.ok(topicPoolService.update(id, workspaceId, request));
     }
 
     @PostMapping("/{id}/to-asset")
@@ -64,7 +62,7 @@ public class TopicPoolController {
         Long userId = requireUserId();
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
         ToAssetResponse result = topicPoolService.toAsset(
-                id, Long.parseLong(workspaceId), userId,
+                id, workspaceId, userId,
                 request.getPlatform(), request.getCategory());
         return ApiResponse.ok(result);
     }
@@ -75,8 +73,7 @@ public class TopicPoolController {
     ) {
         Long userId = requireUserId();
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-        return ApiResponse.ok(topicPoolService.bulkImport(
-                Long.parseLong(workspaceId), userId, request));
+        return ApiResponse.ok(topicPoolService.bulkImport(workspaceId, userId, request));
     }
 
     private Long requireUserId() {

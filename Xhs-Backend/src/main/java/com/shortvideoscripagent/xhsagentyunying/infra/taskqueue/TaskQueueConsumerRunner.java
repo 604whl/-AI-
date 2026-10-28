@@ -83,6 +83,27 @@ public class TaskQueueConsumerRunner {
      * - 再 XADD dummy 消息：确保 Stream 存在（MKSTREAM 的等价实现）
      * 调用方通过检查 `groupInitialized` 标志判断是否成功。
      */
+    /**
+     * 递归收集异常链上的所有消息。
+     * <p>
+     * Spring Data Redis 会把 Redis 原始错误包在 {@code RedisSystemException} 里，
+     * 外层 message 固定是 "Error in execution"，真正的错误码（BUSYGROUP / NOGROUP）
+     * 只出现在 cause 链上。只看最外层 message 会把"组已存在"这种正常情况误判为
+     * 致命错误，导致消费者永远不进入 XREADGROUP。
+     */
+    private static String collectMessages(Throwable ex) {
+        StringBuilder sb = new StringBuilder();
+        Throwable cur = ex;
+        int guard = 0;
+        while (cur != null && guard++ < 12) {
+            if (cur.getMessage() != null) {
+                sb.append(cur.getMessage()).append('\n');
+            }
+            cur = cur.getCause();
+        }
+        return sb.toString();
+    }
+
     private void initConsumerGroup(String streamKey, String group) {
         try {
             // 1. 尝试创建 Consumer Group（Stream 存在时正常，Stream 不存在时抛 NOGROUP）
@@ -91,7 +112,7 @@ public class TaskQueueConsumerRunner {
             groupInitialized = true;
             return;
         } catch (Exception ex) {
-            String msg = ex.getMessage() == null ? "" : ex.getMessage();
+            String msg = collectMessages(ex);
             if (msg.contains("BUSYGROUP")) {
                 // Group 已存在，非错误，初始化成功
                 log.debug("Consumer group {} already exists, skipping", group);
@@ -113,7 +134,7 @@ public class TaskQueueConsumerRunner {
                     groupInitialized = true;
                     return;
                 } catch (Exception initEx) {
-                    String initMsg = initEx.getMessage() == null ? "" : initEx.getMessage();
+                    String initMsg = collectMessages(initEx);
                     if (initMsg.contains("BUSYGROUP")) {
                         log.debug("Consumer group {} already exists after init", group);
                         groupInitialized = true;
@@ -154,8 +175,11 @@ public class TaskQueueConsumerRunner {
                 heartbeat.heartbeat();
 
                 // XREADGROUP 阻塞读取
+                // 注意：Consumer.from(group, consumerName) —— 第一个参数是消费者组名，
+                // 第二个才是消费者名。传成 (consumer, consumer) 会让 XREADGROUP 去读
+                // 一个叫 "worker-1" 的组，报 NOGROUP，任务永远不会被消费。
                 var records = redisTemplate.opsForStream().read(
-                        Consumer.from(consumer, consumer),
+                        Consumer.from(group, consumer),
                         StreamReadOptions.empty()
                                 .count(1)
                                 .block(Duration.ofMillis(properties.getPollTimeout().toMillis())),

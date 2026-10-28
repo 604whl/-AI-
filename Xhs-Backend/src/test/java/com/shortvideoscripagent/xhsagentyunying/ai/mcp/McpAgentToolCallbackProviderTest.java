@@ -75,7 +75,7 @@ class McpAgentToolCallbackProviderTest {
                 .findFirst()
                 .orElseThrow();
 
-        String json = searchKb.call("{\"query\":\"秋招时间线\",\"topK\":3}");
+        String json = searchKb.call("{\"query\":\"收纳技巧\",\"topK\":3}");
         assertTrue(json.contains("chunks"));
     }
 

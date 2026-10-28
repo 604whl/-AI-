@@ -91,7 +91,7 @@ public class UserQuotaService {
     @Transactional
     public void consumeAgentMessageQuota(Long userId, String sessionId) {
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID refId = sessionId != null ? UUID.fromString(sessionId) : null;
+        UUID refId = parseUuidOrNull(sessionId);
 
         QuotaCheckResult result = atomicQuotaGuard.tryConsume(workspaceId, ACTION_AGENT_MESSAGE, refId, "agent-message");
         if (!result.isOk()) {
@@ -114,7 +114,7 @@ public class UserQuotaService {
     @Transactional
     public void consumeBodyGenerationQuota(Long userId, String taskId) {
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID refId = taskId != null ? UUID.fromString(taskId) : null;
+        UUID refId = parseUuidOrNull(taskId);
 
         QuotaCheckResult result = atomicQuotaGuard.tryConsume(workspaceId, ACTION_BODY_GENERATION, refId, "body-generation");
         if (!result.isOk()) {
@@ -126,7 +126,7 @@ public class UserQuotaService {
     @Transactional
     public void consumeWebSearchQuota(Long userId, String sessionId) {
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID refId = sessionId != null ? UUID.fromString(sessionId) : null;
+        UUID refId = parseUuidOrNull(sessionId);
 
         QuotaCheckResult result = atomicQuotaGuard.tryConsume(workspaceId, ACTION_WEB_SEARCH, refId, "web-search");
         if (!result.isOk()) {
@@ -161,6 +161,29 @@ public class UserQuotaService {
             user.setDailyQuota(3);
         }
         return user;
+    }
+
+    /**
+     * 把外部传入的关联 ID 解析成 UUID，解析不了就返回 {@code null}。
+     * <p>
+     * <b>为什么不能直接用 {@link UUID#fromString(String)}</b>：
+     * {@code usage_ledger.ref_id} 是 UUID 列，但传入的关联 ID 并不总是 UUID——
+     * 例如聊天会话 ID 形如 {@code sess_1a2b3c4d5e6f}（见
+     * {@code ChatHistoryService#generateSessionId}）。直接调用会抛
+     * {@code IllegalArgumentException: Invalid UUID string}，
+     * 导致整个 Agent 对话链路 500。
+     * <p>
+     * refId 只用于台账关联，解析失败不影响配额扣减本身，因此降级为 {@code null}。
+     */
+    private static UUID parseUuidOrNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(value);
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 
     /**

@@ -17,7 +17,8 @@ public class BrowserAssistSession {
 
     private Long userId;
 
-    private UUID workspaceId;
+    /** Workspace ID（VARCHAR(32)，与 app.workspace.id 一致；V49 由 UUID 归一） */
+    private String workspaceId;
 
     private String platform;
 

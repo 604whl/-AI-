@@ -43,7 +43,7 @@ class AtomicQuotaGuardConcurrencyTest {
     private QuotaProperties quotaProperties;
 
     private AtomicQuotaGuard guard;
-    private UUID workspaceId;
+    private String workspaceId;
     private final int DAILY_QUOTA = 100;
 
     @BeforeEach
@@ -54,7 +54,7 @@ class AtomicQuotaGuardConcurrencyTest {
                 workspaceMapper,
                 quotaProperties
         );
-        workspaceId = UUID.randomUUID();
+        workspaceId = UUID.randomUUID().toString();
         when(quotaProperties.getDefaultDailyQuota()).thenReturn(DAILY_QUOTA);
         when(quotaProperties.isLazyInitExpired()).thenReturn(false);
     }

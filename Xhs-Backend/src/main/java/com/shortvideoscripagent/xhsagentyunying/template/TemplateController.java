@@ -126,7 +126,7 @@ public class TemplateController {
 
     /**
      * 预览渲染结果。
-     * body: { "variables": {"platform": "小红书", "topic": "秋招"} }
+     * body: { "variables": {"platform": "小红书", "topic": "收纳"} }
      */
     @PostMapping("/{id}/render")
     public ApiResponse<TemplateRenderResponse> render(

@@ -15,7 +15,7 @@ import java.util.UUID;
 public class ReviewTaskResponse {
 
     private UUID id;
-    private UUID workspaceId;
+    private String workspaceId;
     private UUID assetId;
     private Integer versionNo;
     private Long submittedBy;

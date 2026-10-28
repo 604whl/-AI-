@@ -19,6 +19,7 @@ import java.util.UUID;
  * 前缀：/v1
  */
 @RestController
+@RequestMapping("/v1")
 @RequiredArgsConstructor
 public class ReviewController {
 

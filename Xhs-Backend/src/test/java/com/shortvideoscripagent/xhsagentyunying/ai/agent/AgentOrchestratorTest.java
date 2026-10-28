@@ -74,10 +74,10 @@ class AgentOrchestratorTest {
                         帮我分析这篇笔记
 
                         【标题】
-                        26届英国留学生秋招时间线
+                        出租屋小户型收纳时间线
 
                         【正文】
-                        正文测试内容，包含秋招焦虑与投递节奏建议。
+                        正文测试内容，包含收纳焦虑与整理节奏建议。
                         """)
         ));
         when(toolRegistry.toToolCallbacks(any(), any())).thenReturn(List.of());
@@ -112,8 +112,8 @@ class AgentOrchestratorTest {
                 .sessionId("sess_test001")
                 .content("帮我分析这篇笔记")
                 .attachments(Map.of(
-                        "title", "26届英国留学生秋招时间线",
-                        "body", "正文测试内容，包含秋招焦虑与投递节奏建议。"
+                        "title", "出租屋小户型收纳时间线",
+                        "body", "正文测试内容，包含收纳焦虑与整理节奏建议。"
                 ))
                 .build();
 

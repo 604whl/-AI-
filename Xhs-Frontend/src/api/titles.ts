@@ -5,7 +5,7 @@ import { extractHighlightSegments } from '@/utils/titleHighlight'
 
 function inferTypeTag(text: string): TitleTypeTag {
   if (/信息差|没人告诉|真相|秘密/.test(text)) return 'info_gap'
-  if (/上岸|Offer|逆袭|从0/.test(text)) return 'comeback'
+  if (/逆袭|从0|终于|拿下|成功|爆款|出圈|翻车/.test(text)) return 'comeback'
   if (/卷|破防|HR|却|但/.test(text)) return 'conflict'
   return 'anxiety'
 }

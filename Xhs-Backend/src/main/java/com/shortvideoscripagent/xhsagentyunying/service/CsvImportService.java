@@ -6,6 +6,7 @@ import com.shortvideoscripagent.xhsagentyunying.domain.entity.CsvImportLog;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.CsvImportLogMapper;
 import com.shortvideoscripagent.xhsagentyunying.dto.import_.CsvImportRequest;
 import com.shortvideoscripagent.xhsagentyunying.dto.import_.CsvImportResponse;
+import com.shortvideoscripagent.xhsagentyunying.service.MetricSnapshotService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class CsvImportService {
     private static final int MAX_ERRORS = 10;
 
     private final CsvImportLogMapper importLogMapper;
+    private final MetricSnapshotService metricSnapshotService;
 
     @Transactional
     public CsvImportResponse importCsv(Long userId, CsvImportRequest request) {
@@ -31,7 +33,6 @@ public class CsvImportService {
         if (wsIdStr == null || wsIdStr.isBlank()) {
             throw new BusinessException(CODE_BAD_REQUEST, "workspace_id_required");
         }
-        UUID wsUuid = UUID.fromString(wsIdStr);
 
         byte[] csvBytes;
         try {
@@ -64,10 +65,13 @@ public class CsvImportService {
 
         int imported = 0, skipped = 0, errorCount = 0;
         if ("ASSET".equals(request.getImportType())) {
-            int[] r = importAssets(userId, wsUuid, headers, dataRows, errors);
+            int[] r = importAssets(userId, wsIdStr, headers, dataRows, errors);
             imported = r[0]; skipped = r[1]; errorCount = r[2];
         } else if ("TOPIC".equals(request.getImportType())) {
-            int[] r = importTopics(userId, wsUuid, headers, dataRows, errors);
+            int[] r = importTopics(userId, wsIdStr, headers, dataRows, errors);
+            imported = r[0]; skipped = r[1]; errorCount = r[2];
+        } else if ("METRIC".equals(request.getImportType())) {
+            int[] r = importMetrics(userId, wsIdStr, request, csvText, headers, dataRows, errors);
             imported = r[0]; skipped = r[1]; errorCount = r[2];
         } else {
             throw new BusinessException(CODE_BAD_REQUEST, "invalid_import_type");
@@ -75,7 +79,7 @@ public class CsvImportService {
 
         CsvImportLog csvLog = new CsvImportLog();
         csvLog.setUserId(userId);
-        csvLog.setWorkspaceId(wsUuid);
+        csvLog.setWorkspaceId(wsIdStr);
         csvLog.setImportType(request.getImportType());
         csvLog.setFilename(request.getFilename());
         csvLog.setTotalRows(dataRows.size());
@@ -101,7 +105,7 @@ public class CsvImportService {
                 .build();
     }
 
-    private int[] importAssets(Long userId, UUID wsUuid, String[] headers, List<String[]> rows, List<String> errors) {
+    private int[] importAssets(Long userId, String wsIdStr, String[] headers, List<String[]> rows, List<String> errors) {
         int imported = 0, skipped = 0, errorCount = 0;
         int titleIdx = findColumn(headers, "title");
         if (titleIdx < 0) {
@@ -123,7 +127,7 @@ public class CsvImportService {
         return new int[]{imported, skipped, errorCount};
     }
 
-    private int[] importTopics(Long userId, UUID wsUuid, String[] headers, List<String[]> rows, List<String> errors) {
+    private int[] importTopics(Long userId, String wsIdStr, String[] headers, List<String[]> rows, List<String> errors) {
         int imported = 0, skipped = 0, errorCount = 0;
         int titleIdx = findColumn(headers, "title");
         if (titleIdx < 0) {
@@ -143,6 +147,32 @@ public class CsvImportService {
             }
         }
         return new int[]{imported, skipped, errorCount};
+    }
+
+    /**
+     * S3-5：CSV 导入指标快照（import_type = 'METRIC'）。
+     * <p>
+     * 复用既有 csv_import_log 框架；表头白名单由 {@link com.shortvideoscripagent.xhsagentyunying.service.MetricSnapshotService}
+     * 统一校验（未知列直接拒绝 → 40062 CSV_SCHEMA_INVALID）；失败行不影响成功行；
+     * 错误明细含行号 + 原因（沿用既有 MAX_ERRORS 截断逻辑）。
+     * </p>
+     */
+    private int[] importMetrics(Long userId, String wsIdStr, CsvImportRequest request,
+                                String csvText, String[] headers, List<String[]> rows, List<String> errors) {
+        String platformCode = request.getPlatformCode() == null ? null : request.getPlatformCode().trim();
+        if (platformCode == null || platformCode.isBlank()) {
+            platformCode = "XIAOHONGSHU";
+        }
+        String accountId = request.getAccountId() == null ? null : request.getAccountId().trim();
+        try {
+            MetricSnapshotService.CsvImportOutcome outcome =
+                    metricSnapshotService.importMetricsCsv(wsIdStr, userId, platformCode, accountId,
+                            csvText, errors, MAX_ERRORS);
+            return new int[]{outcome.imported(), outcome.skipped(), outcome.errorRows()};
+        } catch (BusinessException be) {
+            // 表头非法等致命错误：错误明细已写入 errors，直接向上抛出（不吞掉）
+            throw be;
+        }
     }
 
     private int findColumn(String[] headers, String name) {

@@ -49,7 +49,6 @@ public class MediaStorageService {
     @Transactional
     public MediaUploadResponse uploadMedia(Long userId, MultipartFile file, String assetIdStr) {
         String wsIdStr = WorkspaceContext.requireWorkspaceId();
-        UUID wsUuid = UUID.fromString(wsIdStr);
         UUID assetId = (assetIdStr != null && !assetIdStr.isBlank()) ? UUID.fromString(assetIdStr) : null;
 
         String contentType = file.getContentType();
@@ -64,7 +63,7 @@ public class MediaStorageService {
 
         String prefix = isVideo ? "videos" : "images";
         String ext = resolveExt(contentType, file.getOriginalFilename());
-        String objectKey = prefix + "/" + wsUuid + "/" + userId + "/" + UUID.randomUUID().toString().replace("-", "") + ext;
+        String objectKey = prefix + "/" + wsIdStr + "/" + userId + "/" + UUID.randomUUID().toString().replace("-", "") + ext;
         String thumbKey = null;
 
         // 写入存储
@@ -80,7 +79,7 @@ public class MediaStorageService {
 
         // 入库
         MediaAsset ma = new MediaAsset();
-        ma.setWorkspaceId(wsUuid);
+        ma.setWorkspaceId(wsIdStr);
         ma.setUserId(userId);
         ma.setAssetId(assetId);
         ma.setMediaType(isVideo ? MediaAsset.TYPE_VIDEO : MediaAsset.TYPE_IMAGE);
@@ -113,8 +112,7 @@ public class MediaStorageService {
 
     public List<MediaUploadResponse> listMedia(Long userId) {
         String wsIdStr = WorkspaceContext.requireWorkspaceId();
-        UUID wsUuid = UUID.fromString(wsIdStr);
-        return mediaAssetMapper.selectRecentByWorkspace(wsUuid).stream()
+        return mediaAssetMapper.selectRecentByWorkspace(wsIdStr).stream()
                 .map(this::buildResponse)
                 .toList();
     }

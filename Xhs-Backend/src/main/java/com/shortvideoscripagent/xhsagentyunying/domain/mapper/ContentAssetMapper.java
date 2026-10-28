@@ -20,16 +20,13 @@ public interface ContentAssetMapper extends BaseMapper<ContentAsset> {
     @Select("""
             SELECT * FROM app.content_asset
             WHERE workspace_id = #{workspaceId}
-              AND (#{status} IS NULL OR #{status} = '' OR status = #{status})
+              AND (CAST(#{status} AS VARCHAR) IS NULL OR CAST(#{status} AS VARCHAR) = '' OR status = CAST(#{status} AS VARCHAR))
             ORDER BY updated_at DESC
-            OFFSET #{offset} LIMIT #{limit}
             """)
     IPage<ContentAsset> selectPageByWorkspace(
             Page<ContentAsset> page,
-            @Param("workspaceId") java.util.UUID workspaceId,
-            @Param("status") String status,
-            @Param("offset") long offset,
-            @Param("limit") long limit
+            @Param("workspaceId") String workspaceId,
+            @Param("status") String status
     );
 
     /**
@@ -38,7 +35,7 @@ public interface ContentAssetMapper extends BaseMapper<ContentAsset> {
     @Select("""
             SELECT COUNT(*) FROM app.content_asset
             WHERE workspace_id = #{workspaceId}
-              AND (#{status} IS NULL OR #{status} = '' OR status = #{status})
+              AND (CAST(#{status} AS VARCHAR) IS NULL OR CAST(#{status} AS VARCHAR) = '' OR status = CAST(#{status} AS VARCHAR))
             """)
-    long countByWorkspace(@Param("workspaceId") java.util.UUID workspaceId, @Param("status") String status);
+    long countByWorkspace(@Param("workspaceId") String workspaceId, @Param("status") String status);
 }

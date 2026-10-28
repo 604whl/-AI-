@@ -71,8 +71,7 @@ public class WorkspaceQuotaController {
     ) {
         requireWorkspaceAccess(workspaceId);
 
-        UUID wsUuid = UUID.fromString(workspaceId);
-        IPage<UsageLedger> ledgerPage = quotaLedgerService.list(wsUuid, action, status, page, size);
+        IPage<UsageLedger> ledgerPage = quotaLedgerService.list(workspaceId, action, status, page, size);
         return ApiResponse.ok(ledgerPage);
     }
 

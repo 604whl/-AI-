@@ -26,8 +26,8 @@ public class TemplateApplyLog {
     /** 关联的内容资产 ID（可能为 null，如果资产被删除） */
     private UUID assetId;
 
-    /** 工作区 ID */
-    private UUID workspaceId;
+    /** 工作区 ID，VARCHAR(32)，与 app.workspace.id 一致 */
+    private String workspaceId;
 
     /** 执行操作的用户 ID */
     private Long userId;

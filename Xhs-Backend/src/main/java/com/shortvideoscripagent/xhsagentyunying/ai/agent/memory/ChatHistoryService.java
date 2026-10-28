@@ -378,9 +378,9 @@ public class ChatHistoryService {
 
     private static String personaLabel(String persona) {
         return switch (persona == null ? "agency" : persona) {
-            case "mentor" -> "导师 IP";
-            case "senior" -> "学长学姐";
-            default -> "机构号";
+            case "mentor" -> "创作者 IP";
+            case "senior" -> "素人博主";
+            default -> "品牌 / 机构号";
         };
     }
 

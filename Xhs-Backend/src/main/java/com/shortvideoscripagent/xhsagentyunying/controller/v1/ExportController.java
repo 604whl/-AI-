@@ -63,7 +63,7 @@ public class ExportController {
             @RequestParam(defaultValue = "md") String format
     ) {
         Long userId = requireUserId();
-        UUID wsId = requireWorkspaceId();
+        String wsId = requireWorkspaceId();
         UUID assetUuid = parseUuid(assetId);
 
         validateFormat(format);
@@ -99,7 +99,7 @@ public class ExportController {
             HttpServletResponse response
     ) throws IOException {
         Long userId = requireUserId();
-        UUID wsId = parseUuid(workspaceId);
+        String wsId = workspaceId;
 
         List<UUID> ids = null;
         if (assetIds != null && !assetIds.isBlank()) {
@@ -131,7 +131,7 @@ public class ExportController {
     @GetMapping("/v1/exports/{id}")
     public ApiResponse<ExportResponse> getExportStatus(@PathVariable("id") String exportId) {
         Long userId = requireUserId();
-        UUID wsId = requireWorkspaceId();
+        String wsId = requireWorkspaceId();
         UUID id = parseUuid(exportId);
 
         ExportResponse resp = exportService.getExportStatus(id, userId, wsId);
@@ -147,7 +147,7 @@ public class ExportController {
             HttpServletResponse response
     ) throws IOException {
         Long userId = requireUserId();
-        UUID wsId = requireWorkspaceId();
+        String wsId = requireWorkspaceId();
         UUID id = parseUuid(exportId);
 
         String signedUrl = exportService.getDownloadUrl(id, userId, wsId);
@@ -167,7 +167,7 @@ public class ExportController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        UUID wsId = parseUuid(workspaceId);
+        String wsId = workspaceId;
         int safePage = Math.max(page, 1);
         int safeSize = Math.min(Math.max(size, 1), 50);
         PageRequest pageable = PageRequest.of(safePage - 1, safeSize);
@@ -188,12 +188,12 @@ public class ExportController {
         return userId;
     }
 
-    private UUID requireWorkspaceId() {
+    private String requireWorkspaceId() {
         String wsId = WorkspaceContext.getWorkspaceId();
         if (wsId == null || wsId.isBlank()) {
             throw new BusinessException(CODE_BAD_REQUEST, "workspace_id_required");
         }
-        return parseUuid(wsId);
+        return wsId;
     }
 
     private UUID parseUuid(String value) {

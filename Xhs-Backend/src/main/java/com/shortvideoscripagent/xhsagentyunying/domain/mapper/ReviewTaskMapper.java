@@ -26,7 +26,7 @@ public interface ReviewTaskMapper extends BaseMapper<ReviewTask> {
             LIMIT #{limit} OFFSET #{offset}
             """)
     List<ReviewTask> selectByReviewerAndStatus(
-            @Param("workspaceId") UUID workspaceId,
+            @Param("workspaceId") String workspaceId,
             @Param("reviewerUserId") Long reviewerUserId,
             @Param("status") String status,
             @Param("limit") int limit,
@@ -47,7 +47,7 @@ public interface ReviewTaskMapper extends BaseMapper<ReviewTask> {
             LIMIT #{limit} OFFSET #{offset}
             """)
     List<ReviewTask> selectQueueByReviewer(
-            @Param("workspaceId") UUID workspaceId,
+            @Param("workspaceId") String workspaceId,
             @Param("reviewerUserId") Long reviewerUserId,
             @Param("limit") int limit,
             @Param("offset") long offset
@@ -63,7 +63,7 @@ public interface ReviewTaskMapper extends BaseMapper<ReviewTask> {
               AND status IN ('pending','in_review')
             """)
     long countQueueByReviewer(
-            @Param("workspaceId") UUID workspaceId,
+            @Param("workspaceId") String workspaceId,
             @Param("reviewerUserId") Long reviewerUserId
     );
 
@@ -78,7 +78,7 @@ public interface ReviewTaskMapper extends BaseMapper<ReviewTask> {
             LIMIT #{limit} OFFSET #{offset}
             """)
     List<ReviewTask> selectBySubmitter(
-            @Param("workspaceId") UUID workspaceId,
+            @Param("workspaceId") String workspaceId,
             @Param("submitterId") Long submitterId,
             @Param("limit") int limit,
             @Param("offset") long offset
@@ -93,7 +93,7 @@ public interface ReviewTaskMapper extends BaseMapper<ReviewTask> {
               AND submitted_by = #{submitterId}
             """)
     long countBySubmitter(
-            @Param("workspaceId") UUID workspaceId,
+            @Param("workspaceId") String workspaceId,
             @Param("submitterId") Long submitterId
     );
 

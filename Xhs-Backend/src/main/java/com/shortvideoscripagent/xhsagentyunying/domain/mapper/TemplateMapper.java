@@ -13,18 +13,23 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Template Mapper锛圥0-4锛夈€? */
+ * Template Mapper（P0-4）。
+ */
 @Mapper
 public interface TemplateMapper extends BaseMapper<Template> {
 
     /**
-     * 鍒嗛〉鏌ヨ妯℃澘鍒楄〃锛屾寜 scope 闅旂鍙鎬с€?     * <ul>
-     *   <li>OFFICIAL锛氭墍鏈変汉鍙锛堝拷鐣?workspaceId / userId锛?/li>
-     *   <li>WORKSPACE锛氬悓 workspace_id</li>
-     *   <li>PERSONAL锛氫粎 owner_user_id = userId</li>
+     * 分页查询模板列表，按 scope 隔离可见性。
+     * <ul>
+     *   <li>OFFICIAL：所有人可见（忽略 workspaceId / userId）</li>
+     *   <li>WORKSPACE：同 workspace_id</li>
+     *   <li>PERSONAL：仅 owner_user_id = userId</li>
      * </ul>
+     * <p>
+     * 分页由 MyBatis-Plus 的 {@code PaginationInnerInterceptor} 负责，
+     * SQL 中不要再手写 OFFSET / LIMIT，否则会与插件重复分页。
      */
-    @Select("""
+            @Select("""
             SELECT * FROM app.template t
             WHERE t.status = 'active'
               AND (
@@ -32,26 +37,23 @@ public interface TemplateMapper extends BaseMapper<Template> {
                 OR (t.scope = 'WORKSPACE' AND t.workspace_id = #{workspaceId})
                 OR (t.scope = 'PERSONAL' AND t.owner_user_id = #{ownerUserId})
               )
-              AND (#{category} IS NULL OR #{category} = '' OR t.category = #{category})
+              AND (CAST(#{category} AS VARCHAR) IS NULL OR CAST(#{category} AS VARCHAR) = '' OR t.category = CAST(#{category} AS VARCHAR))
             ORDER BY t.use_count DESC, t.updated_at DESC
-            OFFSET #{offset} LIMIT #{limit}
             """)
     IPage<Template> selectPageByScope(
             Page<Template> page,
-            @Param("workspaceId") UUID workspaceId,
+            @Param("workspaceId") String workspaceId,
             @Param("ownerUserId") Long ownerUserId,
-            @Param("category") String category,
-            @Param("offset") long offset,
-            @Param("limit") long limit
+            @Param("category") String category
     );
 
     /**
-     * 缁熻 OFFICIAL 妯℃澘鏁伴噺锛堢敤浜庡垽鏂槸鍚﹂渶瑕佸垵濮嬪寲绉嶅瓙鏁版嵁锛夈€?     */
+     * 统计 OFFICIAL 模板数量（用于判断是否需要初始化种子数据）。
     @Select("SELECT COUNT(*) FROM app.template WHERE scope = 'OFFICIAL' AND status = 'active'")
     long countOfficialActive();
 
     /**
-     * 鎵归噺鎻掑叆锛堢敤浜庣瀛愭暟鎹垵濮嬪寲锛夈€?     */
+     * 批量插入（用于种子数据初始化）。
     @Select("<script>" +
             "INSERT INTO app.template (id, scope, category, scenario, persona, title, body_template, " +
             "variables, default_goal, default_tone, version, status, use_count, created_at, updated_at) " +
@@ -64,7 +66,8 @@ public interface TemplateMapper extends BaseMapper<Template> {
     void batchInsert(@Param("list") List<Template> list);
 
     /**
-     * 閫掑 use_count銆?     */
+     * 递增 use_count。
+     */
     @Select("UPDATE app.template SET use_count = use_count + 1, updated_at = NOW() WHERE id = #{templateId}")
     void incrementUseCount(@Param("templateId") UUID templateId);
 
@@ -96,7 +99,7 @@ public interface TemplateMapper extends BaseMapper<Template> {
             LIMIT #{limit}
             """)
     List<LeaderboardEntry> selectLeaderboard(
-            @Param("wsId") UUID wsId,
+            @Param("wsId") String wsId,
             @Param("from") OffsetDateTime from,
             @Param("limit") int limit
     );

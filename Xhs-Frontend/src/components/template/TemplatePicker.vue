@@ -78,6 +78,7 @@ import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { fetchTemplates } from '@/api/template'
 import type { Template, TemplateScope } from '@/api/template'
+import { TEMPLATE_CATEGORIES } from '@/constants/templateCategories'
 
 const props = defineProps<{
   modelValue: boolean
@@ -104,10 +105,7 @@ const page = ref(1)
 const selectedId = ref<string | null>(null)
 const selected = computed(() => templates.value.find(t => t.id === selectedId.value) || null)
 
-const categories = [
-  'career_fair', 'interview', 'visa', 'job_hunt',
-  'career_development', 'salary', 'networking',
-]
+const categories = TEMPLATE_CATEGORIES
 
 watch(visible, (v) => {
   if (v) {

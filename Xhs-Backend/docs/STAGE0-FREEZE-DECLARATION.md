@@ -1,6 +1,6 @@
 # 阶段 0：产品冻结声明
 
-**项目名称**：XhsAgent 小红书留学生求职 AI 运营助手
+**项目名称**：XhsAgent 小红书全平台全品类 AI 内容运营助手
 **声明日期**：2026-10-17
 **依据文档**：`COMMERCIAL_SAAS_READINESS_PLAN.md` 第 9 节
 **冻结依据**：`docs/STAGE0-FREEZE-PLAN.md`

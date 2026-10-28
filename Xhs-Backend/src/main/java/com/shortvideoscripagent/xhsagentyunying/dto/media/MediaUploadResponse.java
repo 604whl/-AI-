@@ -8,7 +8,7 @@ import java.util.UUID;
 @Builder
 public class MediaUploadResponse {
     private Long id;
-    private UUID workspaceId;
+    private String workspaceId;
     private String mediaType;
     private String url;
     private String thumbnailUrl;

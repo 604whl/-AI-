@@ -14,24 +14,21 @@ public interface TopicPoolMapper extends BaseMapper<TopicPool> {
     @Select("""
             SELECT * FROM app.topic_pool
             WHERE workspace_id = #{workspaceId}
-              AND (#{status} IS NULL OR #{status} = '' OR status = #{status})
+              AND (CAST(#{status} AS VARCHAR) IS NULL OR CAST(#{status} AS VARCHAR) = '' OR status = CAST(#{status} AS VARCHAR))
             ORDER BY created_at DESC
-            OFFSET #{offset} LIMIT #{limit}
             """)
     IPage<TopicPool> selectPageByWorkspace(
             Page<TopicPool> page,
-            @Param("workspaceId") Long workspaceId,
-            @Param("status") String status,
-            @Param("offset") long offset,
-            @Param("limit") long limit
+            @Param("workspaceId") String workspaceId,
+            @Param("status") String status
     );
 
     @Select("""
             SELECT COUNT(*) FROM app.topic_pool
             WHERE workspace_id = #{workspaceId}
-              AND (#{status} IS NULL OR #{status} = '' OR status = #{status})
+              AND (CAST(#{status} AS VARCHAR) IS NULL OR CAST(#{status} AS VARCHAR) = '' OR status = CAST(#{status} AS VARCHAR))
             """)
-    long countByWorkspace(@Param("workspaceId") Long workspaceId, @Param("status") String status);
+    long countByWorkspace(@Param("workspaceId") String workspaceId, @Param("status") String status);
 
     /**
      * Check if a topic with normalized title + source already exists in workspace.
@@ -44,7 +41,7 @@ public interface TopicPoolMapper extends BaseMapper<TopicPool> {
               AND LOWER(TRIM(source)) = LOWER(TRIM(#{source}))
             """)
     boolean existsByNormalizedTitleAndSource(
-            @Param("workspaceId") Long workspaceId,
+            @Param("workspaceId") String workspaceId,
             @Param("normalizedTitle") String normalizedTitle,
             @Param("source") String source
     );
@@ -61,7 +58,7 @@ public interface TopicPoolMapper extends BaseMapper<TopicPool> {
             LIMIT 1
             """)
     TopicPool selectByDedupeKey(
-            @Param("workspaceId") Long workspaceId,
+            @Param("workspaceId") String workspaceId,
             @Param("source") String source,
             @Param("normalizedTitle") String normalizedTitle
     );

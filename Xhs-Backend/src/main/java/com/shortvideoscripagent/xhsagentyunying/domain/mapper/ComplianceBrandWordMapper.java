@@ -16,5 +16,5 @@ import java.util.UUID;
 public interface ComplianceBrandWordMapper extends BaseMapper<ComplianceBrandWord> {
 
     @Select("SELECT * FROM app.compliance_brand_word WHERE workspace_id = #{workspaceId}")
-    List<ComplianceBrandWord> selectByWorkspace(@Param("workspaceId") UUID workspaceId);
+    List<ComplianceBrandWord> selectByWorkspace(@Param("workspaceId") String workspaceId);
 }

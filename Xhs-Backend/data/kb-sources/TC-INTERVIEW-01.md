@@ -2,18 +2,18 @@
 doc_id: TC-INTERVIEW-01
 doc_type: topic_card
 content_type: INTERVIEW
-title: 求职面试选题卡
-tags: 选题,面试,求职
+title: 面试问答选题卡
+tags: 选题,面试,问答
 persona: agency
 ---
 
 ## 赛道
 
-互联网 / 大厂 / 产品运营求职
+互联网 / 大厂 / 产品运营面试
 
 ## 目标受众
 
-应届生、跳槽者，正在准备春招/社招面试。
+应届生、跳槽者，正在准备校招/社招面试。
 
 ## 爆款角度
 

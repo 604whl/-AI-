@@ -40,6 +40,15 @@ const router = createRouter({
         { path: 'review/queue', name: 'review-queue', component: () => import('@/views/review/ReviewQueueView.vue') },
         { path: 'review/submissions', name: 'review-submissions', component: () => import('@/views/review/ReviewSubmissionListView.vue') },
         { path: 'review/:id', name: 'review-detail', component: () => import('@/views/review/ReviewDetailView.vue') },
+
+        // --- stage 3 (S3-12) ---
+        { path: 'publish/schedules', name: 'publish-schedules', component: () => import('@/views/publish/PublishCalendarView.vue') },
+        { path: 'metrics', name: 'metrics-dashboard', component: () => import('@/views/metrics/MetricDashboardView.vue') },
+        { path: 'retrospectives', name: 'retrospective-list', component: () => import('@/views/retrospective/RetrospectiveListView.vue') },
+        { path: 'hot-topics', name: 'hot-topic-list', component: () => import('@/views/hotTopic/HotTopicListView.vue') },
+        { path: 'competitors', name: 'competitor-library', component: () => import('@/views/competitor/CompetitorLibraryView.vue') },
+        { path: 'admin/kb', name: 'kb-admin', component: () => import('@/views/kb/KbDocumentAdminView.vue') },
+        { path: 'admin/connectors', name: 'connector-diagnostics', component: () => import('@/views/connector/ConnectorDiagnosticView.vue') },
       ],
     },
   ],

@@ -42,7 +42,7 @@ class QuotaLedgerServiceTest {
     @Test
     void pageByWorkspace_returnsPage() {
         // given
-        UUID workspaceId = UUID.randomUUID();
+        String workspaceId = "ws_" + UUID.randomUUID().toString().replace("-", "");
         Page<UsageLedger> mockPage = new Page<>(1, 20);
         mockPage.setRecords(List.of(
                 createLedger(workspaceId, "ANALYSIS", "CONSUMED"),
@@ -64,7 +64,7 @@ class QuotaLedgerServiceTest {
     @Test
     void pageByWorkspace_withActionFilter_filtersCorrectly() {
         // given
-        UUID workspaceId = UUID.randomUUID();
+        String workspaceId = "ws_" + UUID.randomUUID().toString().replace("-", "");
         Page<UsageLedger> mockPage = new Page<>(1, 20);
         mockPage.setRecords(List.of(createLedger(workspaceId, "ANALYSIS", "CONSUMED")));
         mockPage.setTotal(10);
@@ -80,7 +80,7 @@ class QuotaLedgerServiceTest {
     @Test
     void pageByWorkspace_sanitizesInput() {
         // given
-        UUID workspaceId = UUID.randomUUID();
+        String workspaceId = "ws_" + UUID.randomUUID().toString().replace("-", "");
         Page<UsageLedger> mockPage = new Page<>(1, 100);
         mockPage.setRecords(List.of());
         when(usageLedgerMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(mockPage);
@@ -97,7 +97,7 @@ class QuotaLedgerServiceTest {
     @Test
     void pageByWorkspace_clampPaginationBounds() {
         // given
-        UUID workspaceId = UUID.randomUUID();
+        String workspaceId = "ws_" + UUID.randomUUID().toString().replace("-", "");
         Page<UsageLedger> mockPage = new Page<>(1, 100);
         mockPage.setRecords(List.of());
         when(usageLedgerMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(mockPage);
@@ -113,7 +113,7 @@ class QuotaLedgerServiceTest {
     @Test
     void list_withStatusFilter_filtersCorrectly() {
         // given
-        UUID workspaceId = UUID.randomUUID();
+        String workspaceId = "ws_" + UUID.randomUUID().toString().replace("-", "");
         Page<UsageLedger> mockPage = new Page<>(1, 20);
         mockPage.setRecords(List.of(createLedger(workspaceId, "ANALYSIS", "REFUNDED")));
         mockPage.setTotal(5);
@@ -130,7 +130,7 @@ class QuotaLedgerServiceTest {
     @Test
     void list_orderByCreatedAtDesc() {
         // given
-        UUID workspaceId = UUID.randomUUID();
+        String workspaceId = "ws_" + UUID.randomUUID().toString().replace("-", "");
         Page<UsageLedger> mockPage = new Page<>(1, 20);
         mockPage.setRecords(List.of());
         when(usageLedgerMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(mockPage);
@@ -146,7 +146,7 @@ class QuotaLedgerServiceTest {
     void getById_found() {
         // given
         UUID ledgerId = UUID.randomUUID();
-        UsageLedger ledger = createLedger(UUID.randomUUID(), "ANALYSIS", "CONSUMED");
+        UsageLedger ledger = createLedger("ws_" + UUID.randomUUID().toString().replace("-", ""), "ANALYSIS", "CONSUMED");
         ledger.setId(ledgerId);
         when(usageLedgerMapper.selectById(ledgerId)).thenReturn(ledger);
 
@@ -174,7 +174,7 @@ class QuotaLedgerServiceTest {
     @Test
     void findByRefId_found() {
         // given
-        UUID workspaceId = UUID.randomUUID();
+        String workspaceId = "ws_" + UUID.randomUUID().toString().replace("-", "");
         UUID refId = UUID.randomUUID();
         UsageLedger ledger = createLedger(workspaceId, "ANALYSIS", "CONSUMED");
         ledger.setRefId(refId);
@@ -193,7 +193,7 @@ class QuotaLedgerServiceTest {
     @Test
     void findByRefId_notFound() {
         // given
-        UUID workspaceId = UUID.randomUUID();
+        String workspaceId = "ws_" + UUID.randomUUID().toString().replace("-", "");
         UUID refId = UUID.randomUUID();
         when(usageLedgerMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
 
@@ -206,7 +206,7 @@ class QuotaLedgerServiceTest {
 
     // ── helpers ─────────────────────────────────────────────────────────────
 
-    private UsageLedger createLedger(UUID wsId, String action, String status) {
+    private UsageLedger createLedger(String wsId, String action, String status) {
         UsageLedger ledger = new UsageLedger();
         ledger.setId(UUID.randomUUID());
         ledger.setWorkspaceId(wsId);

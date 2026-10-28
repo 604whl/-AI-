@@ -1,8 +1,10 @@
 package com.shortvideoscripagent.xhsagentyunying.domain.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.shortvideoscripagent.xhsagentyunying.config.mybatis.JsonbMapTypeHandler;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
@@ -15,7 +17,7 @@ import java.util.Map;
  * </p>
  */
 @Data
-@TableName("audit_event")
+@TableName(value = "audit_event", autoResultMap = true)
 public class AuditEvent {
 
     @TableId(type = IdType.ASSIGN_UUID)
@@ -32,6 +34,7 @@ public class AuditEvent {
     private String resourceId;
 
     /** JSON 字符串（MyBatis-Plus 通过 TypeHandler 转换，DB 为 JSONB） */
+    @TableField(typeHandler = JsonbMapTypeHandler.class)
     private Map<String, Object> metadata;
 
     private String ip;

@@ -106,6 +106,7 @@ import { Connection } from '@element-plus/icons-vue'
 import { useWorkspaceChange } from '@/composables/useWorkspaceChange'
 import { fetchTemplates } from '@/api/template'
 import type { Template, TemplateScope } from '@/api/template'
+import { TEMPLATE_CATEGORIES } from '@/constants/templateCategories'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -120,10 +121,7 @@ const pageSize = ref(12)
 
 const canCreate = true
 
-const categories = [
-  'career_fair', 'interview', 'visa', 'job_hunt',
-  'career_development', 'salary', 'networking',
-]
+const categories = TEMPLATE_CATEGORIES
 
 function scopeTagType(scope: string) {
   switch (scope) {

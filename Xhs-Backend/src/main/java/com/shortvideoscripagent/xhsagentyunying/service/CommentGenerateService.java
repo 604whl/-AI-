@@ -122,11 +122,11 @@ public class CommentGenerateService {
 
         String personaInstruction = "";
         if (request.getPersona() != null && !request.getPersona().isBlank()) {
-            personaInstruction = switch (request.getPersona().toLowerCase()) {
-                case "agency" -> "以中介专业顾问的口吻回复。";
-                case "mentor" -> "以学长学姐分享经验的口吻回复，亲切自然。";
-                case "senior" -> "以资深用户分享心得的口吻回复，稳重可信。";
-                default -> "";
+                personaInstruction = switch (request.getPersona().toLowerCase()) {
+                    case "agency" -> "以品牌 / 机构专业顾问的口吻回复。";
+                    case "mentor" -> "以创作者 / IP 分享经验的口吻回复，亲切自然。";
+                    case "senior" -> "以资深用户分享心得的口吻回复，稳重可信。";
+                    default -> "";
             };
         }
 

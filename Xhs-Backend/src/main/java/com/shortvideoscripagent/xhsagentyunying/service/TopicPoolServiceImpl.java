@@ -41,14 +41,13 @@ public class TopicPoolServiceImpl implements TopicPoolService {
     private final ContentAssetVersionMapper versionMapper;
 
     @Override
-    public TopicListResponse list(Long workspaceId, String status, int page, int size) {
+    public TopicListResponse list(String workspaceId, String status, int page, int size) {
         int safePage = Math.max(page, 1);
         int safeSize = Math.min(Math.max(size, 1), 50);
-        long offset = (safePage - 1L) * safeSize;
 
         Page<TopicPool> p = new Page<>(safePage, safeSize);
         IPage<TopicPool> result = topicMapper.selectPageByWorkspace(
-                p, workspaceId, status, offset, safeSize);
+                p, workspaceId, status);
         long total = result.getTotal();
 
         List<TopicDto> items = result.getRecords().stream()
@@ -60,7 +59,7 @@ public class TopicPoolServiceImpl implements TopicPoolService {
 
     @Override
     @Transactional
-    public TopicDto create(Long workspaceId, Long userId, TopicCreateRequest req) {
+    public TopicDto create(String workspaceId, Long userId, TopicCreateRequest req) {
         // Deduplication check: same workspace + source + normalized title → 409
         String normalizedTitle = TopicDedupeKey.normalize(req.getTitle());
         String source = req.getSource() != null ? req.getSource().trim() : "";
@@ -90,7 +89,7 @@ public class TopicPoolServiceImpl implements TopicPoolService {
 
     @Override
     @Transactional
-    public TopicDto update(Long topicId, Long workspaceId, TopicUpdateRequest req) {
+    public TopicDto update(Long topicId, String workspaceId, TopicUpdateRequest req) {
         TopicPool topic = requireOwnedTopic(topicId, workspaceId);
 
         if (req.getStatus() != null) {
@@ -112,7 +111,7 @@ public class TopicPoolServiceImpl implements TopicPoolService {
 
     @Override
     @Transactional
-    public ToAssetResponse toAsset(Long topicId, Long workspaceId, Long userId, String platform, String category) {
+    public ToAssetResponse toAsset(Long topicId, String workspaceId, Long userId, String platform, String category) {
         TopicPool topic = requireOwnedTopic(topicId, workspaceId);
         if (!TopicPool.STATUS_ACTIVE.equals(topic.getStatus())) {
             throw new BusinessException(CODE_CONFLICT, "topic_not_active");
@@ -138,12 +137,12 @@ public class TopicPoolServiceImpl implements TopicPoolService {
         return new ToAssetResponse(asset.getId(), versionId);
     }
 
-    private TopicPool requireOwnedTopic(Long topicId, Long workspaceId) {
+    private TopicPool requireOwnedTopic(Long topicId, String workspaceId) {
         TopicPool topic = topicMapper.selectById(topicId);
         if (topic == null) {
             throw new BusinessException(CODE_NOT_FOUND, "topic_not_found");
         }
-        if (!workspaceId.equals(topic.getWorkspaceId())) {
+        if (workspaceId == null || !workspaceId.equals(topic.getWorkspaceId())) {
             throw new BusinessException(CODE_NOT_FOUND, "topic_not_found");
         }
         return topic;
@@ -164,12 +163,12 @@ public class TopicPoolServiceImpl implements TopicPoolService {
                 "invalid_status_transition: " + current + " -> " + target);
     }
 
-    private ContentAsset createDraftInternal(Long ownerId, Long workspaceId, AssetCreateRequest request) {
+    private ContentAsset createDraftInternal(Long ownerId, String workspaceId, AssetCreateRequest request) {
         OffsetDateTime now = OffsetDateTime.now();
 
         ContentAsset asset = new ContentAsset();
         asset.setId(UUID.randomUUID());
-        asset.setWorkspaceId(UUID.fromString(String.valueOf(workspaceId)));
+        asset.setWorkspaceId(workspaceId);
         asset.setOwnerUserId(ownerId);
         asset.setTitle(request.getTitle() != null ? request.getTitle().trim() : "");
         asset.setBody(request.getBody() != null ? request.getBody() : "");
@@ -215,7 +214,7 @@ public class TopicPoolServiceImpl implements TopicPoolService {
 
     @Override
     @Transactional
-    public TopicBulkImportResponse bulkImport(Long workspaceId, Long userId, TopicBulkImportRequest request) {
+    public TopicBulkImportResponse bulkImport(String workspaceId, Long userId, TopicBulkImportRequest request) {
         List<TopicDto> created = new java.util.ArrayList<>();
         List<TopicBulkImportResponse.SkippedItem> skipped = new java.util.ArrayList<>();
 

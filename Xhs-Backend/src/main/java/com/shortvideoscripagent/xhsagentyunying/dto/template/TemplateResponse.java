@@ -20,12 +20,15 @@ public class TemplateResponse {
     private String scope;
 
     /** 工作区 ID（WORKSPACE 时有值） */
-    private UUID workspaceId;
+    private String workspaceId;
 
     /** 拥有者 userId（PERSONAL 时有值） */
     private Long ownerUserId;
 
     private String category;
+
+    /** 官方种子幂等键（OFFICIAL 模板有值，用户自建模板为 null） */
+    private String code;
 
     private String scenario;
 

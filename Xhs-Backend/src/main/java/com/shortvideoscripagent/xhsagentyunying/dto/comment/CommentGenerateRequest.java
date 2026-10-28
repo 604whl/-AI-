@@ -29,7 +29,7 @@ public class CommentGenerateRequest {
     private String platform;
 
     /**
-     * 人设风格：agency（中介）/ mentor（学长学姐）/ senior（资深用户）。
+     * 人设风格：agency（品牌 / 机构）/ mentor（创作者 IP）/ senior（资深用户）。
      */
     @Size(max = 32, message = "persona max 32 chars")
     private String persona;

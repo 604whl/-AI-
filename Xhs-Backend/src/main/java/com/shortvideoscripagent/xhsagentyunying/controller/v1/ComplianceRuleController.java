@@ -62,9 +62,8 @@ public class ComplianceRuleController {
     public ApiResponse<ComplianceBrandWord> addBrandWord(@Valid @RequestBody ComplianceBrandWordRequest req) {
         Long userId = requireUserId();
         String wsId = WorkspaceContext.getWorkspaceId();
-        UUID wsUuid = UUID.fromString(wsId);
         ComplianceBrandWord w = new ComplianceBrandWord();
-        w.setWorkspaceId(wsUuid);
+        w.setWorkspaceId(wsId);
         w.setRuleCode(req.getRuleCode());
         w.setKeyword(req.getKeyword());
         w.setRiskLevel(req.getRiskLevel() != null ? req.getRiskLevel() : "HIGH");
@@ -80,8 +79,7 @@ public class ComplianceRuleController {
     @GetMapping("/brand-words")
     public ApiResponse<List<ComplianceBrandWord>> listBrandWords() {
         String wsId = WorkspaceContext.getWorkspaceId();
-        UUID wsUuid = UUID.fromString(wsId);
-        return ApiResponse.ok(brandWordMapper.selectByWorkspace(wsUuid));
+        return ApiResponse.ok(brandWordMapper.selectByWorkspace(wsId));
     }
 
     /**

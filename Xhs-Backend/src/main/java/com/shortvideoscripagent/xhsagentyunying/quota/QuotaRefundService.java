@@ -102,7 +102,7 @@ public class QuotaRefundService {
      * 按 refId 查找 ledger 并冲正（用于 handler catch block）。
      */
     @Transactional
-    public boolean refundByRefId(UUID workspaceId, UUID refId, String reason) {
+    public boolean refundByRefId(String workspaceId, UUID refId, String reason) {
         UsageLedger ledger = usageLedgerMapper.selectOne(
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<UsageLedger>()
                         .eq(UsageLedger::getWorkspaceId, workspaceId)

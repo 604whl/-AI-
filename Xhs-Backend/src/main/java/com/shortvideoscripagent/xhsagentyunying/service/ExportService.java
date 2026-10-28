@@ -97,7 +97,7 @@ public class ExportService {
      * @return 导出响应（含 exportId）
      */
     @Transactional
-    public ExportResponse enqueueExport(UUID workspaceId, Long userId, UUID assetId, String format) {
+    public ExportResponse enqueueExport(String workspaceId, Long userId, UUID assetId, String format) {
         validateFormat(format, false);
 
         // ── 限流检查（每天 50 次/workspace） ───────────────────────────────────
@@ -124,7 +124,7 @@ public class ExportService {
         ExportLog record = new ExportLog();
         record.setId(exportId);
         record.setWorkspaceId(workspaceId);
-        record.setUserId(toUuid(userId));
+        record.setUserId(userId);
         record.setAssetId(assetId);
         record.setFormat(format);
         record.setStatus(ExportLog.STATUS_PENDING);
@@ -168,7 +168,7 @@ public class ExportService {
      * @return CSV 字节数组
      */
     @Transactional
-    public byte[] exportCsv(UUID workspaceId, Long userId, List<UUID> assetIds) {
+    public byte[] exportCsv(String workspaceId, Long userId, List<UUID> assetIds) {
         // 限流（同样 50/天/workspace）
         String rateLimitKey = buildDailyRateLimitKey(workspaceId);
         checkDailyRateLimit(workspaceId, rateLimitKey);
@@ -200,7 +200,7 @@ public class ExportService {
      * @param workspaceId 工作区 ID
      * @return 导出响应
      */
-    public ExportResponse getExportStatus(UUID exportId, Long userId, UUID workspaceId) {
+    public ExportResponse getExportStatus(UUID exportId, Long userId, String workspaceId) {
         ExportLog record = exportLogMapper.selectById(exportId);
         if (record == null) {
             throw new BusinessException(CODE_NOT_FOUND, "export_not_found");
@@ -229,7 +229,7 @@ public class ExportService {
      * @param workspaceId 工作区 ID
      * @return 签名 URL
      */
-    public String getDownloadUrl(UUID exportId, Long userId, UUID workspaceId) {
+    public String getDownloadUrl(UUID exportId, Long userId, String workspaceId) {
         ExportLog record = exportLogMapper.selectById(exportId);
         if (record == null) {
             throw new BusinessException(CODE_NOT_FOUND, "export_not_found");
@@ -256,13 +256,13 @@ public class ExportService {
     /**
      * 分页查询导出记录列表。
      */
-    public List<ExportListItem> listExports(UUID workspaceId, Pageable pageable) {
+    public List<ExportListItem> listExports(String workspaceId, Pageable pageable) {
         long offset = pageable.getOffset();
         int pageNo = (int) (offset / pageable.getPageSize()) + 1;
         int pageSize = (int) pageable.getPageSize();
 
         Page<ExportLog> page = new Page<>(pageNo, pageSize);
-        IPage<ExportLog> result = exportLogMapper.selectPageByWorkspace(page, workspaceId, offset, pageSize);
+        IPage<ExportLog> result = exportLogMapper.selectPageByWorkspace(page, workspaceId);
 
         return result.getRecords().stream()
                 .map(this::toListItem)
@@ -272,7 +272,7 @@ public class ExportService {
     /**
      * 统计导出记录总数。
      */
-    public long countExports(UUID workspaceId) {
+    public long countExports(String workspaceId) {
         return exportLogMapper.countByWorkspace(workspaceId);
     }
 
@@ -400,7 +400,7 @@ public class ExportService {
         }
     }
 
-    private void checkDailyRateLimit(UUID workspaceId, String rateLimitKey) {
+    private void checkDailyRateLimit(String workspaceId, String rateLimitKey) {
         Long count = redisTemplate.opsForValue().increment(rateLimitKey);
         if (count != null && count == 1) {
             redisTemplate.expire(rateLimitKey, Duration.ofDays(1));
@@ -411,7 +411,7 @@ public class ExportService {
         }
     }
 
-    private String buildDailyRateLimitKey(UUID workspaceId) {
+    private String buildDailyRateLimitKey(String workspaceId) {
         String dateStr = java.time.LocalDate.now().toString(); // yyyy-MM-dd
         return "export:daily:" + workspaceId + ":" + dateStr;
     }
@@ -479,11 +479,6 @@ public class ExportService {
         }
 
         return objectKey;
-    }
-
-    private UUID toUuid(Long userId) {
-        if (userId == null) return null;
-        return UUID.nameUUIDFromBytes(userId.toString().getBytes());
     }
 
     private ExportResponse toResponse(ExportLog record, String downloadUrl) {

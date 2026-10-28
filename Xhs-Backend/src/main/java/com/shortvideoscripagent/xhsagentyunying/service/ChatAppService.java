@@ -21,6 +21,7 @@ import com.shortvideoscripagent.xhsagentyunying.dto.chat.ChatSessionCreateReques
 import com.shortvideoscripagent.xhsagentyunying.dto.chat.ChatSessionResponse;
 import com.shortvideoscripagent.xhsagentyunying.dto.chat.ChatToolTraceDto;
 import com.shortvideoscripagent.xhsagentyunying.common.api.RequestContext;
+import com.shortvideoscripagent.xhsagentyunying.common.api.WorkspaceContext;
 import com.shortvideoscripagent.xhsagentyunying.service.chat.ChatSseWriter;
 import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceGuards;
 import jakarta.annotation.Resource;
@@ -118,6 +119,10 @@ public class ChatAppService {
 
         Long capturedUserId = userId;
         String requestId = RequestContext.getRequestId();
+        // WorkspaceContext 是 ThreadLocal，切换到 chatStreamExecutor 线程后会丢失。
+        // Agent 的工作区隔离工具（如 list_recent_analyses）依赖它，
+        // 不透传会导致工具直接失败（"Workspace context missing"）。
+        String capturedWorkspaceId = WorkspaceContext.getWorkspaceId();
 
         chatStreamExecutor.execute(() -> {
             ChatSseWriter writer = new ChatSseWriter(emitter, objectMapper, this::toMessageResponse);
@@ -125,6 +130,10 @@ public class ChatAppService {
                 RequestContext.setUserId(capturedUserId);
                 if (requestId != null) {
                     RequestContext.setRequestId(requestId);
+                }
+                if (capturedWorkspaceId != null) {
+                    WorkspaceContext.setWorkspaceId(capturedWorkspaceId);
+                    WorkspaceContext.setUserId(capturedUserId);
                 }
                 agentOrchestrator.run(session, agentRequest, writer);
                 emitter.complete();
@@ -136,6 +145,7 @@ public class ChatAppService {
                 emitter.completeWithError(ex);
             } finally {
                 RequestContext.clear();
+                WorkspaceContext.clear();
             }
         });
 

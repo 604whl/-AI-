@@ -21,11 +21,11 @@ public class ExportLog {
     @TableId(type = IdType.ASSIGN_UUID)
     private UUID id;
 
-    /** Workspace ID，多租户隔离 */
-    private UUID workspaceId;
+    /** Workspace ID，多租户隔离（VARCHAR(32)，与 app.workspace.id 一致） */
+    private String workspaceId;
 
     /** 发起导出的用户 ID */
-    private UUID userId;
+    private Long userId;
 
     /** 关联的资产 ID（可选；CSV 批量导出时为 null） */
     private UUID assetId;

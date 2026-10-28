@@ -45,7 +45,7 @@
 | 25 | TC-ANXIETY-01 | TC-ANXIETY-01.md | topic_card | ANXIETY | 护肤焦虑选题卡 |
 | 26 | TC-OFFER-01 | TC-OFFER-01.md | topic_card | OFFER | 本地生活晒单选题卡 |
 | 27 | TC-INFO-GAP-01 | TC-INFO-GAP-01.md | topic_card | INFO_GAP | 职场信息差选题卡 |
-| 28 | TC-INTERVIEW-01 | TC-INTERVIEW-01.md | topic_card | INTERVIEW | 求职面试选题卡 |
+| 28 | TC-INTERVIEW-01 | TC-INTERVIEW-01.md | topic_card | INTERVIEW | 面试问答选题卡 |
 | 29 | TC-TIMELINE-01 | TC-TIMELINE-01.md | topic_card | TIMELINE | 习惯养成选题卡 |
 | 30 | TC-COMEBACK-01 | TC-COMEBACK-01.md | topic_card | COMEBACK | 人生重启选题卡 |
 

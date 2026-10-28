@@ -2,7 +2,9 @@ package com.shortvideoscripagent.xhsagentyunying.domain.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.shortvideoscripagent.xhsagentyunying.config.mybatis.JsonbStringTypeHandler;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
@@ -16,7 +18,7 @@ import java.util.UUID;
  * 状态枚举：active / archived
  */
 @Data
-@TableName("template")
+@TableName(value = "template", autoResultMap = true)
 public class Template {
 
     @TableId(type = IdType.ASSIGN_UUID)
@@ -30,14 +32,21 @@ public class Template {
      */
     private String scope;
 
-    /** 工作区 ID（WORKSPACE 模板必填） */
-    private UUID workspaceId;
+    /** 工作区 ID（WORKSPACE 模板必填），VARCHAR(32)，与 app.workspace.id 一致 */
+    private String workspaceId;
 
     /** 拥有者 userId（PERSONAL 模板必填） */
     private Long ownerUserId;
 
-    /** 模板分类：career_fair / interview / visa / job_hunt / etc. */
+    /** 模板分类：品类编码（对应 app.category，如 BEAUTY / FASHION / FOOD / TRAVEL / OTHER） */
     private String category;
+
+    /**
+     * 官方种子幂等键（scope=OFFICIAL 时全局唯一，如 beauty_sensitive_skin_guide）。
+     * <p>
+     * 用户自建模板（WORKSPACE / PERSONAL）为 NULL。
+     */
+    private String code;
 
     /** 场景：first_post / interview_share / etc. */
     private String scenario;
@@ -52,6 +61,7 @@ public class Template {
     private String bodyTemplate;
 
     /** 变量列表，JSONB 数组，如 ["platform", "topic", "tone"] */
+        @TableField(typeHandler = JsonbStringTypeHandler.class)
     private String variables;  // JSONB → MyBatis-Plus 存 String
 
     /** 默认目标：high_conversion / brand_awareness / engagement */

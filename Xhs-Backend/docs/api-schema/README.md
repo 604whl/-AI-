@@ -86,7 +86,7 @@ pending → processing → completed
 |----|------|
 | `agency` | 机构号 |
 | `mentor` | 导师 IP |
-| `senior` | 学长学姐 |
+| `senior` | 素人博主 |
 
 ### ContentType
 

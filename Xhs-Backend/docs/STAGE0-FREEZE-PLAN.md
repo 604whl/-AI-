@@ -54,7 +54,7 @@
    - 数据库 `category` / `category_rule_pack` / `category_score_dimension` 表
    - 规则包 JSON Schema（目标人群、表达禁区、行业词表、CTA、指标权重、Prompt 模板引用）
    - 评分维度枚举（运营可配置）
-   - 首批 6 个品类基线：留学、求职、教育、美妆、生活方式、其他
+   - 首批 10 个品类基线：教育与留学、求职与职业发展、K12 教育、医疗与健康、金融理财、美妆与医美、法律具体案件、生活方式、移民签证、其他
 
 7. **合规边界冻结**
    - `compliance_rule` / `compliance_rule_version` 表

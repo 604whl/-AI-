@@ -15,7 +15,7 @@ public class TemplateRenderRequest {
 
     /**
      * 变量值 map，key 为变量名（如 "platform"），value 为变量值。
-     * 例如：{"platform": "小红书", "topic": "秋招", "tone": "friendly"}
+     * 例如：{"platform": "小红书", "topic": "收纳", "tone": "friendly"}
      */
     @NotEmpty(message = "variables map is required")
     private Map<String, String> variables;

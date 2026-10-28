@@ -70,31 +70,32 @@ public class TemplateService {
             int size
     ) {
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID wsUuid = parseUuid(workspaceId);
 
         int safePage = Math.max(page, 1);
         int safeSize = Math.min(Math.max(size, 1), 50);
-        long offset = (safePage - 1L) * safeSize;
 
         // scope 参数过滤
         String effectiveScope = normalizeScope(scope);
+
+        // category 参数归一：品类枚举统一大写，避免前端传小写导致查不到数据
+        String effectiveCategory = normalizeCategory(category);
 
         Page<Template> p = new Page<>(safePage, safeSize);
         IPage<Template> result;
 
         if ("OFFICIAL".equals(effectiveScope)) {
             result = templateMapper.selectPageByScope(
-                    p, null, null, category, offset, safeSize);
+                    p, null, null, effectiveCategory);
         } else if ("WORKSPACE".equals(effectiveScope)) {
             result = templateMapper.selectPageByScope(
-                    p, wsUuid, null, category, offset, safeSize);
+                    p, workspaceId, null, effectiveCategory);
         } else if ("PERSONAL".equals(effectiveScope)) {
             result = templateMapper.selectPageByScope(
-                    p, null, userId, category, offset, safeSize);
+                    p, null, userId, effectiveCategory);
         } else {
             // 无 scope 参数：返回当前用户有权限看到的全部模板
             result = templateMapper.selectPageByScope(
-                    p, wsUuid, userId, category, offset, safeSize);
+                    p, workspaceId, userId, effectiveCategory);
         }
 
         List<TemplateResponse> items = result.getRecords().stream()
@@ -124,7 +125,6 @@ public class TemplateService {
     @Transactional
     public TemplateResponse create(Long creatorId, TemplateCreateRequest req) {
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID wsUuid = parseUuid(workspaceId);
 
         String scope = req.getScope();
         if (Template.SCOPE_OFFICIAL.equals(scope)) {
@@ -144,7 +144,7 @@ public class TemplateService {
         Template t = new Template();
         t.setId(UUID.randomUUID());
         t.setScope(scope);
-        t.setWorkspaceId(Template.SCOPE_WORKSPACE.equals(scope) ? wsUuid : null);
+        t.setWorkspaceId(Template.SCOPE_WORKSPACE.equals(scope) ? workspaceId : null);
         t.setOwnerUserId(Template.SCOPE_PERSONAL.equals(scope) ? creatorId : null);
         t.setCategory(req.getCategory());
         t.setScenario(req.getScenario());
@@ -276,7 +276,6 @@ public class TemplateService {
         }
 
         String currentWorkspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID targetWsUuid = parseUuid(targetWorkspaceId);
 
         // OFFICIAL 模板：可复制到当前 workspace
         // WORKSPACE 模板：同 workspace 可复制
@@ -297,7 +296,7 @@ public class TemplateService {
         Template copy = new Template();
         copy.setId(UUID.randomUUID());
         copy.setScope(Template.SCOPE_WORKSPACE);
-        copy.setWorkspaceId(targetWsUuid);
+        copy.setWorkspaceId(targetWorkspaceId);
         copy.setOwnerUserId(null);
         copy.setCategory(source.getCategory());
         copy.setScenario(source.getScenario());
@@ -382,7 +381,6 @@ public class TemplateService {
         }
 
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID wsUuid = parseUuid(workspaceId);
 
         // 渲染
         TemplateRenderResponse rendered = render(templateId, variables);
@@ -392,7 +390,7 @@ public class TemplateService {
         log.setId(UUID.randomUUID());
         log.setTemplateId(templateId);
         log.setAssetId(assetId);
-        log.setWorkspaceId(wsUuid);
+        log.setWorkspaceId(workspaceId);
         log.setUserId(userId);
         log.setCreatedAt(OffsetDateTime.now());
         applyLogMapper.insert(log);
@@ -449,7 +447,7 @@ public class TemplateService {
         }
         if (Template.SCOPE_WORKSPACE.equals(t.getScope())) {
             String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-            if (t.getWorkspaceId() != null && t.getWorkspaceId().toString().equalsIgnoreCase(workspaceId)) {
+            if (t.getWorkspaceId() != null && t.getWorkspaceId().equalsIgnoreCase(workspaceId)) {
                 return;
             }
         }
@@ -532,6 +530,19 @@ public class TemplateService {
         return null;
     }
 
+    /**
+     * 品类参数归一：品类枚举统一使用大写码（如 {@code BEAUTY}、{@code MOM_BABY}）。
+     * <p>
+     * 前端可能传小写（{@code beauty}），若不归一会导致 SQL 精确匹配查不到数据。
+     * 空值保持 null，表示不过滤。
+     */
+    private String normalizeCategory(String category) {
+        if (category == null || category.isBlank()) {
+            return null;
+        }
+        return category.trim().toUpperCase();
+    }
+
     private List<String> deriveVariables(TemplateCreateRequest req) {
         if (req.getVariables() != null && !req.getVariables().isEmpty()) {
             return req.getVariables();
@@ -578,6 +589,7 @@ public class TemplateService {
                 .workspaceId(t.getWorkspaceId())
                 .ownerUserId(t.getOwnerUserId())
                 .category(t.getCategory())
+                .code(t.getCode())
                 .scenario(t.getScenario())
                 .persona(t.getPersona())
                 .title(t.getTitle())
@@ -591,14 +603,6 @@ public class TemplateService {
                 .createdAt(t.getCreatedAt())
                 .updatedAt(t.getUpdatedAt())
                 .build();
-    }
-
-    private UUID parseUuid(String value) {
-        try {
-            return UUID.fromString(value);
-        } catch (Exception e) {
-            throw new BusinessException(CODE_BAD_REQUEST, "invalid_uuid");
-        }
     }
 
     // ── 内部结果类 ────────────────────────────────────────────────────────

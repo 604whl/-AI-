@@ -73,7 +73,7 @@ public final class SampleAnalysisReport {
                 "emotion", score(82, "痛点与共鸣点覆盖完整，情绪递进清晰。", "high"),
                 "collect", score(85, "时间线结构适合收藏回看。", "high"),
                 "conversion", score(71, "CTA 位置合理，但可再强化稀缺性。", "medium"),
-                "viral", score(68, "话题明确，传播半径适中，利于垂类人群扩散。", "medium")
+                "viral", score(68, "话题明确，传播半径适中，利于目标人群扩散。", "medium")
         ));
         report.put("issues", List.of(
                 issue("medium", "ctr", "标题可再压缩至 20 字内，提升移动端展示完整度。", "尝试「数字+身份标签｜核心利益点」格式。"),

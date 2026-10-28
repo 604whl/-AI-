@@ -12,7 +12,7 @@
 
 在现有「单次 Prompt → JSON 报告」流水线之上，引入 **Agent 工具调用循环**，使 LLM 能按需：
 
-- 检索垂类知识库（RAG）
+- 检索分品类知识库（RAG）
 - 调用已有业务能力（分析、标题、合规、封面）
 - 查询用户历史任务
 - （P2）联网搜索、抓取 URL、获取热点选题
@@ -273,7 +273,7 @@ public interface AgentTool {
 
 ### 6.1 search_kb
 
-检索垂类知识库，对标 [RAG-DESIGN.md](./RAG-DESIGN.md)。
+检索分品类知识库，对标 [RAG-DESIGN.md](./RAG-DESIGN.md)。
 
 | 项 | 值 |
 |----|-----|
@@ -448,7 +448,7 @@ P2 选题能力；可先返回静态 JSON + 定期脚本更新，再接入第三
 
 | | RAG (`search_kb`) | 记忆 (`list_recent_analyses`) |
 |--|-------------------|-------------------------------|
-| 数据 | 公共垂类案例库 | 该用户私有历史 |
+| 数据 | 公共分品类案例库 | 该用户私有历史 |
 | 触发 | 模型判断需要对标 | 用户问「我之前的笔记」 |
 | 存储 | `kb.kb_document` | `app.analysis_task` |
 
@@ -457,12 +457,12 @@ P2 选题能力；可先返回静态 JSON + 定期脚本更新，再接入第三
 文件：`src/main/resources/prompts/agent-system.st`
 
 ```text
-你是小红书留学生求职赛道的 AI 运营助手。你可以通过工具检索案例、分析笔记、生成标题、扫描合规风险。
+你是小红书全平台全品类 AI 运营助手。你可以通过工具检索案例、分析笔记、生成标题、扫描合规风险。
 
 原则：
 1. 分析优先于生成；先理解内容再给建议。
 2. 禁止洗稿；引用案例只学结构。
-3. 需要垂类标杆时调用 search_kb，不要凭空编造案例数据。
+3. 需要分品类标杆时调用 search_kb，不要凭空编造案例数据。
 4. 用户粘贴了完整草稿时，优先调用 analyze_content。
 5. 输出简洁，适合运营人员快速决策。
 
@@ -511,7 +511,7 @@ public class SearchKbTool implements AgentTool {
     @Override
     public String name() { return "search_kb"; }
 
-    @Tool(description = "检索垂类爆文案例、标题模板、转化话术")
+    @Tool(description = "检索分品类爆文案例、标题模板、转化话术")
     public String searchKb(
         @ToolParam(description = "检索 query") String query,
         @ToolParam(required = false) List<String> docTypes,

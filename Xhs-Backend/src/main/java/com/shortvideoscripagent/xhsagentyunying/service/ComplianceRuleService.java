@@ -66,7 +66,7 @@ public class ComplianceRuleService {
     /**
      * 扫描品牌级禁用词（按 workspace）。
      */
-    public List<ComplianceHit> scanBrandWords(UUID workspaceId, String text) {
+    public List<ComplianceHit> scanBrandWords(String workspaceId, String text) {
         List<ComplianceHit> hits = new ArrayList<>();
         if (text == null || text.isBlank() || workspaceId == null) return hits;
         for (ComplianceBrandWord w : brandWordMapper.selectByWorkspace(workspaceId)) {

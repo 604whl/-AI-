@@ -1,8 +1,10 @@
 package com.shortvideoscripagent.xhsagentyunying.domain.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.shortvideoscripagent.xhsagentyunying.config.mybatis.JsonbListTypeHandler;
 import lombok.Data;
 import org.apache.ibatis.type.JdbcType;
 
@@ -16,14 +18,14 @@ import java.util.UUID;
  * 状态枚举：pending / in_review / approved / rejected / cancelled
  */
 @Data
-@TableName("review_task")
+@TableName(value = "review_task", autoResultMap = true)
 public class ReviewTask {
 
     @TableId(type = IdType.ASSIGN_UUID)
     private UUID id;
 
     /** Workspace ID，多租户隔离 */
-    private UUID workspaceId;
+    private String workspaceId;
 
     /** 关联的资产 ID */
     private UUID assetId;
@@ -54,6 +56,7 @@ public class ReviewTask {
     private Integer riskScore;
 
     /** 风险标签列表 JSON */
+@TableField(typeHandler = JsonbListTypeHandler.class)
     private List<String> riskTags;
 
     /** 审核结论/驳回原因 */

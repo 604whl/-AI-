@@ -199,7 +199,7 @@ public class AnalysisTaskHandler implements TaskHandler {
 
             // P0-3: 分析成功时自动创建 ContentAsset draft
             try {
-                createDraftAssetFromAnalysis(taskId, payload, java.util.UUID.fromString(workspaceIdStr));
+                createDraftAssetFromAnalysis(taskId, payload, workspaceIdStr);
             } catch (Exception draftEx) {
                 // 资产创建失败不影响任务完成，只记录日志
                 log.warn("Failed to create draft asset for task {}: {}", taskId, draftEx.getMessage());
@@ -354,7 +354,7 @@ public class AnalysisTaskHandler implements TaskHandler {
      * P0-3: 分析成功后自动创建 ContentAsset draft。
      * 使用 workspaceId 对应的成员 userId 作为 owner。
      */
-    private void createDraftAssetFromAnalysis(String taskId, Map<String, Object> payload, java.util.UUID workspaceId) {
+    private void createDraftAssetFromAnalysis(String taskId, Map<String, Object> payload, String workspaceId) {
         Long ownerId = null;
         try {
             // 尝试从 payload 提取 userId
@@ -367,7 +367,7 @@ public class AnalysisTaskHandler implements TaskHandler {
         if (ownerId == null) {
             // 兜底：从 workspace 第一个成员
             try {
-                ownerId = workspaceService.getFirstMemberUserId(workspaceId.toString());
+                ownerId = workspaceService.getFirstMemberUserId(workspaceId);
             } catch (Exception ignored2) {
             }
         }

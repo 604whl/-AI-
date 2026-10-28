@@ -1,4 +1,4 @@
-# 小红书留学生求职 AI 运营助手 — 需求文档包
+# 小红书全平台全品类 AI 内容运营助手 — 需求文档包
 
 本目录为产品与架构文档。实现代码见 `XhsAgent-yunying`（后端）与 `Xhs-Frontend`（前端）。开发前请先阅读 [PRD-V3.0.md](./PRD-V3.0.md) 与 [TECH-ARCHITECTURE.md](./TECH-ARCHITECTURE.md)。
 

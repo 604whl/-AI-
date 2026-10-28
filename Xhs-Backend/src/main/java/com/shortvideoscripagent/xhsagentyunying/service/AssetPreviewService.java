@@ -33,10 +33,9 @@ public class AssetPreviewService {
      */
     public AssetPreviewResponse preview(Long userId, UUID assetId, String platform) {
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID wsUuid = UUID.fromString(workspaceId);
 
         ContentAsset asset = assetMapper.selectById(assetId);
-        if (asset == null || !asset.getWorkspaceId().equals(wsUuid)) {
+        if (asset == null || !workspaceId.equals(asset.getWorkspaceId())) {
             throw new BusinessException(CODE_BAD_REQUEST, "asset_not_found");
         }
 

@@ -2,7 +2,9 @@ package com.shortvideoscripagent.xhsagentyunying.domain.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.shortvideoscripagent.xhsagentyunying.config.mybatis.JsonbStringTypeHandler;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
@@ -14,14 +16,14 @@ import java.util.UUID;
  * 状态枚举：draft / in_review / approved / scheduled / published / archived
  */
 @Data
-@TableName("content_asset")
+@TableName(value = "content_asset", autoResultMap = true)
 public class ContentAsset {
 
     @TableId(type = IdType.ASSIGN_UUID)
     private UUID id;
 
-    /** Workspace ID，多租户隔离 */
-    private UUID workspaceId;
+    /** Workspace ID，多租户隔离（VARCHAR(32)，与 app.workspace.id 一致） */
+    private String workspaceId;
 
     /** 资产所有者 userId */
     private Long ownerUserId;
@@ -70,6 +72,7 @@ public class ContentAsset {
     private OffsetDateTime updatedAt;
 
     /** 多标签列表（JSON 数组，存储为 PostgreSQL jsonb 列） */
+    @TableField(typeHandler = JsonbStringTypeHandler.class)
     private String tags;
 
     // ── 状态常量 ────────────────────────────────────────────

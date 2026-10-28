@@ -10,7 +10,8 @@ public class CsvImportLog {
     @TableId(type = IdType.AUTO)
     private Long id;
     private Long userId;
-    private java.util.UUID workspaceId;
+    /** Workspace ID（VARCHAR(32)，与 app.workspace.id 一致；V49 由 UUID 归一） */
+    private String workspaceId;
     private String importType;
     private String filename;
     private Integer totalRows;

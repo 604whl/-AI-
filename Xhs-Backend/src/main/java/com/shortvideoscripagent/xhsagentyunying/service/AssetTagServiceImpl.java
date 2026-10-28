@@ -28,7 +28,7 @@ public class AssetTagServiceImpl implements AssetTagService {
 
     @Override
     @Transactional
-    public void setTags(String assetUuid, Long workspaceId, List<String> tags) {
+    public void setTags(String assetUuid, String workspaceId, List<String> tags) {
         validateAssetOwnership(assetUuid, workspaceId);
         List<String> normalized = normalizeTags(tags);
         if (normalized.size() > MAX_TAGS_PER_ASSET) {
@@ -47,14 +47,14 @@ public class AssetTagServiceImpl implements AssetTagService {
     }
 
     @Override
-    public List<String> getTags(String assetUuid, Long workspaceId) {
+    public List<String> getTags(String assetUuid, String workspaceId) {
         validateAssetOwnership(assetUuid, workspaceId);
         List<String> tags = assetTagMapper.selectTagsByAssetUuid(assetUuid);
         return tags != null ? tags : List.of();
     }
 
     @Override
-    public List<String> findAssetUuidsByTag(String tag, Long workspaceId) {
+    public List<String> findAssetUuidsByTag(String tag, String workspaceId) {
         if (tag == null || tag.isBlank()) {
             return List.of();
         }
@@ -66,7 +66,7 @@ public class AssetTagServiceImpl implements AssetTagService {
     }
 
     @Override
-    public List<String> findAssetUuidsByAnyTag(List<String> tags, Long workspaceId) {
+    public List<String> findAssetUuidsByAnyTag(List<String> tags, String workspaceId) {
         if (tags == null || tags.isEmpty()) {
             return List.of();
         }
@@ -86,7 +86,7 @@ public class AssetTagServiceImpl implements AssetTagService {
         return filterByWorkspace(candidates, workspaceId);
     }
 
-    private void validateAssetOwnership(String assetUuid, Long workspaceId) {
+    private void validateAssetOwnership(String assetUuid, String workspaceId) {
         if (assetUuid == null || assetUuid.isBlank()) {
             throw new BusinessException(CODE_NOT_FOUND, "asset_not_found");
         }
@@ -94,11 +94,29 @@ public class AssetTagServiceImpl implements AssetTagService {
         if (asset == null) {
             throw new BusinessException(CODE_NOT_FOUND, "asset_not_found");
         }
-        long wsLeast = asset.getWorkspaceId().getLeastSignificantBits();
-        long wsHash = (long) asset.getWorkspaceId().hashCode();
-        if (wsLeast != workspaceId && wsHash != workspaceId) {
+        if (!sameWorkspace(workspaceId, asset.getWorkspaceId())) {
             throw new BusinessException(CODE_NOT_FOUND, "asset_not_found");
         }
+    }
+
+    /**
+     * 精确比较 workspace 归属。
+     * <p>
+     * 早期实现用 {@code getLeastSignificantBits()} / {@code hashCode()} 做近似比较，
+     * 既不可靠（存在碰撞）又把 long 与 Long 引用混用，属于缺陷实现。
+     * 现在统一为字符串精确相等：{@code app.workspace.id} 形如 {@code ws_xxx}，
+     * 与 {@code app.content_asset.workspace_id} 同为 VARCHAR(32)，可直接 equals。
+     * <p>
+     * 唯一保留的宽松分支是 null 安全的 {@code toString} 兜底，用于历史脏数据。
+     */
+    private boolean sameWorkspace(String expected, String actual) {
+        if (expected == null || actual == null) {
+            return false;
+        }
+        if (expected.equals(actual)) {
+            return true;
+        }
+        return expected.equals(actual.toString());
     }
 
     private List<String> normalizeTags(List<String> tags) {
@@ -114,7 +132,7 @@ public class AssetTagServiceImpl implements AssetTagService {
                 .toList();
     }
 
-    private List<String> filterByWorkspace(List<String> assetUuids, Long workspaceId) {
+    private List<String> filterByWorkspace(List<String> assetUuids, String workspaceId) {
         if (assetUuids == null || assetUuids.isEmpty()) {
             return List.of();
         }
@@ -126,11 +144,7 @@ public class AssetTagServiceImpl implements AssetTagService {
                 .filter(uuid -> uuid != null)
                 .map(uuid -> assetMapper.selectById(uuid))
                 .filter(asset -> asset != null && asset.getWorkspaceId() != null)
-                .filter(asset -> {
-                    long wsLeast = asset.getWorkspaceId().getLeastSignificantBits();
-                    long wsHash = (long) asset.getWorkspaceId().hashCode();
-                    return wsLeast == workspaceId || wsHash == workspaceId;
-                })
+                .filter(asset -> sameWorkspace(workspaceId, asset.getWorkspaceId()))
                 .map(ContentAsset::getId)
                 .map(UUID::toString)
                 .toList();

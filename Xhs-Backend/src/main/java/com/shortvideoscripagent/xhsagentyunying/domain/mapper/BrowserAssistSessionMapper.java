@@ -16,8 +16,8 @@ public interface BrowserAssistSessionMapper extends BaseMapper<BrowserAssistSess
     List<BrowserAssistSession> selectRecentByUser(@Param("userId") Long userId);
 
     @Select("SELECT * FROM app.browser_assist_session WHERE workspace_id = #{workspaceId} ORDER BY created_at DESC LIMIT 50")
-    List<BrowserAssistSession> selectRecentByWorkspace(@Param("workspaceId") UUID workspaceId);
+    List<BrowserAssistSession> selectRecentByWorkspace(@Param("workspaceId") String workspaceId);
 
     @Select("SELECT * FROM app.browser_assist_session WHERE id = #{id} AND workspace_id = #{workspaceId}")
-    BrowserAssistSession selectByIdAndWorkspace(@Param("id") UUID id, @Param("workspaceId") UUID workspaceId);
+    BrowserAssistSession selectByIdAndWorkspace(@Param("id") UUID id, @Param("workspaceId") String workspaceId);
 }

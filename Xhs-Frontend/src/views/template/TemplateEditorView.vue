@@ -173,6 +173,7 @@ import {
   fetchTemplate,
   type TemplateScope,
 } from '@/api/template'
+import { TEMPLATE_CATEGORIES } from '@/constants/templateCategories'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -187,10 +188,7 @@ const publishing = ref(false)
 const newVariable = ref('')
 const previewValues = reactive<Record<string, string>>({})
 
-const categories = [
-  'career_fair', 'interview', 'visa', 'job_hunt',
-  'career_development', 'salary', 'networking',
-]
+const categories = TEMPLATE_CATEGORIES
 
 const form = reactive({
   scope: 'WORKSPACE' as TemplateScope,

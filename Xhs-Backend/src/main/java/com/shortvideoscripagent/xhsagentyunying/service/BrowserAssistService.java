@@ -36,12 +36,11 @@ public class BrowserAssistService {
         if (wsIdStr == null || wsIdStr.isBlank()) {
             throw new BusinessException(CODE_BAD_REQUEST, "workspace_id_required");
         }
-        UUID wsUuid = UUID.fromString(wsIdStr);
 
         BrowserAssistSession s = new BrowserAssistSession();
         s.setId(UUID.randomUUID());
         s.setUserId(userId);
-        s.setWorkspaceId(wsUuid);
+        s.setWorkspaceId(wsIdStr);
         s.setPlatform(req.getPlatform());
         s.setAccountLabel(req.getAccountLabel());
         s.setStatus(BrowserAssistSession.STATUS_CREATED);
@@ -55,9 +54,8 @@ public class BrowserAssistService {
 
     public BrowserSessionResponse getSession(Long userId, UUID sessionId) {
         String wsIdStr = WorkspaceContext.getWorkspaceId();
-        UUID wsUuid = UUID.fromString(wsIdStr);
 
-        BrowserAssistSession s = sessionMapper.selectByIdAndWorkspace(sessionId, wsUuid);
+        BrowserAssistSession s = sessionMapper.selectByIdAndWorkspace(sessionId, wsIdStr);
         if (s == null) {
             throw new BusinessException(CODE_NOT_FOUND, "session_not_found");
         }
@@ -67,17 +65,16 @@ public class BrowserAssistService {
     @Transactional
     public BrowserSessionResponse fillSession(Long userId, FillSessionRequest req) {
         String wsIdStr = WorkspaceContext.getWorkspaceId();
-        UUID wsUuid = UUID.fromString(wsIdStr);
         UUID sessionId = UUID.fromString(req.getSessionId());
         UUID assetId = UUID.fromString(req.getAssetId());
 
-        BrowserAssistSession s = sessionMapper.selectByIdAndWorkspace(sessionId, wsUuid);
+        BrowserAssistSession s = sessionMapper.selectByIdAndWorkspace(sessionId, wsIdStr);
         if (s == null) {
             throw new BusinessException(CODE_NOT_FOUND, "session_not_found");
         }
 
         ContentAsset asset = assetMapper.selectById(assetId);
-        if (asset == null || !asset.getWorkspaceId().equals(wsUuid)) {
+        if (asset == null || !asset.getWorkspaceId().equals(wsIdStr)) {
             throw new BusinessException(CODE_NOT_FOUND, "asset_not_found");
         }
 
@@ -99,9 +96,8 @@ public class BrowserAssistService {
     @Transactional
     public void closeSession(Long userId, UUID sessionId) {
         String wsIdStr = WorkspaceContext.getWorkspaceId();
-        UUID wsUuid = UUID.fromString(wsIdStr);
 
-        BrowserAssistSession s = sessionMapper.selectByIdAndWorkspace(sessionId, wsUuid);
+        BrowserAssistSession s = sessionMapper.selectByIdAndWorkspace(sessionId, wsIdStr);
         if (s == null) {
             throw new BusinessException(CODE_NOT_FOUND, "session_not_found");
         }
@@ -115,8 +111,7 @@ public class BrowserAssistService {
 
     public List<BrowserSessionResponse> listSessions(Long userId) {
         String wsIdStr = WorkspaceContext.getWorkspaceId();
-        UUID wsUuid = UUID.fromString(wsIdStr);
-        return sessionMapper.selectRecentByWorkspace(wsUuid).stream()
+        return sessionMapper.selectRecentByWorkspace(wsIdStr).stream()
                 .map(this::toResponse)
                 .toList();
     }

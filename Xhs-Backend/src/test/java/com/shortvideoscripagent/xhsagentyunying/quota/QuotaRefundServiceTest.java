@@ -45,7 +45,7 @@ class QuotaRefundServiceTest {
     void refund_validConsumedLedger_success() {
         // given
         UUID ledgerId = UUID.randomUUID();
-        UUID workspaceId = UUID.randomUUID();
+        String workspaceId = "ws_" + UUID.randomUUID().toString().replace("-", "");
         UUID refId = UUID.randomUUID();
         UsageLedger ledger = new UsageLedger();
         ledger.setId(ledgerId);
@@ -64,7 +64,7 @@ class QuotaRefundServiceTest {
         // then
         assertTrue(result);
         verify(usageLedgerMapper).markRefunded(ledgerId);
-        verify(workspaceQuotaMapper).refund(workspaceId);
+        verify(workspaceQuotaMapper).refund(workspaceId.toString());
     }
 
     @Test
@@ -102,7 +102,7 @@ class QuotaRefundServiceTest {
     void refund_concurrentRefund_returnsFalse() {
         // given: first refund succeeds, second concurrent refund finds status already REFUNDED
         UUID ledgerId = UUID.randomUUID();
-        UUID workspaceId = UUID.randomUUID();
+        String workspaceId = "ws_" + UUID.randomUUID().toString().replace("-", "");
         UsageLedger ledger = new UsageLedger();
         ledger.setId(ledgerId);
         ledger.setWorkspaceId(workspaceId);
@@ -119,13 +119,13 @@ class QuotaRefundServiceTest {
 
         // then: idempotent, returns true for first
         assertTrue(result);
-        verify(workspaceQuotaMapper).refund(workspaceId);
+        verify(workspaceQuotaMapper).refund(workspaceId.toString());
     }
 
     @Test
     void refundByRefId_foundLedger_refunds() {
         // given
-        UUID workspaceId = UUID.randomUUID();
+        String workspaceId = "ws_" + UUID.randomUUID().toString().replace("-", "");
         UUID refId = UUID.randomUUID();
         UUID ledgerId = UUID.randomUUID();
         UsageLedger ledger = new UsageLedger();
@@ -149,7 +149,7 @@ class QuotaRefundServiceTest {
     @Test
     void refundByRefId_notFound_returnsFalse() {
         // given: no consumed ledger found
-        UUID workspaceId = UUID.randomUUID();
+        String workspaceId = "ws_" + UUID.randomUUID().toString().replace("-", "");
         UUID refId = UUID.randomUUID();
 
         when(usageLedgerMapper.selectOne(any())).thenReturn(null);

@@ -31,7 +31,7 @@ public class SearchKbTool implements AgentTool {
 
     @Override
     public String description() {
-        return "检索垂类爆文案例、标题模板、转化话术等知识库内容";
+        return "检索分品类爆文案例、标题模板、转化话术等知识库内容";
     }
 
     @Override

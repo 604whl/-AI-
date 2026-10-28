@@ -26,13 +26,10 @@ public interface ExportLogMapper extends BaseMapper<ExportLog> {
             SELECT * FROM app.export_log
             WHERE workspace_id = #{workspaceId}
             ORDER BY created_at DESC
-            OFFSET #{offset} LIMIT #{limit}
             """)
     IPage<ExportLog> selectPageByWorkspace(
             Page<ExportLog> page,
-            @Param("workspaceId") UUID workspaceId,
-            @Param("offset") long offset,
-            @Param("limit") long limit
+            @Param("workspaceId") String workspaceId
     );
 
     /**
@@ -42,7 +39,7 @@ public interface ExportLogMapper extends BaseMapper<ExportLog> {
             SELECT COUNT(*) FROM app.export_log
             WHERE workspace_id = #{workspaceId}
             """)
-    long countByWorkspace(@Param("workspaceId") UUID workspaceId);
+    long countByWorkspace(@Param("workspaceId") String workspaceId);
 
     /**
      * 更新导出状态为 processing。

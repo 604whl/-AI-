@@ -21,9 +21,14 @@ public class VersionDiffController {
 
     /**
      * 对比资产的两个版本，输出结构化 diff 结果（LCS 算法）。
-     * GET /v1/assets/{id}/diff?v1=1&v2=2
+     * GET /v1/assets/{id}/version-diff?v1=1&v2=2
+     * <p>
+     * <b>注意</b>：路径为 {@code /version-diff} 而非 {@code /diff}，因为
+     * {@code ContentAssetController#diffVersions} 已占用 {@code GET /v1/assets/{id}/diff}
+     * （前端 {@code api/asset.ts} 使用的 line-based diff 契约），两者同路径会导致
+     * Spring 启动期 {@code Ambiguous mapping} 报错。前端当前未使用本接口。
      */
-    @GetMapping("/{id}/diff")
+    @GetMapping("/{id}/version-diff")
     public ApiResponse<VersionDiffResponse> diff(
             @PathVariable String id,
             @RequestParam int v1,
