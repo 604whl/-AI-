@@ -212,3 +212,50 @@ GET /v1/.../subscription  → planCode=PRO, price=199.0000, planVersion=1
 1. `git commit` + `scripts/push.ps1` 推送本轮全部改动
 2. S4-4（退款/发票）起手 —— 批次 A+B 已收口，DB 迁移 V61-V65 全部落地
 3. 真实支付渠道对接（需商户号 + 证书，依赖外部资源）
+
+## 审核跟进批次 A+B 第二轮收口（2026-10-31 01:48）
+
+### 本轮修复的审核遗留项（P2-1 / P2-2 / P3-2 / P3-4 / P3-5）
+
+| 编号 | 问题 | 修复位置 | 说明 |
+|---|---|---|---|
+| P2-1 | 下单事务内含远程 HTTP 调用 | `billing/order/OrderService.java` | 拆成 3 段：事务1 插 pending 订单并提交（`PROPAGATION_REQUIRES_NEW`）→ **事务外** 调 `provider.createPayment` → 事务2 落 payload / 失败时 `compareAndSetClosed` |
+| P2-2 | 对账事务内含远程 HTTP 调用 | `billing/order/ReconciliationService.java` | `queryDailyBills()` 移到事务外，比对与落库在 `TransactionTemplate` 内 |
+| P3-2 | 升级时配额未按剩余周期折算 | `billing/subscription/SubscriptionService.java` | 新增 `applyPlanQuotaProrated`：`ceil(fullTargetUnits * 剩余天数 / 周期天数)` |
+| P3-4 | 写操作幂等键抢占（cancel/change_plan 抢 subscribe 的键） | `SubscriptionService.java` + 新增 V66 表 | 新建 `app.subscription_write_idempotency`（PK `workspace_id, scope, idempotency_key`），scope 分离 subscribe/trial/cancel/change_plan/admin_adjust |
+| P3-5 | 管理员调整重复提交叠加延期天数 | `SubscriptionService.java` + `SubscriptionAdminController.java` | `adminAdjust` 接 `Idempotency-Key` 头，重放返回既有状态不重放副作用；缺 `reason` 返 40010 |
+
+### 新增单元测试
+- `SubscriptionServiceTest`：12 例（新增 6 例覆盖 P3-4/P3-5 作用域隔离与重放语义）
+- `BalanceServiceTest`：9 例
+- `StatementServiceTest`：6 例
+
+### 验证结论（2026-10-31 01:48）
+
+| 套件 | 结果 |
+|---|---|
+| `mvn -o -q compile` / `package` | EXIT=0 |
+| `mvn -o test` | **Tests run 234, Failures 0, Errors 1**（唯一 error = Testcontainers `ryuk:0.12.0` 拉取失败，**环境网络问题**，非代码缺陷） |
+| `scripts/verify-stage4.ps1` | **14/14 PASS** |
+| `scripts/verify-stage4-fixes.ps1` | **5/5 PASS** |
+| `scripts/verify-s4-0-legacy.ps1` | **15/15 PASS** |
+| Flyway | `validated 52 migrations`，**V66 success=t**，`app.subscription_write_idempotency` 表 + PK 已建 |
+
+### 本轮发现的环境侧缺陷（非业务代码）
+
+- **本地启动 profile 必须是 `local`** —— `dev` profile 在 `application.yml` 中不存在，会被 `SecurityStartupValidator` 当作生产环境拦截（`JWT_SECRET` / `AI_MOCK_ENABLED` / 真实 API Key 三项校验失败）。
+- **`cmd set X=val &&` 会把分隔空格并入变量值** —— 导致 `PAYMENT_MOCK_SECRET` 服务端与客户端不一致，Mock 回调验签必然 40012 `signature_invalid`。必须写成 `set "X=val"`。
+- **`.cmd` 启动器必须是 ANSI/GBK 编码** —— UTF-8/UTF-16 的 `.cmd` 会被 `cmd.exe` 解析成乱码而静默不执行。
+- **E2E 重复跑会撞限流** —— `ratelimit:*` Redis 键未自动过期，重跑前需清理，否则 step 6 返回 429 `rate_limit_exceeded`。
+
+### 当前遗留（未变）
+- **真实支付渠道未联通**（支付宝/微信商户号与证书未落地，仅 Mock 渠道可端到端）
+- **真实浏览器驱动未接入**（`NoopBrowserDriver` 恒返回不可用）
+- **前端未动工**（S4-4~S4-11 的前端页面与 i18n 未开始）
+- **V65 历史重复扣费自愈**只覆盖 `dedupe_key` 命中行；历史无 dedupe_key 的重复行需人工核对
+
+### 下一步（明天）
+1. S4-4 起手：**退款 + 发票**（D10：仅个人普票 + 企业普票）
+2. S4-5~S4-11：后台运营 / 开放平台 / 用户门户 / 通知 / 压测 / 高可用
+3. 前端计费页面 + i18n 补齐（阶段四目前全为后端）
+4. 真实支付渠道对接（需商户号 + 证书，依赖外部资源，需用户协调）

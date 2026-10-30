@@ -129,6 +129,10 @@ public class SubscriptionAdminController {
 
     /**
      * 订阅补偿 / 延期（幂等）。
+     * <p>
+     * P3-5：{@code Idempotency-Key} 必须透传给 Service ——
+     * 否则重复提交同一个键会把延期天数叠加两次，误操作不可撤销。
+     * </p>
      */
     @PatchMapping("/subscriptions/{id}")
     public ApiResponse<PlanDtos.AdminSubscriptionItem> adjustSubscription(
@@ -136,7 +140,7 @@ public class SubscriptionAdminController {
             @RequestBody SubscriptionDtos.AdminAdjustRequest request,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         platformAdminService.requirePlatformAdmin();
-        return ApiResponse.ok(subscriptionService.adminAdjust(parseUuid(id), request));
+        return ApiResponse.ok(subscriptionService.adminAdjust(parseUuid(id), request, idempotencyKey));
     }
 
     // ── private ──────────────────────────────────────────────────────────

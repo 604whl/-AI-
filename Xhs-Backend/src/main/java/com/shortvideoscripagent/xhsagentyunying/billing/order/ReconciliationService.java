@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -51,20 +52,33 @@ public class ReconciliationService {
     private final SubscriptionOrderMapper orderMapper;
     private final PaymentProviderRegistry providerRegistry;
     private final AuditWriter auditWriter;
+    private final org.springframework.transaction.PlatformTransactionManager transactionManager;
 
     /**
      * 执行一次对账。
+     * <p>
+     * <b>P2-2 事务边界</b>：{@code queryDailyBills} 是<b>同步 HTTP 远程调用</b>
+     * （拉取渠道当日账单），不能被包在数据库事务里 ——
+     * 渠道慢/挂起会把连接与行锁持有到 HTTP 超时；{@code BillingScheduler} 每天 03:15
+     * 对 3 个渠道串行调用，任一渠道超时会拖死整次对账事务。
+     * 因此拆成两段：
+     * <ol>
+     *   <li><b>事务外</b>：{@code provider.queryDailyBills(targetDay)}；</li>
+     *   <li><b>事务内</b>：差异比对 + 落库（{@code upsertReconciliation}）。</li>
+     * </ol>
+     * 渠道调用失败 → 整个对账失败，<b>不落半截差异</b>。
+     * </p>
      *
      * @param provider 渠道名
      * @param day      对账日期（null = 今天）
      * @return 差异条数
      */
-    @Transactional
     public int reconcile(String provider, LocalDate day) {
         PaymentProvider paymentProvider = providerRegistry.require(provider);
         String providerName = paymentProvider.provider();
         LocalDate targetDay = day == null ? LocalDate.now() : day;
 
+        // ── 事务外：拉取渠道账单（远程调用，不持有 DB 事务与行锁） ──
         List<PaymentProvider.ProviderBill> bills;
         try {
             bills = paymentProvider.queryDailyBills(targetDay);
@@ -76,6 +90,21 @@ public class ReconciliationService {
             throw ex;
         }
 
+        // ── 事务内：差异比对 + 落库 ──
+        Integer diffCount = newTransaction().execute(txStatus ->
+                reconcileBills(bills, providerName, targetDay));
+        int diffs = diffCount == null ? 0 : diffCount;
+
+        log.info("Reconciliation done: provider={} day={} bills={} diffs={}",
+                providerName, targetDay, bills.size(), diffs);
+        return diffs;
+    }
+
+    /**
+     * 差异比对 + 落库（<b>必须在事务内执行</b>）。
+     */
+    private int reconcileBills(List<PaymentProvider.ProviderBill> bills, String providerName,
+                               LocalDate targetDay) {
         Map<String, PaymentProvider.ProviderBill> billMap = new LinkedHashMap<>();
         for (PaymentProvider.ProviderBill bill : bills) {
             if (bill.orderNo() != null) {
@@ -142,10 +171,21 @@ public class ReconciliationService {
                 diffCount++;
             }
         }
-
-        log.info("Reconciliation done: provider={} day={} bills={} diffs={}",
-                providerName, targetDay, bills.size(), diffCount);
         return diffCount;
+    }
+
+    /**
+     * 新建一个「独立事务」模板（{@code PROPAGATION_REQUIRES_NEW}）。
+     * <p>
+     * P2-2：{@code reconcile} 需要把「渠道远程调用」排除在事务之外，
+     * 只把差异比对与落库放在事务内。
+     * </p>
+     */
+    private TransactionTemplate newTransaction() {
+        TransactionTemplate template = new TransactionTemplate(transactionManager);
+        template.setPropagationBehavior(
+                org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        return template;
     }
 
     /**
@@ -226,6 +266,14 @@ public class ReconciliationService {
 
     /**
      * 幂等写入差异记录：同（order_no, provider, diff_type）已存在则更新。
+     * <p>
+     * P2-2：<b>插入必须在独立事务里做</b>。PostgreSQL 中唯一索引冲突会把当前事务
+     * 置为 aborted，此后的任何 SQL 都会抛
+     * {@code current transaction is aborted, commands ignored until end of transaction block}。
+     * 如果插入与差异比对共用一个事务，一行重复就会让整次对账的差异落库全部失败。
+     * 这里把 insert 放进独立事务（{@code REQUIRES_NEW}）：冲突只回滚该次插入，
+     * 外层差异比对事务不受影响。
+     * </p>
      */
     private void upsertReconciliation(BillingReconciliation record) {
         BillingReconciliation existing = reconciliationMapper.selectByOrderDiff(
@@ -238,7 +286,7 @@ public class ReconciliationService {
             return;
         }
         try {
-            reconciliationMapper.insert(record);
+            newTransaction().executeWithoutResult(status -> reconciliationMapper.insert(record));
         } catch (org.springframework.dao.DuplicateKeyException ex) {
             log.debug("Duplicate reconciliation record ignored: orderNo={} diffType={}",
                     record.getOrderNo(), record.getDiffType());

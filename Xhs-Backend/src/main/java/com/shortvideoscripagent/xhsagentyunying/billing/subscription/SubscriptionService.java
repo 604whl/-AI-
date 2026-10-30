@@ -72,11 +72,28 @@ public class SubscriptionService {
     /** 到期降级目标套餐编码 */
     public static final String FREE_PLAN_CODE = "FREE";
 
+    // ── 幂等作用域（P3-4 / P3-5）────────────────────────────────────────
+    // 同一订阅行上会先后发生多种写操作，若共用一个幂等键空间，
+    // 先到的操作会占住键空间导致后到的操作永远绑不上。
+    // 这里按「操作种类」划分作用域，不同作用域互不抢占。
+    /** 开通订阅 */
+    public static final String SCOPE_SUBSCRIBE = "subscribe";
+    /** 发起试用 */
+    public static final String SCOPE_TRIAL = "trial";
+    /** 取消订阅 */
+    public static final String SCOPE_CANCEL = "cancel";
+    /** 变更套餐 */
+    public static final String SCOPE_CHANGE_PLAN = "change_plan";
+    /** 管理端补偿 / 延期 */
+    public static final String SCOPE_ADMIN_ADJUST = "admin_adjust";
+
     private static final int LIMIT_SUBSCRIBE_PER_DAY = 5;
     private static final int LIMIT_CHANGE_PLAN_PER_DAY = 3;
     private static final int WINDOW_ONE_DAY = 24 * 60 * 60;
 
     private final SubscriptionMapper subscriptionMapper;
+    private final com.shortvideoscripagent.xhsagentyunying.billing.subscription.domain.mapper.SubscriptionWriteIdempotencyMapper
+            writeIdempotencyMapper;
     private final WorkspaceQuotaMapper workspaceQuotaMapper;
     private final WorkspaceMapper workspaceMapper;
     private final PlanService planService;
@@ -335,21 +352,19 @@ public class SubscriptionService {
                                                     SubscriptionDtos.CancelRequest request,
                                                     String idempotencyKey) {
         requireOwner(workspaceId, userId);
-        String key = normalizeKey(idempotencyKey);
-        if (key != null) {
-            Subscription existing = subscriptionMapper.selectByIdempotencyKey(workspaceId, key);
-            if (existing != null) {
-                return toView(existing);
-            }
-        }
         Subscription sub = subscriptionMapper.selectActiveByWorkspace(workspaceId);
         if (sub == null) {
             // 已经没有生效订阅：按「未找到」处理
             throw new BusinessException(CODE_NOT_FOUND, "subscription_not_found");
         }
-        // cancel 是「修改已有订阅」，创建时并没有把幂等键写进行里，
-        // 这里补绑一次，重复提交同一 Idempotency-Key 才会命中唯一索引并被识别为重放。
-        bindIdempotencyKey(sub, key);
+        // P3-4：cancel 是「修改已有订阅」，幂等键要落在独立的
+        // subscription_write_idempotency 表（scope = cancel），
+        // 而不是抢 subscribe 写在 subscription.idempotency_key 上的那个键。
+        // 返回 0 = 该键此前已绑定 -> 幂等重放，直接返回当前订阅视图，
+        // 绝不能再次执行「取消 / 降级额度」这些副作用。
+        if (bindIdempotencyKey(workspaceId, sub.getId(), SCOPE_CANCEL, idempotencyKey) == 0) {
+            return toView(subscriptionMapper.selectById(sub.getId()));
+        }
         boolean atPeriodEnd = request == null || request.getAtPeriodEnd() == null || request.getAtPeriodEnd();
 
         if (atPeriodEnd) {
@@ -442,16 +457,6 @@ public class SubscriptionService {
         rateLimiter.require("workspace", workspaceId + ":subscription:change_plan",
                 LIMIT_CHANGE_PLAN_PER_DAY, WINDOW_ONE_DAY);
 
-        String key = normalizeKey(idempotencyKey);
-        if (key != null) {
-            Subscription existing = subscriptionMapper.selectByIdempotencyKey(workspaceId, key);
-            if (existing != null) {
-                SubscriptionDtos.ChangePlanResult replay = new SubscriptionDtos.ChangePlanResult();
-                replay.setEffective("replay");
-                replay.setSubscription(toView(existing));
-                return replay;
-            }
-        }
         if (request == null || request.getPlanCode() == null || request.getPlanCode().isBlank()) {
             throw new BusinessException(CODE_BAD_REQUEST, "plan_code_required");
         }
@@ -459,8 +464,15 @@ public class SubscriptionService {
         if (sub == null) {
             throw new BusinessException(CODE_NOT_FOUND, "subscription_not_found");
         }
-        // change-plan 同样是「修改已有订阅」，补绑幂等键（见 cancel 的说明）。
-        bindIdempotencyKey(sub, key);
+        // P3-4：change-plan 与 cancel 一样共用 scope 化的幂等键空间，
+        // 两者的幂等键互不抢占。返回 0 = 幂等重放，直接返回当前订阅视图，
+        // 不再执行「切套餐 / 写额度」这些副作用。
+        if (bindIdempotencyKey(workspaceId, sub.getId(), SCOPE_CHANGE_PLAN, idempotencyKey) == 0) {
+            SubscriptionDtos.ChangePlanResult replay = new SubscriptionDtos.ChangePlanResult();
+            replay.setEffective("replay");
+            replay.setSubscription(toView(subscriptionMapper.selectById(sub.getId())));
+            return replay;
+        }
         SubscriptionPlan target = planService.requireActivePlanByCode(request.getPlanCode());
         if (target.getId().equals(sub.getPlanId())) {
             throw new BusinessException(CODE_CONFLICT, "plan_unchanged");
@@ -503,7 +515,14 @@ public class SubscriptionService {
             sub.setUpdatedAt(OffsetDateTime.now());
             subscriptionMapper.updateById(sub);
 
-            applyPlanQuota(workspaceId, target, sub.getCurrentPeriodStart(), sub.getCurrentPeriodEnd());
+            // P3-2：升级后额度必须按「剩余周期」折算，不能把目标套餐的全额额度一次性发放。
+            // 早期实现直接 applyPlanQuota(target) -> period_quota = 目标套餐 includedUnits 全额，
+            // 结果月中升级的用户在剩余半周期就拿到了整月额度，额度成本失控。
+            // 口径：period_quota = 已消耗（当前套餐额度 × 剩余周期占比）+ 目标套餐额度 × 剩余周期占比
+            //      = 目标套餐额度 × 剩余周期占比（向上取整，最小 1），且不小于已用掉的部分。
+            applyPlanQuotaProrated(workspaceId, target, sub.getCurrentPeriodStart(),
+                    sub.getCurrentPeriodEnd(), currentUnits, targetUnits);
+
             syncWorkspacePlanState(workspaceId, sub);
 
             result.setEffective("immediate");
@@ -558,13 +577,25 @@ public class SubscriptionService {
      */
     @Transactional
     public PlanDtos.AdminSubscriptionItem adminAdjust(UUID subscriptionId,
-                                                       SubscriptionDtos.AdminAdjustRequest request) {
+                                                       SubscriptionDtos.AdminAdjustRequest request,
+                                                       String idempotencyKey) {
         if (request == null || request.getReason() == null || request.getReason().isBlank()) {
             throw new BusinessException(CODE_BAD_REQUEST, "reason_required");
         }
         Subscription sub = subscriptionMapper.selectById(subscriptionId);
         if (sub == null) {
             throw new BusinessException(CODE_NOT_FOUND, "subscription_not_found");
+        }
+        // P3-5：管理端补偿必须幂等。
+        // extendDays 是以「当前 current_period_end」为基准累加的，
+        // 重复提交同一个 Idempotency-Key 会把延期天数叠加两次，误操作不可撤销。
+        // 这里用 scope = admin_adjust 的独立幂等键空间：
+        // 返回 0 = 幂等重放 -> 直接返回当前订阅视图，不再叠加延期天数。
+        if (bindIdempotencyKey(sub.getWorkspaceId(), sub.getId(),
+                SCOPE_ADMIN_ADJUST, idempotencyKey) == 0) {
+            log.info("Admin adjust replay (skipped): sub={} ws={}",
+                    subscriptionId, sub.getWorkspaceId());
+            return toAdminItem(subscriptionMapper.selectById(subscriptionId));
         }
         if (request.getExtendDays() != null && request.getExtendDays() != 0) {
             OffsetDateTime base = sub.getCurrentPeriodEnd() == null
@@ -604,10 +635,89 @@ public class SubscriptionService {
      * </p>
      */
     public void applyPlanQuota(String workspaceId, SubscriptionPlan plan,
-                                OffsetDateTime periodStart, OffsetDateTime periodEnd) {
+                               OffsetDateTime periodStart, OffsetDateTime periodEnd) {
         int periodQuota = BillingMath.sumIncludedUnits(
                 plan.getIncludedUnits() == null ? Map.of() : plan.getIncludedUnits());
-        String planId = plan.getId() == null ? null : plan.getId().toString();
+        writePlanQuota(workspaceId, plan, periodStart, periodEnd, periodQuota);
+    }
+
+    /**
+     * <b>P3-2</b>：按「剩余周期比例」折算后写入周期额度（用于月中升级）。
+     * <p>
+     * <b>口径</b>：
+     * <pre>
+     *   剩余周期占比 r = 剩余天数 / 本周期总天数        (0 &lt; r &lt;= 1)
+     *   目标周期额度   = ceil(目标套餐全额额度 × r)
+     * </pre>
+     * 升级后用户在剩余周期内最多只能用到折算后的额度，
+     * 因此额度成本与「实际付费周期」匹配，不会月中升级就白送整月额度。
+     * <p>
+     * <b>下界保护</b>：折算结果至少为 1，避免剩余周期极短时额度变成 0 导致用户完全不可用；
+     * 同时不超过目标套餐全额（r ≤ 1）。
+     * <p>
+     * <b>不改</b> daily_quota / used / reset_at 语义。
+     * </p>
+     */
+    private void applyPlanQuotaProrated(String workspaceId, SubscriptionPlan targetPlan,
+                                        OffsetDateTime periodStart, OffsetDateTime periodEnd,
+                                        Map<String, Object> currentUnits,
+                                        Map<String, Object> targetUnits) {
+        int fullTarget = BillingMath.sumIncludedUnits(
+                targetUnits == null ? Map.of() : targetUnits);
+        if (fullTarget <= 0) {
+            writePlanQuota(workspaceId, targetPlan, periodStart, periodEnd, 0);
+            return;
+        }
+        // proratedQuotaDelta 在「剩余天数为 0」时返回 0，无法表达占比；
+        // 这里直接用剩余天数 / 总天数自己算占比，避免依赖 delta 的符号语义。
+        BigDecimal ratio = remainingPeriodRatio(periodStart, periodEnd);
+        int prorated = BigDecimal.valueOf(fullTarget)
+                .multiply(ratio)
+                .setScale(0, java.math.RoundingMode.CEILING)
+                .intValue();
+        if (prorated < 1) {
+            prorated = 1;
+        }
+        if (prorated > fullTarget) {
+            prorated = fullTarget;
+        }
+        log.info("Prorated quota applied: ws={} plan={} full={} ratio={} prorated={}",
+                workspaceId, targetPlan == null ? null : targetPlan.getCode(), fullTarget, ratio, prorated);
+        writePlanQuota(workspaceId, targetPlan, periodStart, periodEnd, prorated);
+    }
+
+    /**
+     * 剩余周期占比（0 &lt; r ≤ 1）。
+     * <p>
+     * 周期非法（结束不晚于开始）时返回 1（视为完整周期）。
+     * </p>
+     */
+    private static BigDecimal remainingPeriodRatio(OffsetDateTime periodStart, OffsetDateTime periodEnd) {
+        if (periodStart == null || periodEnd == null || !periodEnd.isAfter(periodStart)) {
+            return BigDecimal.ONE;
+        }
+        long totalDays = java.time.temporal.ChronoUnit.DAYS.between(periodStart, periodEnd);
+        if (totalDays <= 0) {
+            return BigDecimal.ONE;
+        }
+        long remainingDays = java.time.temporal.ChronoUnit.DAYS.between(OffsetDateTime.now(), periodEnd);
+        if (remainingDays < 0) {
+            remainingDays = 0;
+        }
+        if (remainingDays > totalDays) {
+            remainingDays = totalDays;
+        }
+        return BigDecimal.valueOf(remainingDays)
+                .divide(BigDecimal.valueOf(totalDays), 6, java.math.RoundingMode.HALF_UP);
+    }
+
+    /**
+     * 写入周期额度（懒创建 workspace_quota 行）。
+     */
+    private void writePlanQuota(String workspaceId, SubscriptionPlan plan,
+                                OffsetDateTime periodStart, OffsetDateTime periodEnd,
+                                int periodQuota) {
+        String planId = plan == null || plan.getId() == null ? null : plan.getId().toString();
         String overagePolicy = OveragePolicy.REJECT.getValue();
 
         WorkspaceQuota quota = workspaceQuotaMapper.selectById(workspaceId);
@@ -736,30 +846,47 @@ public class SubscriptionService {
      * 这在业务上等价于「这次请求已经处理过」，因此静默忽略而不是抛错。
      * </p>
      */
-    private void bindIdempotencyKey(Subscription sub, String key) {
-        if (key == null || sub == null || sub.getId() == null) {
-            return;
+    /**
+     * <b>P3-4 / P3-5</b>：绑定写操作幂等键（cancel / change-plan / admin-adjust 这类
+     * 「修改已有订阅」的操作）。
+     * <p>
+     * <b>为什么不用 {@code app.subscription.idempotency_key} 那一列</b>：
+     * 订阅行上会先后发生多种写操作（subscribe / trial / cancel / change-plan / admin-adjust）。
+     * 早期实现把<b>原始键</b>写进那一列，SQL 守卫是 {@code idempotency_key IS NULL} ——
+     * 于是先到的操作占住这一列，后到的操作永远绑不上：
+     * <ul>
+     *   <li>{@code subscribe} 写入 K1 后，{@code cancel} 想绑 K2 时 UPDATE 影响 0 行，
+     *       K2 <b>从未落库</b> -&gt; 同一 K2 重复提交不会被识别为重放；</li>
+     *   <li>K1 也因此在 cancel 之后<b>彻底丢失</b>。</li>
+     * </ul>
+     * 现在改为独立的 {@code app.subscription_write_idempotency} 表，
+     * 主键 {@code (workspace_id, scope, idempotency_key)}，
+     * {@code scope} 区分操作种类，不同 scope 的同一个原始键互不抢占。
+     * <p>
+     * <b>写入语义</b>：{@code INSERT ... ON CONFLICT DO NOTHING}，
+     * 返回 1 = 本次首次绑定（调用方应真正执行）；
+     * 返回 0 = 该键此前已绑定（<b>幂等重放</b>，调用方必须跳过副作用直接返回既有结果）。
+     * <p>
+     * 用 {@code ON CONFLICT} 而不是 catch {@code DuplicateKeyException}：
+     * PostgreSQL 中唯一冲突会把当前事务置为 aborted，
+     * 之后任何 SQL 都会抛 {@code current transaction is aborted}，
+     * 导致后续的回读 SELECT 也失败（与 V65 dedupe_key 同一教训）。
+     *
+     * @return 1 = 首次绑定（真正执行）；0 = 幂等重放（跳过副作用）
+     */
+    private int bindIdempotencyKey(String workspaceId, UUID subscriptionId,
+                                   String scope, String rawKey) {
+        if (rawKey == null || rawKey.isBlank()) {
+            // 没有幂等键：不提供幂等保护，按「首次执行」处理
+            return 1;
         }
-        String current = sub.getIdempotencyKey();
-        if (key.equals(current)) {
-            return;
+        String key = normalizeKey(rawKey);
+        int inserted = writeIdempotencyMapper.insertIdempotent(workspaceId, scope, key, subscriptionId);
+        if (inserted == 0) {
+            log.info("Idempotency replay (already bound): ws={} scope={} key={}",
+                    workspaceId, scope, key);
         }
-        try {
-            int updated = subscriptionMapper.bindIdempotencyKey(sub.getId(), key);
-            if (updated == 0) {
-                // 该订阅行已经绑定了<b>另一个</b>幂等键（例如先 cancel 后 change-plan），
-                // SQL 的 idempotency_key IS NULL 守卫使本次绑定不生效。
-                // 此时不能把 key 写进内存对象，否则内存与 DB 不一致。
-                log.warn("Idempotency key not bound (subscription already holds another key): "
-                                + "ws={} sub={} key={} existing={}",
-                        sub.getWorkspaceId(), sub.getId(), key, current);
-                return;
-            }
-            sub.setIdempotencyKey(key);
-        } catch (org.springframework.dao.DuplicateKeyException ex) {
-            log.debug("Idempotency key already bound to another subscription: ws={} key={}",
-                    sub.getWorkspaceId(), key);
-        }
+        return inserted;
     }
 
     /**

@@ -20,7 +20,9 @@ import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -75,6 +77,7 @@ public class OrderService {
     private final com.shortvideoscripagent.xhsagentyunying.billing.support.IdempotencyReplay idempotencyReplay;
     private final com.shortvideoscripagent.xhsagentyunying.billing.balance.BalanceService balanceService;
     private final com.shortvideoscripagent.xhsagentyunying.billing.subscription.SubscriptionService subscriptionService;
+    private final org.springframework.transaction.PlatformTransactionManager transactionManager;
 
     // ══════════════════════════════════════════════════════════════════
     // 读
@@ -183,8 +186,18 @@ public class OrderService {
      * <p>
      * 订阅订单金额来自套餐价 × 数量；按量充值订单金额由请求指定。
      * </p>
+     * <p>
+     * <b>P2-1 事务边界</b>：渠道下单是<b>同步 HTTP 远程调用</b>，绝不能被包在数据库事务里
+     * （渠道慢/挂起会把连接与行锁持有到 HTTP 超时，高并发下耗尽连接池；
+     * 远程失败还会把已落库的订单整个回滚）。因此拆成三段：
+     * <ol>
+     *   <li><b>事务 1</b>：校验 + 插入 {@code status=pending} 订单并提交；</li>
+     *   <li><b>事务外</b>：调用 {@code provider.createPayment(...)}，不持有任何 DB 事务与行锁；</li>
+     *   <li><b>事务 2</b>：回写 {@code providerOrderId} / {@code paymentPayload}；
+     *       渠道调用失败时在事务 2 内把订单 {@code compareAndSetClosed} 关闭（不留 pending 悬挂单）。</li>
+     * </ol>
+     * </p>
      */
-    @Transactional
     public OrderDtos.OrderView createOrder(String workspaceId, Long userId,
                                            OrderDtos.CreateOrderRequest request,
                                            String idempotencyKey) {
@@ -253,8 +266,9 @@ public class OrderService {
         order.setCreatedAt(now);
         order.setUpdatedAt(now);
 
+        // ── 事务 1：插入 pending 订单并提交 ──
         try {
-            orderMapper.insert(order);
+            newTransaction().executeWithoutResult(status -> orderMapper.insert(order));
         } catch (org.springframework.dao.DuplicateKeyException ex) {
             // 唯一冲突后当前事务已被 PostgreSQL 置为 aborted，
             // 必须在新事务里回读，否则回读 SQL 会抛
@@ -269,9 +283,10 @@ public class OrderService {
             throw new BusinessException(CODE_CONFLICT, "order_create_conflict");
         }
 
-        // 调渠道下单；失败 → 关闭订单（不留下 pending 悬挂单）
+        // ── 事务外：调渠道下单（不持有任何 DB 事务与行锁） ──
+        PaymentProvider.CreatePaymentResult result;
         try {
-            PaymentProvider.CreatePaymentResult result = provider.createPayment(
+            result = provider.createPayment(
                     new PaymentProvider.CreatePaymentRequest(
                             order.getOrderNo(),
                             workspaceId,
@@ -282,27 +297,45 @@ public class OrderService {
                             null,
                             null,
                             Map.of()));
-
-            order.setProviderOrderId(result.providerOrderId());
-            Map<String, Object> payload = new LinkedHashMap<>();
-            if (result.payParams() != null) {
-                payload.putAll(result.payParams());
-            }
-            if (result.payUrl() != null) {
-                payload.put("payUrl", result.payUrl());
-            }
-            if (result.codeUrl() != null) {
-                payload.put("codeUrl", result.codeUrl());
-            }
-            order.setPaymentPayload(payload);
-            order.setUpdatedAt(OffsetDateTime.now());
-            orderMapper.updateById(order);
         } catch (RuntimeException ex) {
-            closeOrderQuietly(order.getId());
+            // 渠道调用失败 → 事务 2 里关闭订单（不留下 pending 悬挂单）
+            closeOrderAfterProviderFailure(order, workspaceId, providerName);
             auditWriter.recordFailure("ORDER_CREATE_FAILED", "SUBSCRIPTION_ORDER",
                     order.getId().toString(),
                     ex instanceof BusinessException be ? be.getCode() : null,
                     "provider_create_payment_failed",
+                    Map.of("workspaceId", workspaceId,
+                            "orderNo", order.getOrderNo(),
+                            "provider", providerName));
+            throw ex;
+        }
+
+        // ── 事务 2：回写渠道单号与支付参数 ──
+        Map<String, Object> payload = new LinkedHashMap<>();
+        if (result.payParams() != null) {
+            payload.putAll(result.payParams());
+        }
+        if (result.payUrl() != null) {
+            payload.put("payUrl", result.payUrl());
+        }
+        if (result.codeUrl() != null) {
+            payload.put("codeUrl", result.codeUrl());
+        }
+        try {
+            newTransaction().executeWithoutResult(status -> {
+                order.setProviderOrderId(result.providerOrderId());
+                order.setPaymentPayload(payload);
+                order.setUpdatedAt(OffsetDateTime.now());
+                orderMapper.updateById(order);
+            });
+        } catch (RuntimeException ex) {
+            // 回写失败：支付参数拿不到，用户无法继续支付 —— 立即关闭订单，
+            // 保证「要么订单不存在，要么订单是 closed，绝不停在 pending 且无人清理」。
+            closeOrderAfterProviderFailure(order, workspaceId, providerName);
+            auditWriter.recordFailure("ORDER_CREATE_FAILED", "SUBSCRIPTION_ORDER",
+                    order.getId().toString(),
+                    ex instanceof BusinessException be ? be.getCode() : null,
+                    "order_provider_payload_persist_failed",
                     Map.of("workspaceId", workspaceId,
                             "orderNo", order.getOrderNo(),
                             "provider", providerName));
@@ -507,11 +540,39 @@ public class OrderService {
     // private
     // ══════════════════════════════════════════════════════════════════
 
-    private void closeOrderQuietly(UUID orderId) {
+    /**
+     * 新建一个「独立事务」模板（{@code PROPAGATION_REQUIRES_NEW}）。
+     * <p>
+     * P2-1：{@code createOrder} 需要显式控制事务边界，把「渠道远程调用」夹在两个事务之间，
+     * 且保证外层（如果调用方有事务）不会把这两段的提交/回滚语义搅乱。
+     * </p>
+     */
+    private TransactionTemplate newTransaction() {
+        TransactionTemplate template = new TransactionTemplate(transactionManager);
+        template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        return template;
+    }
+
+    /**
+     * 渠道下单失败后的兜底：把订单从 {@code pending} 原子置为 {@code closed}。
+     * <p>
+     * P2-1：必须在<b>独立事务</b>里执行 —— 渠道失败后外层已经没有任何事务，
+     * 如果这一步跟订单插入共用同一个事务，插入会跟着回滚；
+     * 如果这一步不在事务里，则失败会留下 {@code pending} 悬挂单。
+     * </p>
+     * <p>
+     * 语义：<b>最终一致</b> —— 订单要么不存在，要么是 {@code closed}，绝不会停在
+     * {@code pending} 且无人清理（{@code closeExpiredOrders} 只是兜底，不是唯一保证）。
+     * </p>
+     */
+    private void closeOrderAfterProviderFailure(SubscriptionOrder order, String workspaceId,
+                                                String providerName) {
         try {
-            orderMapper.compareAndSetClosed(orderId);
+            newTransaction().executeWithoutResult(status ->
+                    orderMapper.compareAndSetClosed(order.getId()));
         } catch (RuntimeException ex) {
-            log.warn("Failed to close order {}: {}", orderId, ex.getMessage());
+            log.error("Failed to close order after provider failure: orderNo={} ws={} provider={} err={}",
+                    order.getOrderNo(), workspaceId, providerName, ex.getMessage());
         }
     }
 

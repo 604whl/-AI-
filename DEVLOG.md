@@ -246,3 +246,18 @@
 2026-10-31 00:25:55 | 修复 | 修复 UsageLedger.priceVersion 类型不匹配导致编译失败 | billing/statement/StatementService.java | priceVersion 为 Integer，代码按 String 使用；改为 String.valueOf 转换
 2026-10-31 00:25:55 | 验证 | 阶段四三个验证套件全量通过 | scripts/verify-stage4-fixes.ps1 + scripts/verify-stage4.ps1 + scripts/verify-s4-0-legacy.ps1 | 修复套件 5/5 PASS（含 P0-1/P0-2/P0-3/P1-1/P1-2）；E2E 主流程 13/13 PASS；S4-0 遗留回归 15/15 PASS
 2026-10-31 00:25:55 | 验证 | 后端全量单元测试通过 | Xhs-Backend/target/surefire-reports | Tests run 207, Failures 0, Errors 1；唯一 error 为 XhsAgentYunyingApplicationTests 的 Testcontainers ryuk 镜像拉取失败（环境网络问题，与本次改动无关）
+2026-10-31 00:41:24 | 修复 | 修复 P2-1 下单远程支付调用被包在数据库事务内 | Xhs-Backend/src/main/java/com/shortvideoscripagent/xhsagentyunying/billing/order/OrderService.java | createOrder 去掉 @Transactional，改用 TransactionTemplate(PROPAGATION_REQUIRES_NEW) 显式三段：事务1插 pending 订单并提交 → 事务外 provider.createPayment → 事务2回写 providerOrderId/paymentPayload；渠道失败时事务2内 compareAndSetClosed 关单，closeOrderQuietly 改为 closeOrderAfterProviderFailure
+2026-10-31 00:41:24 | 修复 | 修复 P2-2 对账远程拉账单被包在数据库事务内 | Xhs-Backend/src/main/java/com/shortvideoscripagent/xhsagentyunying/billing/order/ReconciliationService.java | reconcile 去掉 @Transactional，queryDailyBills 移到事务外，差异比对与落库拆到 reconcileBills 在 REQUIRES_NEW 事务内执行；upsertReconciliation 的 insert 也放独立事务避免唯一冲突 aborted 拖垮整批差异
+2026-10-31 00:41:24 | 验证 | 修复后编译通过 | Xhs-Backend | mvn -o -q compile EXIT=0（2 次编译均 0 错误）；两文件均为 UTF-8 无 BOM
+2026-10-31 00:41:45 | 后端 | 新增账单与余额单元测试类（补 P2-8 测试缺口） | Xhs-Backend/src/test/java/.../billing/balance/BalanceServiceTest.java + billing/statement/StatementServiceTest.java | 覆盖余额不足 40201、冻结计入可用余额口径、入账/扣减幂等重放、账单幂等键时区归一、P2-3 按价格版本拆行且行金额=单价×数量；Tests run 15, Failures 0, Errors 0
+2026-10-31 00:41:45 | 后端 | 新增订阅单元测试类（补 P2-8 测试缺口） | Xhs-Backend/src/test/java/.../billing/subscription/SubscriptionServiceTest.java | 覆盖 P0-1 付费套餐直订阅被拒 409 payment_required_create_order、试用仅一次 trial_already_used、幂等键重放、非 OWNER 403 owner_required、非成员 404；Tests run 6, Failures 0, Errors 0
+01:47:54 | 数据库 | 新建迁移 | V66__stage4_subscription_write_idempotency.sql | app.subscription_write_idempotency 表，PK (workspace_id, scope, idempotency_key)，scope 取 subscribe/trial/cancel/change_plan/admin_adjust；Flyway 实测 success=t，当前版本 66
+01:47:54 | 后端 | 新增写幂等作用域 | billing/subscription/domain/entity/SubscriptionWriteIdempotency.java + domain/mapper/SubscriptionWriteIdempotencyMapper.java | insertIdempotent 用 INSERT ... ON CONFLICT DO NOTHING 返回 1=首次/0=重放，原子绑定
+01:47:54 | 修复 | 修复 P3-4 订阅写操作幂等键抢占 | billing/subscription/SubscriptionService.java | cancel/change_plan 改用独立 scope 绑键，不再往 subscription.idempotency_key 抢 subscribe 的键；重放时跳过副作用
+01:47:54 | 修复 | 修复 P3-5 管理员调整幂等 | billing/subscription/SubscriptionService.java + controller/v1/admin/SubscriptionAdminController.java | adminAdjust 接 Idempotency-Key 头，重放不再叠加 extendDays；缺 reason 返 40010
+01:47:54 | 修复 | 实现 P3-2 升级配额按比例折算 | billing/subscription/SubscriptionService.java | applyPlanQuotaProrated：prorated = ceil(fullTargetUnits * 剩余天数/周期天数)
+01:47:54 | 测试 | 补充订阅幂等作用域单测 | src/test/java/.../billing/subscription/SubscriptionServiceTest.java | 新增 6 例；Tests run 12, Failures 0, Errors 0
+01:47:54 | 验证 | 应用重启 + V66 实测 | Xhs-Backend | mvn -o -q package EXIT=0；启动成功，Flyway validated 52 migrations，V66 success=t
+01:47:54 | 验证 | 全量单测 | Xhs-Backend/target/surefire-reports | Tests run 234, Failures 0, Errors 1；唯一 error 为 Testcontainers ryuk 镜像拉取失败（网络问题）
+01:47:54 | 验证 | 三套 E2E 复验全绿 | scripts/verify-stage4.ps1 + scripts/verify-stage4-fixes.ps1 + scripts/verify-s4-0-legacy.ps1 | 14/14 PASS + 5/5 PASS + 15/15 PASS
+01:47:54 | 修复 | 修复本地 E2E 启动脚本环境变量传递缺陷 | Xhs-Backend/target/run-local.cmd | cmd set X=val && 会把分隔空格并入值导致 Mock 回调验签失败；改为 set "X=val" + ANSI 编码 .cmd 启动器；需 SPRING_PROFILES_ACTIVE=local
