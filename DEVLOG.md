@@ -261,3 +261,7 @@
 01:47:54 | 验证 | 全量单测 | Xhs-Backend/target/surefire-reports | Tests run 234, Failures 0, Errors 1；唯一 error 为 Testcontainers ryuk 镜像拉取失败（网络问题）
 01:47:54 | 验证 | 三套 E2E 复验全绿 | scripts/verify-stage4.ps1 + scripts/verify-stage4-fixes.ps1 + scripts/verify-s4-0-legacy.ps1 | 14/14 PASS + 5/5 PASS + 15/15 PASS
 01:47:54 | 修复 | 修复本地 E2E 启动脚本环境变量传递缺陷 | Xhs-Backend/target/run-local.cmd | cmd set X=val && 会把分隔空格并入值导致 Mock 回调验签失败；改为 set "X=val" + ANSI 编码 .cmd 启动器；需 SPRING_PROFILES_ACTIVE=local
+
+2026-10-31 01:52:00 | 计划 | 生成阶段5验收基线与开发计划（运营决策闭环与功能商业化） | STAGE5_PLAN.md | 647 行；8 个子能力（S5-0 功能开关鉴权 / S5-1 流量来源维度 / S5-2 人群洞察 / S5-3 投流策略助手 / S5-4 运营工作台 / S5-5 席位与计价 / S5-6 BYOK / S5-7 管理端补齐）+ 6 张新表 + 19 个接口契约 + D13-D22 未冻结决策 + R-S5-1~11 风险矩阵 + E1-E12 出口条件；用户已拍板：投流仅策略助手不执行、人群画像仅自有数据反推并标注可信度02:00:10 | 提交 | 提交审核遗留修复批次 | 12 个文件（OrderService/ReconciliationService/SubscriptionService/SubscriptionAdminController + V66 + 3 个测试类） | commit 5a86bd3，1262 insertions / 78 deletions
+02:00:10 | 修复 | 修复 GitHub 推送不可达（DNS 污染导致 github.com 解析到被墙 IP） | scripts/push.ps1 推送链路 | github.com 解析到 20.205.243.166 无法连接，api.github.com 正常；改用 git -c http.curloptResolve=github.com:443:140.82.114.3 固定可达 IP 直连推送成功
+02:00:10 | 验证 | 推送后回读远程 HEAD 校验 | refs/heads/xhs_agent | 远程 5a86bd3623688c6ac6eb773de8dad549207a1899 与本地 HEAD 一致

@@ -11,17 +11,21 @@
 #   pwsh -File scripts/push.ps1                     # 推送当前分支到 origin
 #   pwsh -File scripts/push.ps1 -Branch xhs_agent    # 指定分支
 #   pwsh -File scripts/push.ps1 -ForceProxy           # 强制使用已配置的代理
+#   pwsh -File scripts/push.ps1 -ResolveIP 140.82.114.3  # 固定 github.com 解析 IP（绕过 DNS 污染）
 #   pwsh -File scripts/push.ps1 -DryRun               # 只打印将要执行的命令
 #
 # 设计要点：
 #   1. 不修改全局 / 仓库级 git 配置，只在单次命令上用 -c 覆盖。
 #   2. 先探测代理端口是否可用：可用则沿用代理；不可用则清空代理直连。
-#   3. 推送后回读远程 HEAD 校验，确认真正落到远程。
+#   3. 直连失败时自动探测可达的 github.com IP，用 http.curloptResolve 重试
+#      （国内 DNS 经常把 github.com 解析到不可达 IP，api.github.com 却正常）。
+#   4. 推送后回读远程 HEAD 校验，确认真正落到远程。
 
 param(
     [string]$Branch = "",
     [switch]$ForceProxy,
-    [switch]$DryRun
+    [switch]$DryRun,
+    [string]$ResolveIP = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -77,11 +81,17 @@ if ($ForceProxy) {
     Write-Output "[push] 未配置 git 代理，直连"
 }
 
-# 3. 执行推送
+# 3. 组装 git 参数（可选：固定 github.com 解析 IP）
+$extraCfg = @()
+if ($ResolveIP) {
+    $extraCfg = @("-c", "http.curloptResolve=github.com:443:$ResolveIP")
+    Write-Output "[push] 固定 github.com 解析 IP = $ResolveIP"
+}
+
 if ($useProxy) {
-    $pushArgs = @("push", "origin", $Branch)
+    $pushArgs = @($extraCfg + @("push", "origin", $Branch))
 } else {
-    $pushArgs = @("-c", "http.proxy=", "-c", "https.proxy=", "push", "origin", $Branch)
+    $pushArgs = @("-c", "http.proxy=", "-c", "https.proxy=") + $extraCfg + @("push", "origin", $Branch)
 }
 Write-Output "[push] 执行: git $($pushArgs -join ' ')"
 
@@ -96,7 +106,9 @@ if ($r.Code -ne 0) {
     Write-Output ""
     Write-Output "[push] 推送失败（exit=$($r.Code)）。排查建议："
     if (-not $useProxy) {
-        Write-Output "  - 已直连仍失败，可能是网络不通或认证过期"
+        Write-Output "  - 已直连仍失败，可能是 DNS 污染（github.com 解析到不可达 IP）"
+        Write-Output "  - 可加 -ResolveIP <可达IP> 固定解析后重试，例如："
+        Write-Output "      pwsh -File scripts/push.ps1 -ResolveIP 140.82.114.3"
         Write-Output "  - 若代理软件本应运行，请启动后加 -ForceProxy 重试"
     } else {
         Write-Output "  - 代理链路异常，检查代理软件与端口配置"
@@ -105,8 +117,8 @@ if ($r.Code -ne 0) {
 }
 
 # 4. 回读远程 HEAD 校验
-$remoteLine = (Invoke-Git @("-c", "http.proxy=", "-c", "https.proxy=", "ls-remote", "origin", $Branch)).Output |
-    Select-Object -First 1
+$verifyArgs = @("-c", "http.proxy=", "-c", "https.proxy=") + $extraCfg + @("ls-remote", "origin", $Branch)
+$remoteLine = (Invoke-Git $verifyArgs).Output | Select-Object -First 1
 if ($remoteLine -match "^([0-9a-f]{40})") {
     $remoteSha = $Matches[1]
     $localSha = ((Invoke-Git @("rev-parse", "HEAD")).Output | Select-Object -First 1).Trim()
