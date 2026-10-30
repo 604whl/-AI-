@@ -108,10 +108,19 @@ public class AnalysisTaskHandler implements TaskHandler {
         // P0-2: 进入 handler 时先扣减配额，失败直接返回（任务不会执行）
         java.util.UUID ledgerId;
         try {
-            QuotaCheckResult consumeResult = atomicQuotaGuard.tryConsume(
+            // 幂等扣减：任务失败重试（handleFailure → scheduleRetry）与孤儿任务恢复
+            // （TaskRecoveryService）都会把同一个 taskId 重新投递给本 handler。
+            // 若每次执行都扣一次配额，同一个任务失败 N 次就会被扣 N 次费
+            // —— 实测库中已出现同一 ref_id 的 3 行 ANALYSIS 台账记录。
+            // 因此这里用 tryConsumeIdempotent：同一 (workspace_id, ref_id, 'ANALYSIS')
+            // 最多只有一笔生效扣费，重试时复用原台账行。
+            QuotaCheckResult consumeResult = atomicQuotaGuard.tryConsumeIdempotent(
                     workspaceIdStr,
                     "ANALYSIS",
-                    java.util.UUID.fromString(taskId),
+                    // 注意：taskId 形如 ana_xxx，不是合法 UUID。
+                    // 直接 UUID.fromString 会在调用前抛异常 → 配额扣减被整段跳过 →
+                    // 分析用量从未写入台账、从未计费。必须用 QuotaRefId 做确定性映射。
+                    com.shortvideoscripagent.xhsagentyunying.quota.QuotaRefId.resolve(taskId),
                     "task-start"
             );
             if (!consumeResult.isOk()) {

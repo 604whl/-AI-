@@ -8,6 +8,15 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @MapperScan({
         "com.shortvideoscripagent.xhsagentyunying.domain.mapper",
         "com.shortvideoscripagent.xhsagentyunying.quota.domain.mapper",
+        // S4-1 套餐 / 订阅 Mapper
+        "com.shortvideoscripagent.xhsagentyunying.billing.plan.domain.mapper",
+        "com.shortvideoscripagent.xhsagentyunying.billing.subscription.domain.mapper",
+        // S4-2 订单 / 支付事件 / 对账 Mapper
+        "com.shortvideoscripagent.xhsagentyunying.billing.order.domain.mapper",
+        // S4-3 价格表 / 余额 / 账单 Mapper
+        "com.shortvideoscripagent.xhsagentyunying.billing.pricing.domain.mapper",
+        "com.shortvideoscripagent.xhsagentyunying.billing.balance.domain.mapper",
+        "com.shortvideoscripagent.xhsagentyunying.billing.statement.domain.mapper",
         "com.shortvideoscripagent.xhsagentyunying.freeze"
 })
 @EnableScheduling

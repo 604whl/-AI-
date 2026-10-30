@@ -30,6 +30,16 @@ public class Workspace {
 
     private String status;
 
+    /**
+     * S4-1：当前订阅状态（冗余自 app.subscription），便于列表查询与鉴权。
+     */
+    private String subscriptionStatus;
+
+    /**
+     * S4-1：当前套餐编码（冗余自 app.subscription），便于列表查询与鉴权。
+     */
+    private String planCode;
+
     private OffsetDateTime createdAt;
 
     private OffsetDateTime updatedAt;

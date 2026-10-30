@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * 审计写入服务。
@@ -61,6 +62,8 @@ public class AuditWriter {
                        String errorMessage) {
         try {
             AuditEvent event = new AuditEvent();
+            // UUID 主键不会被 IdType.ASSIGN_UUID 自动赋值，必须手动赋值
+            event.setId(UUID.randomUUID());
             event.setWorkspaceId(WorkspaceContext.getWorkspaceId());
             Long uid = RequestContext.getUserId();
             event.setActorUserId(uid == null ? null : String.valueOf(uid));
@@ -84,8 +87,10 @@ public class AuditWriter {
             auditEventMapper.insert(event);
             metrics.auditWritten(action);
         } catch (Exception ex) {
-            log.warn("Failed to write audit event action={} resource={}: {}",
-                    action, resourceType, ex.getMessage());
+            // 审计是 best-effort，不向上抛；但必须留下可检索的 ERROR 记录，
+            // 否则「审计整体失效」这类问题会被静默吞掉、无从发现。
+            log.error("Failed to write audit event action={} resourceType={} resourceId={}",
+                    action, resourceType, resourceId, ex);
         }
     }
 }

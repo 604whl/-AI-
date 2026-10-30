@@ -33,6 +33,22 @@ public class AuthInterceptor implements HandlerInterceptor {
             "/v1/health"
     );
 
+    /**
+     * 公开只读路径<b>前缀</b>。
+     * <p>
+     * S4-1 套餐目录：阶段四接口契约规定 {@code GET /api/v1/plans} 与
+     * {@code GET /api/v1/plans/{code}} 的权限是「全部」。
+     * 未登录用户也要能在定价页看到套餐与价格，否则无法引导注册。
+     * </p>
+     * <p>
+     * 用前缀而非枚举具体 code，避免新增套餐（code 是数据驱动的）时
+     * 忘记同步白名单，导致套餐页对新套餐 401。
+     * </p>
+     */
+    private static final Set<String> PUBLIC_PATH_PREFIXES = Set.of(
+            "/v1/plans"
+    );
+
     private final AuthService authService;
     private final ApiKeyService apiKeyService;
     private final UserMapper userMapper;
@@ -120,7 +136,16 @@ public class AuthInterceptor implements HandlerInterceptor {
     }
 
     private boolean isPublicPath(String path) {
-        return PUBLIC_PATHS.contains(path);
+        if (PUBLIC_PATHS.contains(path)) {
+            return true;
+        }
+        for (String prefix : PUBLIC_PATH_PREFIXES) {
+            // 精确匹配或前缀 + "/"（避免 "/v1/plansfoo" 之类被误判为公开）
+            if (path.equals(prefix) || path.startsWith(prefix + "/")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isSwaggerPath(String path) {

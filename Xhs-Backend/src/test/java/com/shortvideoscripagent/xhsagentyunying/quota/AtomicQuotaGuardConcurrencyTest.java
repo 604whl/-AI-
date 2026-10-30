@@ -1,6 +1,7 @@
 package com.shortvideoscripagent.xhsagentyunying.quota;
 
 import com.shortvideoscripagent.xhsagentyunying.domain.entity.Workspace;
+import com.shortvideoscripagent.xhsagentyunying.billing.pricing.PricingService;
 import com.shortvideoscripagent.xhsagentyunying.domain.mapper.WorkspaceMapper;
 import com.shortvideoscripagent.xhsagentyunying.quota.domain.entity.UsageLedger;
 import com.shortvideoscripagent.xhsagentyunying.quota.domain.entity.WorkspaceQuota;
@@ -41,6 +42,8 @@ class AtomicQuotaGuardConcurrencyTest {
     private WorkspaceMapper workspaceMapper;
     @Mock
     private QuotaProperties quotaProperties;
+    @Mock
+    private PricingService pricingService;
 
     private AtomicQuotaGuard guard;
     private String workspaceId;
@@ -52,11 +55,14 @@ class AtomicQuotaGuardConcurrencyTest {
                 workspaceQuotaMapper,
                 usageLedgerMapper,
                 workspaceMapper,
-                quotaProperties
+                quotaProperties,
+                pricingService
         );
         workspaceId = UUID.randomUUID().toString();
         when(quotaProperties.getDefaultDailyQuota()).thenReturn(DAILY_QUOTA);
         when(quotaProperties.isLazyInitExpired()).thenReturn(false);
+        // 价格表无数据 → 单价 0，计价不阻断扣费
+        when(pricingService.resolvePrice(any(), any())).thenReturn(null);
     }
 
     @Test

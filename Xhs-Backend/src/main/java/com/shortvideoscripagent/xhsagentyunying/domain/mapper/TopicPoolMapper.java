@@ -49,12 +49,19 @@ public interface TopicPoolMapper extends BaseMapper<TopicPool> {
     /**
      * Find an existing topic by dedupe key (workspace + source + normalized title).
      * Used in create() dedup check. Returns null if not found.
+     * <p>
+     * <b>注意</b>：这里用 {@code LOWER(TRIM(title))} 而非 {@code normalized_title} 列。
+     * {@code app.topic_pool} 上<b>没有</b> normalized_title 触发器（对比 app.hot_topic 有），
+     * 该列只在 V40 迁移时对存量数据回填过一次，之后所有 INSERT 都写 NULL；
+     * 若按列比较，去重查询永远查不到已有行，重复导入会不断插入重复选题。
+     * {@code existsByNormalizedTitleAndSource} 同理，已经使用 title 的 LOWER+TRIM 表达式。
+     * </p>
      */
     @Select("""
             SELECT * FROM app.topic_pool
             WHERE workspace_id = #{workspaceId}
               AND LOWER(TRIM(source)) = LOWER(TRIM(#{source}))
-              AND LOWER(TRIM(normalized_title)) = LOWER(TRIM(#{normalizedTitle}))
+              AND LOWER(TRIM(title)) = LOWER(TRIM(#{normalizedTitle}))
             LIMIT 1
             """)
     TopicPool selectByDedupeKey(

@@ -4,3 +4,11 @@ backend-*.log
 frontend.log
 compile.log
 Xhs-Backend/data/uploads/
+
+# 本地运行/验证产物（应用启动日志、一次性脚本输出）
+Xhs-Backend/s*.out
+Xhs-Backend/s*.err
+scripts/_*.py
+
+# 一次性编码扫描报告
+_enc_report.txt

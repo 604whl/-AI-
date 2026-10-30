@@ -12,6 +12,7 @@ import com.shortvideoscripagent.xhsagentyunying.domain.mapper.WorkspaceMapper;
 import com.shortvideoscripagent.xhsagentyunying.quota.AtomicQuotaGuard;
 import com.shortvideoscripagent.xhsagentyunying.quota.QuotaCheckResult;
 import com.shortvideoscripagent.xhsagentyunying.quota.QuotaExceededException;
+import com.shortvideoscripagent.xhsagentyunying.quota.QuotaRefId;
 import com.shortvideoscripagent.xhsagentyunying.quota.domain.entity.WorkspaceQuota;
 import com.shortvideoscripagent.xhsagentyunying.workspace.WorkspaceGuards;
 import lombok.RequiredArgsConstructor;
@@ -71,15 +72,21 @@ public class UserQuotaService {
     @Transactional
     public void consumeAnalysisQuota(Long userId, String taskId) {
         String workspaceId = WorkspaceGuards.requireCurrentWorkspaceId();
-        UUID refId = taskId != null ? UUID.fromString(taskId) : null;
+        // taskId 形如 ana_xxx，不是合法 UUID；必须用 QuotaRefId 映射，
+        // 否则 UUID.fromString 会在 tryConsume 之前抛异常 → 配额扣减被跳过。
+        UUID refId = QuotaRefId.resolve(taskId);
 
-        QuotaCheckResult result = atomicQuotaGuard.tryConsume(workspaceId, ACTION_ANALYSIS, refId, "task-created");
+        // 分析是「一次任务扣一次费」→ 用幂等版本。
+        // 与 AnalysisTaskHandler 的扣费共用 (workspace_id, ref_id, 'ANALYSIS') 去重键，
+        // 因此「任务创建时扣 + 任务开始执行时扣」这两条路径只会实际扣 1 次。
+        QuotaCheckResult result = atomicQuotaGuard.tryConsumeIdempotent(
+                workspaceId, ACTION_ANALYSIS, refId, "task-created");
         if (!result.isOk()) {
             throw new QuotaExceededException();
         }
 
         // 兼容旧 usage_log
-        writeLegacyUsageLog(userId, workspaceId, ACTION_ANALYSIS, taskId);
+        writeLegacyUsageLog(userId, workspaceId, ACTION_ANALYSIS, taskId, result.ledgerId());
     }
 
     public int remainingAgentMessageQuota(Long userId) {
@@ -97,7 +104,7 @@ public class UserQuotaService {
         if (!result.isOk()) {
             throw new BusinessException(CODE_AGENT_QUOTA_EXCEEDED, "agent_quota_exceeded");
         }
-        writeLegacyUsageLog(userId, workspaceId, ACTION_AGENT_MESSAGE, sessionId);
+        writeLegacyUsageLog(userId, workspaceId, ACTION_AGENT_MESSAGE, sessionId, result.ledgerId());
     }
 
     public int remainingWebSearchQuota(Long userId) {
@@ -120,7 +127,7 @@ public class UserQuotaService {
         if (!result.isOk()) {
             throw new BusinessException(CODE_BODY_QUOTA_EXCEEDED, "body_quota_exceeded");
         }
-        writeLegacyUsageLog(userId, workspaceId, ACTION_BODY_GENERATION, taskId);
+        writeLegacyUsageLog(userId, workspaceId, ACTION_BODY_GENERATION, taskId, result.ledgerId());
     }
 
     @Transactional
@@ -132,7 +139,7 @@ public class UserQuotaService {
         if (!result.isOk()) {
             throw new BusinessException(CODE_WEB_SEARCH_QUOTA_EXCEEDED, "web_search_quota_exceeded");
         }
-        writeLegacyUsageLog(userId, workspaceId, ACTION_WEB_SEARCH, sessionId);
+        writeLegacyUsageLog(userId, workspaceId, ACTION_WEB_SEARCH, sessionId, result.ledgerId());
     }
 
     // ========== 新 API ==========
@@ -174,28 +181,30 @@ public class UserQuotaService {
      * 导致整个 Agent 对话链路 500。
      * <p>
      * refId 只用于台账关联，解析失败不影响配额扣减本身，因此降级为 {@code null}。
+     * </p>
      */
     private static UUID parseUuidOrNull(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            return UUID.fromString(value);
-        } catch (IllegalArgumentException ex) {
-            return null;
-        }
+        return QuotaRefId.resolve(value);
     }
 
     /**
      * 兼容旧 usage_log 表写入。
+     * <p>
+     * <b>{@code originalLogId} 必须写入台账行 id</b>：冲正流程靠它反查本行并打退费标记。
+     * 该列是 {@code UUID} 类型，与 {@code app.usage_ledger.id} 对齐；
+     * 早期实现把 {@code usage_log.id}（{@code BIGSERIAL}）误当台账 id 使用，
+     * 冲正时会因类型不匹配让整个事务 aborted —— 失败任务仍然被计费。
+     * </p>
      */
-    private void writeLegacyUsageLog(Long userId, String workspaceId, String action, String taskId) {
+    private void writeLegacyUsageLog(Long userId, String workspaceId, String action,
+                                     String taskId, UUID ledgerId) {
         try {
             UsageLog log = new UsageLog();
             log.setUserId(userId);
             log.setWorkspaceId(workspaceId);
             log.setAction(action);
             log.setTaskId(taskId);
+            log.setOriginalLogId(ledgerId);
             log.setCreatedAt(OffsetDateTime.now());
             usageLogMapper.insert(log);
         } catch (Exception ex) {

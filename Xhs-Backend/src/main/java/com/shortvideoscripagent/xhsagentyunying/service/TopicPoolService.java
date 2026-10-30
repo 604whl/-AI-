@@ -20,6 +20,15 @@ public interface TopicPoolService {
     record ToAssetResponse(java.util.UUID assetId, java.util.UUID contentAssetVersionId) {}
 
     /**
+     * 内部 / 批量创建入口（CSV 导入等）。
+     * <p>
+     * 与 {@link #create} 的差异：命中去重（同 workspace + source + 归一化标题）时返回 {@code null}
+     * 表示「跳过」，不抛冲突异常，便于批量导入逐行统计。
+     * </p>
+     */
+    TopicDto createInternal(String workspaceId, Long userId, TopicCreateRequest req);
+
+    /**
      * Bulk import topics from AI search results with deduplication.
      *
      * @param workspaceId workspace context

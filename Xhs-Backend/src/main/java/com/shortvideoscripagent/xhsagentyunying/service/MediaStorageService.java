@@ -9,9 +9,11 @@ import com.shortvideoscripagent.xhsagentyunying.dto.media.MediaUploadResponse;
 import com.shortvideoscripagent.xhsagentyunying.infra.upload.FileValidator;
 import io.minio.BucketExistsArgs;
 import io.minio.GetObjectArgs;
+import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import io.minio.http.Method;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -38,6 +40,8 @@ public class MediaStorageService {
     private static final long MAX_VIDEO_BYTES = 200L * 1024 * 1024;
     private static final int THUMBNAIL_WIDTH = 320;
     private static final int THUMBNAIL_HEIGHT = 180;
+    /** L2：预签名 URL 有效期（秒）= 5 分钟 */
+    private static final int PRESIGNED_EXPIRY_SECONDS = 300;
 
     private static final Set<String> IMAGE_TYPES = Set.of("image/jpeg", "image/png", "image/webp", "image/gif");
     private static final Set<String> VIDEO_TYPES = Set.of("video/mp4", "video/webm", "video/quicktime");
@@ -139,10 +143,7 @@ public class MediaStorageService {
 
     private void uploadToMinio(String objectKey, MultipartFile file) throws Exception {
         var minio = storageProperties.getMinio();
-        MinioClient client = MinioClient.builder()
-                .endpoint(minio.getEndpoint())
-                .credentials(minio.getAccessKey(), minio.getSecretKey())
-                .build();
+        MinioClient client = minioClient();
         boolean exists = client.bucketExists(BucketExistsArgs.builder().bucket(minio.getBucket()).build());
         if (!exists) client.makeBucket(MakeBucketArgs.builder().bucket(minio.getBucket()).build());
         try (InputStream in = file.getInputStream()) {
@@ -206,16 +207,42 @@ public class MediaStorageService {
 
     private void uploadThumbnailToMinio(String thumbKey, byte[] data) throws Exception {
         var minio = storageProperties.getMinio();
-        MinioClient client = MinioClient.builder()
-                .endpoint(minio.getEndpoint())
-                .credentials(minio.getAccessKey(), minio.getSecretKey())
-                .build();
+        MinioClient client = minioClient();
         ByteArrayInputStream in = new ByteArrayInputStream(data);
         client.putObject(PutObjectArgs.builder()
                 .bucket(minio.getBucket()).object(thumbKey)
                 .stream(in, data.length, -1)
                 .contentType("image/jpeg")
                 .build());
+    }
+
+    /** 统一构建 MinioClient（复用单例式构造，避免重复创建连接资源）。 */
+    private MinioClient minioClient() {
+        var minio = storageProperties.getMinio();
+        return MinioClient.builder()
+                .endpoint(minio.getEndpoint())
+                .credentials(minio.getAccessKey(), minio.getSecretKey())
+                .build();
+    }
+
+    /**
+     * L2：生成 5 分钟有效的预签名下载 URL（MinIO 私有桶语义）。
+     * <p>
+     * 生成失败时降级返回 null，由调用方回退到 baseUrl 拼接，不中断上传流程。
+     * </p>
+     */
+    private String presignedUrl(String objectKey) {
+        try {
+            return minioClient().getPresignedObjectUrl(GetPresignedObjectUrlArgs.builder()
+                    .bucket(storageProperties.getMinio().getBucket())
+                    .object(objectKey)
+                    .method(Method.GET)
+                    .expiry(PRESIGNED_EXPIRY_SECONDS)
+                    .build());
+        } catch (Exception e) {
+            log.warn("Presigned URL generation failed for key={}: {}", objectKey, e.getMessage());
+            return null;
+        }
     }
 
     private int[] readImageDimensions(MultipartFile file) {
@@ -246,8 +273,21 @@ public class MediaStorageService {
 
     private MediaUploadResponse buildResponse(MediaAsset ma) {
         String baseUrl = storageProperties.getLocal().getPublicBaseUrl().replace("/files/cover", "/files/media");
-        String url = baseUrl + "/" + ma.getObjectKey();
-        String thumbUrl = ma.getThumbnailKey() != null ? baseUrl + "/" + ma.getThumbnailKey() : null;
+        boolean isMinio = "minio".equalsIgnoreCase(storageProperties.getType());
+
+        // L2：MinIO 私有桶 → 5 分钟预签名 URL；生成失败回退到 baseUrl 拼接
+        String url = isMinio ? presignedUrl(ma.getObjectKey()) : null;
+        if (url == null) {
+            url = baseUrl + "/" + ma.getObjectKey();
+        }
+
+        String thumbUrl = null;
+        if (ma.getThumbnailKey() != null) {
+            thumbUrl = isMinio ? presignedUrl(ma.getThumbnailKey()) : null;
+            if (thumbUrl == null) {
+                thumbUrl = baseUrl + "/" + ma.getThumbnailKey();
+            }
+        }
         return MediaUploadResponse.builder()
                 .id(ma.getId())
                 .workspaceId(ma.getWorkspaceId())

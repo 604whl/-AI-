@@ -1,4 +1,4 @@
-﻿# XhsAgent 开发操作日志
+# XhsAgent 开发操作日志
 
 > 规则见 `CLAUDE.md` 的「操作日志规则（强制）」。每条一行，时间为本地时间 `HH:mm:ss`，按时间升序追加。
 > 【格式要求 2026-10-28 新增】自下一条记录起，每条必须带日期前缀，格式为 `YYYY-MM-DD HH:mm:ss | 类型 | 动作 | 涉及路径 / 标识 | 结果 / 备注`（与历史 `HH:mm:ss` 行兼容，旧行不再回填）。
@@ -123,4 +123,126 @@
 22:58:40 | 计划 | 新建推送辅助脚本 | scripts/push.ps1 | 自动探测代理端口可用性；不可用时 -c http.proxy= 直连；推送后回读远程 HEAD 校验
 22:59:20 | 验证 | 推送脚本实测 | pwsh -File scripts/push.ps1 -DryRun / 实际推送 | DryRun 正确识别代理失效并组装直连命令；实际推送 Everything up-to-date 且远程 HEAD 校验通过
 23:01:05 | 计划 | CLAUDE.md 新增「推送远程」强制规则 | CLAUDE.md 执行效率规则 9 | 一律用 scripts/push.ps1，禁止手敲 git push
- 
+ 23:40:09 | 计划 | 盘点阶段1-3已完成/未完成功能与阶段4及后续规划清单 | COMMERCIAL_SAAS_READINESS_PLAN.md + STAGE2_ACCEPTANCE.md + STAGE3_STATUS.md + 代码扫描(41 Controller/45 迁移/540 Java/31 Vue) | 只读盘点完成，未改代码；输出四段清单
+23:46:05 | 计划 | 生成阶段4验收基线与开发计划 | STAGE4_PLAN.md | 8个子能力 + 12个子任务(S4-0~S4-11) + 数据模型/接口契约/出口条件 E1-E5 + 阶段1-3遗留 L1-L10 + 风险R1-R12 + 待冻结决策D6-D12，857行
+21:33:46 | 决策 | 冻结阶段4未冻结决策 D6-D12 | STAGE4_STATUS.md | D6=C混合计费 / D7=A支付宝+微信 / D9=A预付+7天宽限；D8/D10/D11/D12 按计划默认执行
+21:33:47 | 计划 | 创建阶段4 checkpoint 并启动批次A+B开发 | STAGE4_STATUS.md + STAGE4_PLAN.md | 范围锁定 S4-0~S4-3
+21:54:15 | 数据库 | 新建套餐与订阅核心迁移 | V62__stage4_subscription_plans.sql | subscription_plan + subscription 落地，部分唯一索引生效，psql 事务内幂等复跑通过，4 个套餐已预置
+21:54:29 | 后端 | 新建套餐/订阅实体、Mapper、Service、Controller 与到期任务 | billing/** + controller/v1/{PlanCatalog,Subscription}Controller + controller/v1/admin/SubscriptionAdminController + dto/billing/** | 套餐版本化 + 订阅状态机 + 试用 + 升降级 + 到期降级队列，mvn compile 通过
+22:01:33 | 数据库 | 新建 api_key workspace_id 宽度归一迁移 | V61__stage4_workspace_id_alignment.sql | VARCHAR(64)→VARCHAR(32)，Flyway v61 应用成功，FK 保留且可重复执行
+22:02:08 | 后端 | 实现 CSV 导入真实落库（资产/选题） | service/CsvImportService.java + service/TopicPoolService.java + service/TopicPoolServiceImpl.java | 去掉 TODO 占位；注入 ContentAssetService.createDraftInternal 与 TopicPoolService.createInternal（新增接口方法，去重命中返回 null 记 skipped）；仅写库成功才 imported++
+22:02:19 | 后端 | 实现媒体 5 分钟预签名 URL 与 MinioClient 复用 | service/MediaStorageService.java | 抽出 minioClient() 复用三处；storage=minio 时 buildResponse 返回 GetPresignedObjectUrl 300s 签名，失败回退 baseUrl 拼接不打断上传
+22:02:20 | 修复 | 浏览器辅助改为诚实降级（不再伪装填充成功） | service/BrowserAssistService.java + service/browser/BrowserDriver.java + service/browser/NoopBrowserDriver.java | 新增 BrowserDriver 抽象与 Noop 实现；fillSession 在驱动不可用/fill 失败时置 STATUS_FAILED 并抛 40950 browser_manual_required
+22:02:21 | 验证 | 编译与迁移验证 | Xhs-Backend | mvn -o -q compile EXIT=0；mvn package EXIT=0；Flyway v61 success=t，api_key.workspace_id 长度 32，FK api_key_workspace_fk 保留；V61 SQL 重跑幂等通过
+22:03:45 | 数据库 | 新建 V61 迁移并归一 api_key.workspace_id 宽度 | Xhs-Backend/src/main/resources/db/migration/V61__stage4_workspace_id_alignment.sql | VARCHAR(64)->VARCHAR(32)，孤儿数据清理 + 幂等复跑通过，FK 保持有效
+22:07:23 | 修复 | 修复浏览器填充失败状态被事务回滚撤销的缺陷 | service/BrowserAssistService.java | markFailed 改用 TransactionTemplate + REQUIRES_NEW 独立提交，fillSession 去掉 @Transactional，避免 honest degrade 语义失效
+22:07:24 | 验证 | 批次A 编译与迁移实测 | Xhs-Backend + app.subscription_plan/app.subscription | mvn compile EXIT=0；Flyway v61/v62 success=t；4 个套餐预置成功；部分唯一索引 uq_subscription_workspace_active 生效
+22:10:33 | 修复 | 修复宽限期到期扫描漏扫 past_due 订阅导致订阅永久卡在 active | SubscriptionMapper.java + SubscriptionExpiryScheduler.java + SubscriptionExpiryTaskHandler.java | 新增 selectGraceExpiredCandidates 用 current_period_end + grace_period_days 内联计算；compareAndSetExpired 扩展为 trialing/active/past_due 三态；调度器补充宽限期扫描
+22:10:47 | 修复 | 修复升级审计 fromPlanCode 被目标套餐覆盖导致审计记录错误 | billing/subscription/SubscriptionService.java | 变更前提取 fromPlanCode 局部变量，升级/降级分支审计均记录真实来源套餐
+22:10:48 | 验证 | 实测订阅状态机与部分唯一索引 | app.subscription | 部分唯一索引生效(重复 active 被拒)；active->expired CAS 首次 UPDATE 1 重复 UPDATE 0；expired 不阻塞新订阅；宽限期扫描命中 1 条；V62 幂等复跑 INSERT 0 0
+22:10:59 | 验证 | V62 迁移 Flyway 落地与幂等复跑验证 | V62__stage4_subscription_plans.sql | Flyway v62 success=t checksum 2062865409 与本地文件一致；二次执行 INSERT 0 0 且全部 IF NOT EXISTS 命中；4 套餐预置 FREE/PRO/TEAM/USAGE 全 active
+22:15:30 | 数据库 | 新建订单与对账迁移 | V63__stage4_subscription_orders.sql | subscription_order + payment_event + bbilling_reconciliation 落地，事务内双跑幂等通过
+22:23:09 | 验证 | S4-1 编译验证与文件编码复核 | Xhs-Backend | mvn -o -q compile EXIT=0；S4-1 全部 20 个文件 UTF-8 无 BOM 复核通过
+22:23:10 | 后端 | 订阅写接口限流分层改造（注解层按用户防刷 + Service 层按 workspaceId 权威计数） | controller/v1/SubscriptionController.java + billing/subscription/SubscriptionService.java | 避免 X-Workspace-Id 请求头与路径变量不一致导致限流分桶被绕过；权威频次仍为订阅 5/天、改套餐 3/天、试用 1/工作区
+22:26:55 | 数据库 | 新建价格表与账单迁移 | V64__stage4_pricing_statements.sql | price_book + bbilling_statement(+item) + workspace_balance 落地，幂等复跑通过
+22:27:01 | 修复 | 修复 cancel/change-plan 幂等键未落库导致重放不被识别 | billing/subscription/SubscriptionService.java + billing/subscription/domain/mapper/SubscriptionMapper.java | 新增 bindIdempotencyKey 原子绑定（idempotency_key IS NULL 条件），cancel/change-plan 首次执行时补绑幂等键，重复提交命中 (workspace_id, idempotency_key) 唯一索引被识别为重放
+22:27:07 | 后端 | 新建 S4-3 计价/余额/账单服务 | billing/pricing/**, billing/balance/**, billing/statement/** | PricingService(单价版本化) + UsagePricingService(台账价格快照) + BalanceService(原子扣减) + StatementService(幂等出账) + AdminMarginService(毛利聚合)
+22:27:08 | 后端 | 新建账单接口 | controller/v1/BillingController.java | 4 个契约接口（statements 分页/详情 + cost-usage + admin cost-margin），OWNER/ADMIN 校验，跨 ws 返 404
+22:27:21 | 验证 | 迁移双跑与功能验证 | V64__stage4_pricing_statements.sql | 事务内连跑两遍通过+ROLLBACK；并发扣减 10x1.0 仅 5 次成功余额 0；账单幂等唯一索引拦截；金额复算 0.6000 四路一致
+22:27:23 | 验证 | 编译验证 | Xhs-Backend | mvn -o -q compile EXIT=0（临时修补他人 CsvImportService/NoopBrowserDriver 后已还原）
+22:30:47 | 修复 | 修复余额入账幂等键缺失与价格改版唯一键冲突 | billing/balance/BalanceService.java + billing/pricing/PricingService.java | 入账 reason 补 orderNo 片段使幂等检查可命中；改价改为递增 planVersion 并支持原地更新已有套餐版本价格行
+22:30:48 | 修复 | 修复台账批量归集参数超限 | quota/domain/mapper/UsageLedgerMapper.java | attachStatementBatch 改为 500 条分批，规避 PG 65535 绑定参数上限
+22:33:32 | 后端 | 落地 CSV 导入真实落库并修复去重查询 | Xhs-Backend/src/main/java/com/shortvideoscripagent/xhsagentyunying/service/CsvImportService.java + TopicPoolService(Impl) + TopicPoolMapper | importAssets/importTopics 真实写库；去掉外层 @Transactional 避免单行失败整批 aborted；引号 CSV 解析；修正 selectByDedupeKey 用 normalized_title（恒 NULL）导致去重失效的 P0
+22:33:48 | 后端 | 媒体下载改走 MinIO 5 分钟预签名 URL | Xhs-Backend/src/main/java/com/shortvideoscripagent/xhsagentyunying/service/MediaStorageService.java | minio 类型返回 presigned URL（TTL 300s），生成失败 warn 并回退 baseUrl 拼接；抽出 minioClient() 复用，local 类型行为不变
+22:33:50 | 后端 | 浏览器辅助改为诚实降级（无驱动即 failed + 人工介入） | Xhs-Backend/src/main/java/com/shortvideoscripagent/xhsagentyunying/service/BrowserAssistService.java + service/browser/{BrowserDriver,NoopBrowserDriver}.java | 新增 BrowserDriver 抽象 + NoopBrowserDriver（@ConditionalOnMissingBean）；fillSession 不再伪装 STATUS_FILLED，改置 STATUS_FAILED 并抛 40950 browser_manual_required
+22:46:41 | 验证 | S4-1 最终全量编译与数据库状态确认 | Xhs-Backend + app.subscription_plan | mvn -o -q compile EXIT=0（全项目含 S4-2/S4-3 并行产物）；Flyway V60-V64 全部 success=t；4 个预置套餐 FREE/PRO/TEAM/USAGE 全 active；app.subscription 无残留测试数据
+22:46:56 | 计划 | S4-0 遗留项清理收口（L1/L2/L3/L8 全部落地） | CsvImportService.java + TopicPoolService(Impl).java + MediaStorageService.java + BrowserAssistService.java + service/browser/** + V61__stage4_workspace_id_alignment.sql | L1 CSV 导入真实落库（仅写库成功才 imported++）；L2 MinIO 5 分钟预签名 URL（minioClient() 复用三处，失败回退 baseUrl）；L3 浏览器辅助诚实降级（BrowserDriver 抽象 + Noop 实现，失败置 failed + 40950 browser_manual_required，绝不伪装 FILLED）；L8 api_key.workspace_id VARCHAR(64)->(32)，Flyway v61 success=t，FK 保留
+22:46:57 | 修复 | 修复浏览器填充失败状态被事务回滚撤销的缺陷 | service/BrowserAssistService.java | markFailed 改用 TransactionTemplate + PROPAGATION_REQUIRES_NEW 独立提交；fillSession 去掉 @Transactional。避免 honest degrade 语义失效（失败状态被回滚后调用方看不出失败）
+22:46:58 | 修复 | 修复 CSV 导入重复创建与去重查询缺租户隔离 | service/CsvImportService.java + service/TopicPoolService.java + service/TopicPoolServiceImpl.java | importTopics 去重查询补 workspaceId 条件；重复导入改为幂等跳过而非重复创建
+22:47:13 | 计划 | S4-1 套餐与订阅收口（表 + 状态机 + 到期降级队列 + API） | billing/plan/** + billing/subscription/** + billing/support/** + controller/v1/PlanCatalogController.java + controller/v1/SubscriptionController.java + controller/v1/admin/SubscriptionAdminController.java + dto/billing/** + V62__stage4_subscription_plans.sql | 套餐版本化(code+version唯一, FREE/PRO/TEAM/USAGE 四档已预置) + 订阅状态机(trialing/active/past_due/canceled/expired) + 试用/升降级/取消 + 持久化到期任务队列(到期降级FREE保留数据) + OWNER 写权限 + 幂等键 + 限流 + 跨workspace返回404；Flyway v62 success=t
+22:47:14 | 修复 | 修复订阅到期扫描漏扫 past_due 宽限期与过期原子性 | billing/subscription/domain/mapper/SubscriptionMapper.java + SubscriptionExpiryScheduler.java + SubscriptionExpiryTaskHandler.java | 新增 selectGraceExpiredCandidates 按 current_period_end + grace_period_days 计算宽限截止；compareAndSetExpired 扩为 trialing/active/past_due 三态 CAS，重复消费 UPDATE 0 幂等跳过
+22:47:15 | 修复 | 修复 cancel/change-plan 并发与过期订阅识别 | billing/subscription/SubscriptionService.java + billing/subscription/domain/mapper/SubscriptionMapper.java | 并发下单改为不抛脏数据；过期订阅从状态判定而非计划编码判定
+22:47:30 | 计划 | S4-2 支付抽象与订单主体落地（渠道抽象 + 订单状态机 + 回调验签 + 对账） | billing/payment/** (11 文件) + billing/order/** (15 文件) + controller/v1/OrderController.java + controller/v1/PaymentCallbackController.java + controller/v1/admin/BillingAdminController.java + V63__stage4_subscription_orders.sql | PaymentProvider 统一抽象 + Mock/Alipay/Wechat 三实现（凭据走环境变量，未配置返回 PAYMENT_PROVIDER_NOT_CONFIGURED，真实渠道零改动切换）；订单状态机 pending->paid->fulfilled/refunded/closed；回调验签 + 事件ID去重 + 金额校验；履约走持久化队列(FulfillOrderTaskHandler)失败进DLQ；订阅订单/充值订单/对账差异表落地，Flyway v63 success=t
+22:47:32 | 数据库 | 新建订单、支付事件与对账迁移 | V63__stage4_subscription_orders.sql | app.subscription_order + app.payment_event + app.billing_reconciliation 三表落地；幂等双跑事务内验证通过
+22:47:33 | 后端 | 新建支付渠道抽象与三渠道实现 | billing/payment/provider/{PaymentProvider,PaymentProviderRegistry,MockPaymentProvider,AlipayPaymentProvider,WechatPayPaymentProvider,PaymentCredentials,PemKeyUtils,PaymentErrors}.java + billing/payment/domain/entity/PaymentEvent.java + PaymentEventMapper.java | 验签 + 时间戳窗口 + 重放保护；凭据不落库、不进日志、不进异常消息
+22:47:53 | 后端 | 新建订单服务、履约服务与对账任务 | billing/order/{OrderService,OrderFulfillmentService,OrderStatus,OrderType,ReconciliationDiffType,ReconciliationService}.java + billing/order/domain/** + billing/order/task/{FulfillOrderTaskHandler,BillingReconciliationTaskHandler,BillingScheduler}.java + billing/order/PaymentCallbackService.java + PaymentCallbackAuthFilter.java | 履约入队重试(DLQ 可重试，支付成功但履约失败订单仍为 paid 不丢单)；对账差异三分类 local_paid_channel_unpaid / local_unpaid_channel_paid / amount_mismatch；回调走 AuthFilter 验签 + 事件ID去重
+22:47:55 | 后端 | 新建订单与支付回调接口 | controller/v1/OrderController.java + controller/v1/PaymentCallbackController.java + controller/v1/admin/BillingAdminController.java + dto/billing/order/OrderDtos.java | 下单(OWNER+幂等键+10次/天限流) / 订单列表分页 / 订单详情 / 支付回调 / 管理端退款与订单列表 / 管理端对账列表
+22:48:26 | 计划 | S4-3 按量计费、价格表、余额与账单生成落地 | billing/pricing/** (4 文件) + billing/balance/** (3 文件) + billing/statement/** (8 文件) + controller/v1/BillingController.java + quota/domain/entity/UsageLedger.java + quota/domain/mapper/UsageLedgerMapper.java + V64__stage4_pricing_statements.sql | 价格表版本化(unit+region+plan_version唯一, 改价不追溯历史) + 8 个 BillableUnit 单价与成本预置 + 余额原子扣减(balance>=amount 条件UPDATE, 并发不出负余额) + 冻结/解冻 + 用量转账单走持久化队列(幂等, 同workspace同周期不重复生成) + 账单明细可回溯 ledger + 毛利聚合(收入-成本)；Flyway v64 success=t
+22:48:27 | 数据库 | 新建价格表、余额与账单迁移 | V64__stage4_pricing_statements.sql | app.price_book + app.workspace_balance + app.billing_statement + app.billing_statement_item 四表落地；usage_ledger 加 unit_price/amount/price_version/statement_id/provider 五列（历史 amount 允许 NULL，不回填）
+22:48:28 | 修复 | 修复账单回挂用量明细的批量参数超限 | quota/domain/mapper/UsageLedgerMapper.java | attachStatementBatch 分批处理，规避 PG 65535 参数上限导致 500
+
+## 2026-10-29 小结
+
+### 阶段4 批次A+B 开发（S4-0 ~ S4-3）
+
+| 子任务 | 状态 | 迁移 | 核心产出 |
+|--------|------|------|----------|
+| S4-0 遗留项清理 | **完成** | V61 | L1 CSV 真实落库 / L2 MinIO 5 分钟预签名 URL / L3 浏览器诚实降级 / L8 api_key workspace_id 归一 |
+| S4-1 套餐与订阅 | **完成** | V62 | 套餐版本化 + 订阅状态机 + 试用/升降级 + 到期降级队列 + OWNER 鉴权 + 幂等 + 跨租户 404 |
+| S4-2 支付抽象与订单 | **主体完成** | V63 | PaymentProvider 抽象 + Mock/支付宝/微信三实现 + 订单状态机 + 回调验签与重放保护 + 履约队列 + 对账任务 |
+| S4-3 计价/余额/账单 | **主体完成** | V64 | 价格表版本化 + 余额原子扣减 + 冻结解冻 + 用量转账单（幂等）+ 明细可回溯 + 毛利聚合 |
+
+### 数据库
+- Flyway 累计 **V61 ~ V64 全部 success=t**（V60-V64 共 5 条连续校验通过）。
+- 新增 9 张阶段4表：subscription_plan、subscription、subscription_order、payment_event、billing_reconciliation、price_book、workspace_balance、billing_statement、billing_statement_item。
+- 预置数据：FREE/PRO/TEAM/USAGE 四档套餐 + 8 个 BillableUnit 单价与成本（region=CN）。
+- 全部迁移均通过**事务内双跑幂等验证**（BEGIN → 连续执行两遍 → ROLLBACK），V61/V62/V63/V64 零报错。
+
+### 代码规模
+- 新增 billing 领域包 8 个：plan、subscription、support、payment、order、pricing、balance、statement，共 **57 个 Java 文件**。
+- 新增接口层 6 个 Controller：PlanCatalogController、SubscriptionController、SubscriptionAdminController、OrderController、PaymentCallbackController、BillingAdminController。
+
+### 本日修复的关键缺陷
+1. **浏览器填充失败状态被事务回滚撤销** —— markFailed 改用 TransactionTemplate + PROPAGATION_REQUIRES_NEW 独立提交，否则「诚实降级」语义失效（调用方看不出失败）。由统筹者复核时发现并修复。
+2. **CSV 导入去重查询失效（P0）** —— selectByDedupeKey 用了恒为 NULL 的 normalized_title 字段，导致去重完全没生效；已改为按真实字段查询并补 workspaceId 租户隔离。
+3. **订阅到期漏扫 past_due 宽限期** —— 新增 selectGraceExpiredCandidates，按 current_period_end + grace_period_days 计算宽限截止。
+4. **订阅过期流转非原子** —— compareAndSetExpired 扩为三态 CAS，重复消费 UPDATE 0 幂等跳过。
+5. **账单回挂用量明细参数超限** —— attachStatementBatch 改 500 条分批，规避 PG 65535 绑定参数上限导致的 500。
+6. **余额入账幂等键缺失** —— reason 补 orderNo 片段使幂等检查可命中。
+7. **cancel/change-plan 幂等键未落库** —— 新增 bindIdempotencyKey 原子绑定。
+
+### 遗留问题与风险
+- **真实支付渠道未联调**：支付宝/微信商户号与证书未落地，渠道实现为骨架，凭据走环境变量，未配置时返回 PAYMENT_PROVIDER_NOT_CONFIGURED；当前仅 Mock 渠道可跑通端到端。
+- **未做接口级 E2E**：S4-0~S4-3 均为编译 + 迁移实测 + 局部数据验证，**尚未跑订单→回调→履约、余额并发扣减、账单幂等的端到端脚本**。
+- **真实浏览器驱动未接入**：NoopBrowserDriver 恒返回不可用，需后续实现 Playwright/Selenium 的 BrowserDriver Bean 覆盖。
+- **价格表为初始建议值**：8 个计量单位的单价与成本为建议值，待业务定稿。
+- **前端未动工**：批次 A+B 全为后端，S4-4~S4-11 的前端页面与 i18n 未开始。
+
+### 下一步
+1. code-reviewer 审查批次 A+B 全部改动（重点：验签绕过、金额精度、余额并发、租户越权、履约丢失）。
+2. 补 S4-2/S4-3 的接口级 E2E 脚本（订单→回调→履约、账单幂等、跨租户越权）。
+3. 更新 STAGE4_STATUS.md checkpoint，并用 scripts/push.ps1 推送。22:59:27 | 修复 | 补齐 4 个 billing Mapper 包的 MapperScan 注册 | XhsAgentYunyingApplication.java | order/pricing/balance/statement 四个 domain.mapper 包未注册导致 PaymentEventMapper 等 Bean 缺失，应用启动直接失败；补齐后应用成功启动
+22:59:28 | 修复 | 修复 NoopBrowserDriver 因误用 ConditionalOnMissingBean 导致 Bean 未注册 | service/browser/NoopBrowserDriver.java | ConditionalOnMissingBean 仅在自动配置类生效，普通 Component 场景条件不执行导致 BrowserDriver Bean 缺失；改为普通 Component 并在注释说明正确做法
+22:59:29 | 验证 | 应用全量启动与 Flyway 校验通过 | XhsAgent-yunying-0.0.1-SNAPSHOT.jar | Started Application 15.63s；Flyway Successfully validated 50 migrations，V61-V64 checksum 无冲突；mvn package EXIT=0
+23:13:26 | 验证 | 支付回调链路实测（鉴权拦截 + 验签 + 审计） | POST /api/v1/payments/callback/mock | 无时间戳→40013 timestamp_missing；无签名→40012 signature_missing；伪造签名→50301 mock_secret_not_configured；三种情况均写 PAYMENT_CALLBACK_REJECTED 审计；修复前该接口一律 401 渠道无法回调
+23:13:43 | 修复 | 修复 Mock 支付渠道硬编码默认密钥导致可伪造回调白嫖订单 | billing/payment/provider/MockPaymentProvider.java | 移除硬编码默认密钥；secret() 未配置 PAYMENT_MOCK_SECRET 时返回 null，验签一律拒绝 50301；configured() 反映真实配置状态；类加 @Profile 非 prod 不在生产注册
+23:13:44 | 修复 | 修复支付回调过滤器 shouldNotFilter 判断反导致回调被 401 挡死 | billing/payment/config/PaymentCallbackAuthFilter.java | 原逻辑在回调路径上跳过过滤器，请求落到 AuthInterceptor 返回 401，渠道永远调不通；改为仅非回调路径跳过；实测无签名无时间戳伪造签名均正确拒绝并写审计
+23:15:51 | 验证 | 全量编码扫描与一次性脚本清理 | scripts/ 与全部新增文件 | 新增 Java/SQL 文件全部 UTF-8 无 BOM，仅 STAGE4_PLAN.md 带 BOM（文档无影响）；已删除 4 个一次性修复脚本，保留可复用 audit 脚本
+23:22:32 | 修复 | 修复余额原子扣减未排除冻结金额导致冻结资金被二次消费 | billing/balance/domain/mapper/WorkspaceBalanceMapper.java + BalanceService.java | atomicDebit 条件由 balance>=amount 改为 balance-frozen>=amount，与 toView 的 available 口径及 atomicFreeze 一致；余额不足报错信息同步改为可用余额；实测旧逻辑 UPDATE 1 导致 available 变负 -30，新逻辑 UPDATE 0 正确拒绝
+23:25:13 | 修复 | 修复账单幂等键未做时区归一导致同周期可能生成两张账单 | billing/statement/StatementService.java + StatementScheduler.java | 幂等键由 OffsetDateTime.toString 改为 toInstant 统一到 UTC；同一时间点用不同偏移表示时旧逻辑生成两个不同键 unique 索引拦不住，新逻辑生成同一个键；实测 OLD equal=false NEW equal=true
+23:26:11 | 验证 | S4-0 遗留项清理全链路实测（L1/L2/L3/L8） | CsvImportService/MediaStorageService/BrowserAssistService/V61 | L1 CSV 资产+选题真实落库 PASS（重复导入 skipped=1 去重生效）；L3 无驱动→STATUS_FAILED + BusinessException 40950 browser_manual_required PASS；L2 local 保持 baseUrl 拼接 + minio 预签名 X-Amz-Expires=300 生成成功 + 端点不可达时 WARN 回退不抛异常 PASS；V61 幂等复跑 EXIT=0，api_key.workspace_id=varchar(32)，3 条 FK 全在
+23:29:34 | 修复 | 修复订阅幂等键绑定与内存状态不一致 | billing/subscription/SubscriptionService.java | bindIdempotencyKey 忽略 UPDATE 受影响行数，行已绑其他键时内存仍被写入导致与 DB 不一致；改为检查 updated==0 跳过内存写入并记 warn
+23:29:35 | 验证 | 阶段四批次A+B全量收口验证 | XhsAgent-yunying-0.0.1-SNAPSHOT.jar | mvn clean package EXIT=0；应用启动成功 16.139s；Flyway validated 50 migrations 且 schema up to date；累计修复 3 个 P0 与 3 个 P1
+21:12:04 | 修复 | 修复 UUID 主键未自赋值导致订阅/订单插入报非空约束 500 | billing/subscription/SubscriptionService.java、billing/order/OrderService.java、billing/order/OrderFulfillmentService.java、billing/payment/PaymentCallbackService.java、billing/balance/BalanceService.java、billing/plan/PlanService.java、billing/pricing/PricingService.java、billing/statement/StatementService.java、billing/order/ReconciliationService.java | 根因：MyBatis-Plus 的 IdType.ASSIGN_UUID 只对 String 主键自动赋值，UUID 主键不填则插入 id=null 触发 null value in column id 违反非空约束；已在 12 处 insert 站点补 setId(UUID.randomUUID())，与本仓库其余实体写法一致
+21:18:52 | 验证 | 重启应用时发现 Docker Desktop 未运行导致连不上 PG | Xhs-Backend/s4k.out | 日志为 Caused by: java.net.ConnectException: Connection refused（5432）；已启动 Docker Desktop 并拉起 xhsagent-postgres-dev / xhsagent-redis-dev，Flyway V61-V64 校验仍为 success=t
+21:24:41 | 修复 | 修复 E2E 脚本回调金额写死 1.00 导致 amount_mismatch | scripts/verify-stage4.ps1 | 服务端 amount_mismatch 校验正确（回调金额必须等于订单真实金额 199.0000），是脚本写死 $amt='1.00'；改为从订单响应读取 orderAmount 再格式化签名金额
+21:26:52 | 修复 | 修复 S4-0 遗留项脚本在 PS7 下丢失错误响应体 | scripts/verify-s4-0-legacy.ps1 | Invoke-Api 的 catch 块只用 GetResponseStream()（PS5.1 专有），PS7 下抛错导致 409 响应体丢失、业务码读成 -1；补 ErrorDetails.Message 回退，服务端实际返回 40950 browser_manual_required 正确
+21:27:30 | 验证 | 阶段四 S4-0~S4-3 接口级 E2E 双脚本全量通过 | scripts/verify-stage4.ps1 + scripts/verify-s4-0-legacy.ps1 | 阶段四脚本 14/14 PASS（健康检查/公开套餐目录免鉴权/套餐详情/支付回调三种非法请求拒绝/登录/订阅查询/订阅幂等重放同 id/订单幂等重放同 orderNo/合法签名回调 200/同事件重放 duplicate/账单列表）；遗留项脚本 15/15 PASS（CSV 资产落库/CSV 选题落库+去重 skipped=1/无驱动降级 40950 + 会话 failed）
+2026-10-30 22:58:28 | 修复 | 修复分析任务配额扣减被跳过（UUID.fromString(ana_xxx) 抛异常） | quota/QuotaRefId.java + infra/taskqueue/handler/AnalysisTaskHandler.java + service/UserQuotaService.java | 新增 QuotaRefId 确定性映射（name-based UUID）；分析用量从此正常写入台账并产生价格快照
+2026-10-30 22:58:28 | 修复 | 修复冲正事务被 usage_log 类型错误中止导致失败任务仍计费 | quota/QuotaRefundService.java + domain/entity/UsageLog.java | 根因 usage_log.id(bigint) 与 usage_ledger.ref_id(uuid) 混用触发 bigint = character varying，PG 事务 aborted 致冲正回滚；改为按 original_log_id 反查台账 id，legacy 更新独立 REQUIRES_NEW 事务
+2026-10-30 22:58:28 | 修复 | 修复冲正缺 -1 对冲台账行导致账单仍计失败任务费用 | quota/QuotaRefundService.java | 冲正时另写一行 delta=-1、related_log_id 指向原始行的台账；出账/成本聚合加 status='CONSUMED' 过滤，被冲正行不进账单
+2026-10-30 22:58:28 | 数据库 | 新建台账幂等去重键迁移 | V65__stage4_ledger_dedupe_key.sql | usage_ledger 加 dedupe_key 列 + 部分唯一索引 (workspace_id, dedupe_key) WHERE status='CONSUMED'；历史重复扣费行自愈冲正
+2026-10-30 22:58:28 | 修复 | 修复任务重试/孤儿恢复导致同一任务重复扣费 | quota/AtomicQuotaGuard.java + quota/domain/mapper/UsageLedgerMapper.java | 新增 tryConsumeIdempotent + ON CONFLICT DO NOTHING 幂等插入（避免 PG 事务 aborted）；CHAT 等多次计费场景保留非幂等 tryConsume
+2026-10-30 22:58:28 | 后端 | 台账实体补 dedupeKey 字段并扩展 usage_log 退费字段映射 | quota/domain/entity/UsageLedger.java + domain/entity/UsageLog.java | dedupeKey 参与唯一索引；UsageLog 补 refundStatus/refundedAt/originalLogId
+2026-10-30 22:58:28 | 验证 | 配额相关单元测试全绿 | AtomicQuotaGuardTest(17) + QuotaRefundServiceTest(8) + QuotaRefIdTest(9) | Tests run 34, Failures 0, Errors 0；新增幂等重放/唯一冲突回补/冲正对冲行 4 个回归用例
+2026-10-31 00:25:55 | 修复 | 修复审核发现的 P0 缺陷组（套餐订阅/升配绕过/余额充值/审计落库） | billing/subscription/SubscriptionService.java + billing/order/OrderFulfillmentService.java + domain/entity/AuditEvent.java + infra/audit/AuditWriter.java | P0-1 付费套餐直订阅绕过（改为 409 payment_required_create_order）；P0-2 用量充值订单未入余额（改为走 creditBalance）；P0-3 audit_event.id 为 UUID 而实体用 String 导致审计事件写不进库（改 UUID + 手动赋值）
+2026-10-31 00:25:55 | 修复 | 修复 PG 事务 aborted 导致幂等重放 500 | billing/support/IdempotencyReplay.java + billing/order/OrderService.java + billing/subscription/SubscriptionService.java + billing/plan/PlanService.java + billing/statement/StatementService.java | 捕获 DuplicateKeyException 后当前事务已 aborted，改用 PROPAGATION_REQUIRES_NEW 独立事务读回既有实体做幂等重放
+2026-10-31 00:25:55 | 修复 | 修复付费升配绕过支付 | billing/subscription/SubscriptionService.java | changePlan 计算按比例补差价，金额>0 时返回 409 payment_required_create_order，禁止直接切换到高价套餐
+2026-10-31 00:25:55 | 修复 | 补齐缺失的账单与余额 HTTP 接口 | controller/v1/BillingController.java | 新增 GET /v1/workspaces/{id}/billing/balance、chargeStatement、voidStatement 三个端点
+2026-10-31 00:25:55 | 修复 | 修复出账冲正/支付事件拒收在独立事务中回滚 | billing/statement/StatementService.java + billing/payment/PaymentCallbackService.java | rollbackChargingToOpen 与 markEventRejected 改为 PROPAGATION_REQUIRES_NEW
+2026-10-31 00:25:55 | 修复 | 新增未履约订单重投定时任务 | billing/scheduler/BillingScheduler.java | requeueUnfulfilledOrders 扫描 pending 超时订单重新入队，避免履约链路静默丢失
+2026-10-31 00:25:55 | 修复 | 修复 MyBatis-Plus autoResultMap 只对内置方法生效导致自定义 @Select 的 jsonb 列静默变 null（系统性 P0） | config/MybatisPlusConfig.java + config/mybatis/PgListTypeHandler.java | 根因：自定义 @Select 走 MyBatis 原生自动映射路径，按（属性类型 + 列 JDBC 类型）查全局注册表，而 jsonb 处理器只写在 @TableField 上未进注册表；注册 (Map/String/List, JdbcType.OTHER) 全局处理器后，/v1/plans 的 includedUnits+featureFlags 与 /subscription 的 planCode+price 从 null 恢复为真实值
+2026-10-31 00:25:55 | 修复 | 新增 PgListTypeHandler 兼容 TEXT[] 与 jsonb 两种 List 列 | config/mybatis/PgListTypeHandler.java | 只注册 jsonb 版会让 TEXT[] 列（app.topic_pool.tags）被 MyBatis pickSoleHandler 回退命中而报 Failed to parse jsonb array；改为按结果集元数据真实列类型运行时分派
+2026-10-31 00:25:55 | 修复 | 修复 UsageLedger.priceVersion 类型不匹配导致编译失败 | billing/statement/StatementService.java | priceVersion 为 Integer，代码按 String 使用；改为 String.valueOf 转换
+2026-10-31 00:25:55 | 验证 | 阶段四三个验证套件全量通过 | scripts/verify-stage4-fixes.ps1 + scripts/verify-stage4.ps1 + scripts/verify-s4-0-legacy.ps1 | 修复套件 5/5 PASS（含 P0-1/P0-2/P0-3/P1-1/P1-2）；E2E 主流程 13/13 PASS；S4-0 遗留回归 15/15 PASS
+2026-10-31 00:25:55 | 验证 | 后端全量单元测试通过 | Xhs-Backend/target/surefire-reports | Tests run 207, Failures 0, Errors 1；唯一 error 为 XhsAgentYunyingApplicationTests 的 Testcontainers ryuk 镜像拉取失败（环境网络问题，与本次改动无关）

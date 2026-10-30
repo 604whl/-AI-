@@ -89,6 +89,35 @@ public class TopicPoolServiceImpl implements TopicPoolService {
 
     @Override
     @Transactional
+    public TopicDto createInternal(String workspaceId, Long userId, TopicCreateRequest req) {
+        String normalizedTitle = TopicDedupeKey.normalize(req.getTitle());
+        String source = req.getSource() != null ? req.getSource().trim() : "";
+        TopicPool existing = topicMapper.selectByDedupeKey(workspaceId, source, normalizedTitle);
+        if (existing != null) {
+            // 批量导入场景：重复视为「跳过」，不抛异常
+            return null;
+        }
+
+        TopicPool topic = new TopicPool();
+        topic.setWorkspaceId(workspaceId);
+        topic.setTitle(req.getTitle().trim());
+        topic.setSource(source);
+        topic.setHeatScore(req.getHeatScore() != null ? req.getHeatScore() : 0);
+        topic.setTags(req.getTags());
+        topic.setTargetPersona(req.getTargetPersona());
+        topic.setScheduledDate(req.getScheduledDate());
+        topic.setStatus(TopicPool.STATUS_ACTIVE);
+        topic.setCreatedBy(userId);
+        topic.setCreatedAt(OffsetDateTime.now());
+        topic.setUpdatedAt(OffsetDateTime.now());
+        topicMapper.insert(topic);
+
+        log.info("Topic {} created (internal) by user {} in workspace {}", topic.getId(), userId, workspaceId);
+        return toDto(topic);
+    }
+
+    @Override
+    @Transactional
     public TopicDto update(Long topicId, String workspaceId, TopicUpdateRequest req) {
         TopicPool topic = requireOwnedTopic(topicId, workspaceId);
 

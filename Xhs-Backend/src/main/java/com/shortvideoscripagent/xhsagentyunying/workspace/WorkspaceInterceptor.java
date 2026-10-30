@@ -62,6 +62,9 @@ public class WorkspaceInterceptor implements HandlerInterceptor {
             new PathMethodRule("/webjars/",         Set.of("GET", "HEAD")),
             new PathMethodRule("/mcp",              Set.of("GET", "HEAD")),
             new PathMethodRule("/v1/platform/",     Set.of("GET", "POST", "PUT", "DELETE", "PATCH")),
+            // S4-1 套餐目录：公开只读（阶段四接口契约权限为「全部」）。
+            // 未登录用户要在定价页看到套餐与价格，故豁免工作区上下文注入。
+            new PathMethodRule("/v1/plans",         Set.of("GET", "HEAD")),
             // 封面下载 GET /v1/files/cover/{objectKey} 豁免，POST /v1/files/cover（上传）需要 workspace 注入
             new PathMethodRule("/v1/files/cover/", Set.of("GET", "HEAD"))
     );
