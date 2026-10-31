@@ -286,3 +286,32 @@
 21:12:00 | 验证 | 新建 S4-4 端到端验证脚本 | scripts/verify-s4-4-refund-invoice.ps1 | 覆盖订单→支付回调→退款申请→管理端审核→开票→签名下载→红冲，共 26 项断言
 21:15:20 | 验证 | 后端重启（local profile + PAYMENT_MOCK_SECRET） | Xhs-Backend/target/XhsAgent-yunying-0.0.1-SNAPSHOT.jar | 端口 8125，Flyway V67 已应用
 21:16:30 | 修复 | 修复启动失败：application-prod.yml 内含 spring.profiles.active 非法导入 | src/main/resources/application-prod.yml | 未设 SPRING_PROFILES_ACTIVE 时默认 prod 触发 InvalidConfigDataPropertyException；本地验证统一用 SPRING_PROFILES_ACTIVE=local
+21:38:00 | 修复 | 修复发票 PDF 字体兜底分支未处理 IOException | billing/invoice/InvoicePdfGenerator.java | resolveCjkFont 的 catch 分支直接调 BaseFont.createFont（抛 IOException）未处理；打包产物由 Eclipse JDT 编译，编译错误被烘焙进字节码，运行时炸成 Unresolved compilation problem，开票接口 500；已显式 catch IOException | DocumentException 并抛 invoice_pdf_font_unavailable
+21:39:10 | 修复 | 修复红冲后原发票状态被旧快照覆盖回 issued | billing/invoice/InvoiceService.java | compareAndSetRedFlushed 已同时落 status + red_flush_invoice_id，后续再用 status='issued' 的旧快照 updateById 会把 red_flushed 覆盖回 issued（原票看起来没被红冲）；已删除该 updateById，改为同步内存对象
+21:39:45 | 修复 | 修复管理端手动红冲不依赖 orderId | billing/invoice/InvoiceService.java | 抽出 doRedFlush(origin,...) 核心，redFlushByOrder 与 redFlush 共用；原实现走 redFlushByOrder(origin.getOrderId())，按账单开票的发票 orderId 为 null 导致永远红冲不了
+21:40:30 | 测试 | 新增回归测试锁死两个 P0 | billing/invoice/InvoicePdfGeneratorTest.java (3 例) + InvoiceServiceTest.java (+2 例) | PDF 头 %PDF- / 尾 %%EOF 断言；红冲不得用旧快照回写；手动红冲不依赖 orderId；S4-4 单测 33/33 PASS
+21:41:20 | 验证 | S4-4 端到端复验全绿 | scripts/verify-s4-4-refund-invoice.ps1 | 26/26 PASS（订单幂等/回调去重/退款幂等/超额拒绝/租户隔离 404/审核幂等/企业票缺税号 400/重复开票 409/签名下载 200/篡改签名 403/过期签名 403/红冲 red_flushed）
+21:42:30 | 验证 | 全量单测回归 | mvn -o test | Tests run 267, Failures 0, Errors 1；唯一 error 仍是 XhsAgentYunyingApplicationTests 的 Testcontainers ryuk:0.12.0 镜像拉取失败（环境网络问题，与本次改动无关）
+21:43:10 | 修复 | 修复 pre-commit 密钥扫描脚本在 Windows 下抛 UnicodeDecodeError | scripts/pre-commit-secret-check.py | git show 的输出按 GBK 解码遇中文注释报错，r.stdout 变 None 导致 AttributeError；已显式 encoding='utf-8' + errors='replace'
+21:44:00 | 计划 | 更新阶段4 checkpoint | STAGE4_STATUS.md | 新增「S4-4 退款 + 发票 收口」章节：交付范围 / 12 个接口 / 4 个实测缺陷 / 验证结论表 / 数据库侧复核 / 遗留 / 下一步；子任务表 S4-4 标记完成
+21:45:10 | 提交 | 提交 S4-4 退款 + 发票 | commit aba8c62 | 21 个文件；含 V67 迁移 + 退款域 3 类 + 发票域 7 类 + 3 个 Controller + 2 个 DTO + 3 个测试类 + E2E 脚本；修复 3 个真实缺陷（S4-4-P0-1/P0-2/P1-1）
+21:45:30 | 提交 | 推送远程并回读校验 | refs/heads/xhs_agent | 推送成功 5a86bd3..aba8c62；远程 HEAD aba8c62d92a44d49683348961abfaf0ec34f018f 与本地一致
+
+## 2026-10-31 小结
+
+### 产出
+- S4-4 退款 + 发票完整交付：V67 迁移（app.refund_order + app.invoice）、退款域（申请→审核→渠道退款→权益冲正→发票红冲）、发票域（开票→PDF→HMAC 签名下载→红冲）、12 个接口、33 个单元测试、26 项 E2E 断言
+- 修复 3 个 E2E 实测暴露的真实缺陷（2 个 P0 + 1 个 P1）：PDF 字体兜底分支 IOException、红冲状态被旧快照覆盖回 issued、管理端手动红冲依赖 orderId
+- 新增 scripts/verify-s4-4-refund-invoice.ps1（可重复执行，自动清理 Redis 限流计数）
+
+### 验证
+- scripts/verify-s4-4-refund-invoice.ps1 → 26/26 PASS
+- S4-4 单测 → 33/33 PASS；mvn -o test 全量 267 例 → Failures 0, Errors 1
+- Flyway alidated 53 migrations，V67 success=t；PDF 实产物 %PDF-1.5 / %%EOF + 内嵌 STSong-Light CJK 字体
+
+### 遗留
+- S4-4 前端页面 + i18n 未开始（阶段四目前全为后端）
+- 真实支付渠道未联通（支付宝/微信商户号与证书未落地，仅 Mock 可端到端）
+- 部分退款（金额 ≠ 原票）不自动红冲，交财务人工处理
+- Testcontainers yuk:0.12.0 镜像拉取失败（环境网络问题），致 XhsAgentYunyingApplicationTests 1 例 error
+- 真实浏览器驱动未接入（NoopBrowserDriver 恒返回不可用）
