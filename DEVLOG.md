@@ -262,6 +262,27 @@
 01:47:54 | 验证 | 三套 E2E 复验全绿 | scripts/verify-stage4.ps1 + scripts/verify-stage4-fixes.ps1 + scripts/verify-s4-0-legacy.ps1 | 14/14 PASS + 5/5 PASS + 15/15 PASS
 01:47:54 | 修复 | 修复本地 E2E 启动脚本环境变量传递缺陷 | Xhs-Backend/target/run-local.cmd | cmd set X=val && 会把分隔空格并入值导致 Mock 回调验签失败；改为 set "X=val" + ANSI 编码 .cmd 启动器；需 SPRING_PROFILES_ACTIVE=local
 
-2026-10-31 01:52:00 | 计划 | 生成阶段5验收基线与开发计划（运营决策闭环与功能商业化） | STAGE5_PLAN.md | 647 行；8 个子能力（S5-0 功能开关鉴权 / S5-1 流量来源维度 / S5-2 人群洞察 / S5-3 投流策略助手 / S5-4 运营工作台 / S5-5 席位与计价 / S5-6 BYOK / S5-7 管理端补齐）+ 6 张新表 + 19 个接口契约 + D13-D22 未冻结决策 + R-S5-1~11 风险矩阵 + E1-E12 出口条件；用户已拍板：投流仅策略助手不执行、人群画像仅自有数据反推并标注可信度02:00:10 | 提交 | 提交审核遗留修复批次 | 12 个文件（OrderService/ReconciliationService/SubscriptionService/SubscriptionAdminController + V66 + 3 个测试类） | commit 5a86bd3，1262 insertions / 78 deletions
+2026-10-31 01:52:00 | 计划 | 生成阶段5验收基线与开发计划（运营决策闭环与功能商业化） | STAGE5_PLAN.md | 647 行；8 个子能力（S5-0 功能开关鉴权 / S5-1 流量来源维度 / S5-2 人群洞察 / S5-3 投流策略助手 / S5-4 运营工作台 / S5-5 席位与计价 / S5-6 BYOK / S5-7 管理端补齐）+ 6 张新表 + 19 个接口契约 + D13-D22 未冻结决策 + R-S5-1~11 风险矩阵 + E1-E12 出口条件；用户已拍板：投流仅策略助手不执行、人群画像仅自有数据反推并标注可信度
+
+02:00:10 | 提交 | 提交审核遗留修复批次 | 12 个文件（OrderService/ReconciliationService/SubscriptionService/SubscriptionAdminController + V66 + 3 个测试类） | commit 5a86bd3，1262 insertions / 78 deletions
 02:00:10 | 修复 | 修复 GitHub 推送不可达（DNS 污染导致 github.com 解析到被墙 IP） | scripts/push.ps1 推送链路 | github.com 解析到 20.205.243.166 无法连接，api.github.com 正常；改用 git -c http.curloptResolve=github.com:443:140.82.114.3 固定可达 IP 直连推送成功
 02:00:10 | 验证 | 推送后回读远程 HEAD 校验 | refs/heads/xhs_agent | 远程 5a86bd3623688c6ac6eb773de8dad549207a1899 与本地 HEAD 一致
+2026-10-31 02:35:10 | 决策 | 冻结商业模式：暂不开通收费（资质周期长）→ 现阶段全功能免费无限量 + 保留 BYOK；预留收费结构并采用「模式开关」切换 | STAGE5_PLAN.md §0.1 + §6.1（D23-D29） | 用户拍板；冻结项 D23 现阶段不收费 / D24 结构化预留+模式开关 / D25 阶段5开工建 feature/monetization-gating 分支 / D26 不限配额 / D27 台账 amount=0 照写 / D28 BYOK 保留+平台Key兜底 / D29 合并分支+改数据+翻开关
+2026-10-31 02:36:40 | 计划 | 新建商业化预留方案文档 | STAGE5_MONETIZATION_RESERVE.md | 462 行 15 章；8 件预留物（R-1 能力门骨架 / R-2 模式开关 / R-3 FREE套餐种子 / R-4 计量台账口径 / R-5 席位模型 / R-6 BYOK / R-7 收费分支 / R-8 接口×开关矩阵）；含现状代码事实核对、切换手册、回滚预案、Q1-Q10 待确认项
+2026-10-31 02:41:15 | 计划 | 修订阶段5主计划：补商业化策略章节、分支切换手册、预留索引，批次重排为 B0-B8 | STAGE5_PLAN.md | 653 → 793 行；新增 §0.1 商业化策略、§6.1 商业模式冻结项 D23-D29、§9.1 收费分支与切换手册、§12 预留索引 + 12.1 批次重排；修正 E1/E13-E16 出口条件（原 E1 与免费期矛盾，已改为「免费期无403」口径）；§2.2/§2.3 补 L14-L16
+2026-10-31 02:42:30 | 决策 | 批次顺序调整：预留三件套前置 | STAGE5_PLAN.md §9 + §12.1 | B0 门+数据 / B1 计量 / B2 BYOK 为预留与真实功能核心，B2 完成即具备开收条件；B3-B7 业务功能；B8 收费分支+矩阵终审
+
+2026-10-31 20:40:15 | 数据库 | 新建退款单 + 发票表迁移 | Xhs-Backend/src/main/resources/db/migration/V67__stage4_refund_invoice.sql | app.refund_order + app.invoice，含 3+4 唯一索引、CHECK 约束、FK；已在本地 PG 实测通过且可重复执行（幂等）
+2026-10-31 20:42:30 | 后端 | 新建退款/发票域实体与 Mapper | billing/refund/domain/{entity,mapper}/RefundOrder*.java + billing/invoice/domain/{entity,mapper}/Invoice*.java | 条件更新 CAS 保证状态机幂等；新增 selectByIdempotencyKeyOnly（幂等重放不依赖订单查询）
+2026-10-31 20:44:10 | 后端 | 引入 OpenPDF 依赖用于发票 PDF 生成 | Xhs-Backend/pom.xml | com.github.librepdf:openpdf:2.0.3（内置 STSong-Light CJK 字体，无需外部字体文件）
+2026-10-31 20:47:00 | 后端 | 实现退款服务（含渠道退款 + 权益冲正） | billing/refund/RefundService.java | 申请(OWNER/3次每天/幂等)→审核→事务外调 provider.refund→approved→refunded→余额回补/订阅取消+降级；回调按 provider_refund_id 幂等
+2026-10-31 20:50:30 | 后端 | 实现发票服务（开票 + 红冲 + 签名下载） | billing/invoice/InvoiceService.java + InvoicePdfGenerator.java + InvoiceStorageService.java + InvoiceDownloadSigner.java | 仅个人/企业普票；红冲新增 red 记录不删原票；下载链接 HMAC 签名 5 分钟过期
+2026-10-31 20:53:15 | 后端 | 注册新 Mapper 包 | XhsAgentYunyingApplication.java | @MapperScan 增加 billing.refund.domain.mapper + billing.invoice.domain.mapper
+2026-10-31 20:55:40 | 后端 | 新增退款/发票 Controller | controller/v1/{RefundController,InvoiceController}.java + controller/v1/admin/RefundInvoiceAdminController.java | 工作区侧申请/列表/下载票据 + 管理端审核/开票/红冲
+2026-10-31 20:57:20 | 后端 | 新增台账查询方法支撑退款冲正 | quota/domain/mapper/UsageLedgerMapper.java | selectUnbilledByWorkspace：只冲正未出账行，已出账账单不可追溯改写
+2026-10-31 21:00:30 | 验证 | 新增 S4-4 单元测试 | billing/refund/RefundServiceTest.java (15 例) + billing/invoice/InvoiceServiceTest.java (13 例) | 28/28 PASS，覆盖幂等/超额/权益冲正/红冲/签名下载
+2026-10-31 21:05:50 | 验证 | 全量单测回归 | mvn -o test | 262 例 0 失败；唯一 Error 为 XhsAgentYunyingApplicationTests 的 testcontainers ryuk 镜像拉取失败（网络/基建问题，与本次改动无关）
+2026-10-31 21:08:00 | 修复 | 修复幂等重放依赖订单查询的缺陷 | billing/invoice/InvoiceService.java | 幂等键回读前置到订单查询之前，订单状态变化后重放不再误报 409
+21:12:00 | 验证 | 新建 S4-4 端到端验证脚本 | scripts/verify-s4-4-refund-invoice.ps1 | 覆盖订单→支付回调→退款申请→管理端审核→开票→签名下载→红冲，共 26 项断言
+21:15:20 | 验证 | 后端重启（local profile + PAYMENT_MOCK_SECRET） | Xhs-Backend/target/XhsAgent-yunying-0.0.1-SNAPSHOT.jar | 端口 8125，Flyway V67 已应用
+21:16:30 | 修复 | 修复启动失败：application-prod.yml 内含 spring.profiles.active 非法导入 | src/main/resources/application-prod.yml | 未设 SPRING_PROFILES_ACTIVE 时默认 prod 触发 InvalidConfigDataPropertyException；本地验证统一用 SPRING_PROFILES_ACTIVE=local

@@ -267,6 +267,26 @@ public interface UsageLedgerMapper extends BaseMapper<UsageLedger> {
                                       @Param("to") OffsetDateTime to);
 
     /**
+     * 查出某工作区尚未出账（{@code statement_id IS NULL}）且仍然生效的台账行。
+     * <p>
+     * <b>用途</b>：S4-4 退款成功后冲正该工作区未出账的扣费行。
+     * 已出账的扣费属于历史账单（不可变凭证），<b>不追溯改写</b>。
+     * </p>
+     */
+    @Select("""
+            SELECT * FROM app.usage_ledger
+            WHERE workspace_id = CAST(#{workspaceId} AS VARCHAR)
+              AND statement_id IS NULL
+              AND amount IS NOT NULL
+              AND status = 'CONSUMED'
+              AND action <> 'BALANCE'
+            ORDER BY created_at ASC, id ASC
+            LIMIT #{limit}
+            """)
+    List<UsageLedger> selectUnbilledByWorkspace(@Param("workspaceId") String workspaceId,
+                                                 @Param("limit") int limit);
+
+    /**
      * 按工作区 + 计量单位聚合某时间段的用量（数量、收入、成本）。
      * <p>
      * 成本侧按 {@code price_version} 回查 {@code app.price_book.cost_per_unit}，

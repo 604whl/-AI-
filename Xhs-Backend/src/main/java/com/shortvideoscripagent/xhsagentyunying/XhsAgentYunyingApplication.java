@@ -17,6 +17,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         "com.shortvideoscripagent.xhsagentyunying.billing.pricing.domain.mapper",
         "com.shortvideoscripagent.xhsagentyunying.billing.balance.domain.mapper",
         "com.shortvideoscripagent.xhsagentyunying.billing.statement.domain.mapper",
+        // S4-4 退款 / 发票 Mapper
+        "com.shortvideoscripagent.xhsagentyunying.billing.refund.domain.mapper",
+        "com.shortvideoscripagent.xhsagentyunying.billing.invoice.domain.mapper",
         "com.shortvideoscripagent.xhsagentyunying.freeze"
 })
 @EnableScheduling

@@ -17,6 +17,8 @@
 
 **本次开发范围**：批次 A + B = **S4-0 / S4-1 / S4-2 / S4-3**（S4-4~S4-11 留待下一轮）。
 
+> **2026-10-31 更新**：S4-4（退款 + 发票）已完成并收口，详见本文末「S4-4 退款 + 发票 收口」。
+
 ## 环境状态
 
 - Docker Desktop 29.5.2 已启动
@@ -33,7 +35,8 @@
 | S4-1 | 套餐与订阅 | V62 | **完成** | dev-B |
 | S4-2 | 支付抽象与订单 | V63 | **完成**（报告因平台错误丢失，代码已编译+启动验证） | dev-C |
 | S4-3 | 计价、价格表、余额、账单 | V64 | **完成** | dev-D |
-| S4-4~S4-11 | 退款发票/对账/后台/开放平台/门户/通知/压测/高可用 | V65-V69 | 本轮不做 | — |
+| S4-4 | 退款 + 发票 | V67 | **完成**（2026-10-31 收口，E2E 26/26） | dev-E |
+| S4-5~S4-11 | 对账/后台/开放平台/门户/通知/压测/高可用 | V68+ | 本轮不做 | — |
 
 ## 文件所有权（避免并行冲突）
 
@@ -259,3 +262,85 @@ GET /v1/.../subscription  → planCode=PRO, price=199.0000, planVersion=1
 2. S4-5~S4-11：后台运营 / 开放平台 / 用户门户 / 通知 / 压测 / 高可用
 3. 前端计费页面 + i18n 补齐（阶段四目前全为后端）
 4. 真实支付渠道对接（需商户号 + 证书，依赖外部资源，需用户协调）
+
+## S4-4 退款 + 发票 收口（2026-10-31 21:40）
+
+### 交付范围
+- **退款**（`app.refund_order`）：用户申请（OWNER / 3 次每天每工作区 / 幂等键）→ 平台管理员审核 → **事务外**调 `provider.refund()` → 渠道确认 → 额度 / 余额冲正 →（已开票）发票红冲
+- **发票**（`app.invoice`）：D10 仅个人普票 + 企业普票；开票 → PDF 生成 → HMAC 签名下载（5 分钟过期）；红冲用 `status='red_flushed'` + `status='red'` 双记录，**原票不物理删除**
+- **P2-1 事务边界**：审核通过拆三段 —— 事务1 CAS `pending→approved` → **事务外** HTTP 调渠道 → 事务2 CAS `approved→refunded` + 权益冲正
+
+### 接口
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/v1/workspaces/{ws}/refunds` | 申请退款（OWNER，幂等） |
+| GET | `/v1/workspaces/{ws}/refunds` | 退款列表（OWNER/ADMIN） |
+| GET | `/v1/workspaces/{ws}/refunds/{refundNo}` | 退款详情（跨工作区 404） |
+| GET | `/v1/workspaces/{ws}/invoices` | 发票列表 |
+| GET | `/v1/workspaces/{ws}/invoices/{id}/download-ticket` | 签名下载票据（TTL 300s） |
+| GET | `/v1/workspaces/{ws}/invoices/{id}/pdf` | PDF 下载（校验 HMAC 签名 + 过期时间） |
+| GET | `/v1/platform/admin/refunds` | 退款列表（平台管理员） |
+| POST | `/v1/platform/admin/refunds/{refundNo}/approve` | 审核通过 → 渠道退款 → 权益冲正 |
+| POST | `/v1/platform/admin/refunds/{refundNo}/reject` | 审核驳回 |
+| POST | `/v1/platform/admin/invoices` | 开具发票（幂等键） |
+| GET | `/v1/platform/admin/invoices` | 发票列表（平台管理员） |
+| POST | `/v1/platform/admin/invoices/{id}/red-flush` | 手动红冲 |
+
+### 本轮修复的真实缺陷（E2E 实测暴露，非推测）
+
+| 编号 | 缺陷 | 影响 | 修复 |
+|---|---|---|---|
+| **S4-4-P0-1** | `InvoicePdfGenerator.resolveCjkFont()` 的兜底分支在 `catch` 里直接调 `BaseFont.createFont(...)`（抛 `IOException`）而未处理 | CJK 字体不可用时抛 `Unresolved compilation problem: Unhandled exception type IOException`，**开票接口 500** | 兜底分支显式 catch `IOException \| DocumentException`，失败抛 `invoice_pdf_font_unavailable` |
+| **S4-4-P0-2** | 红冲后用 `status='issued'` 的**旧快照** `updateById(origin)` 回写，把 DB 里已改的 `red_flushed` 覆盖回 `issued` | 红冲后原票状态回滚，**看起来没被红冲** | 删除该 `updateById`，`compareAndSetRedFlushed` 已同时落 `status` 与 `red_flush_invoice_id`；内存对象同步即可 |
+| **S4-4-P1-1** | 管理端手动红冲走 `redFlushByOrder(origin.getOrderId(), ...)` | **按账单开票的发票 `orderId` 为 null → 永远红冲不了** | 抽出 `doRedFlush(origin, ...)` 核心，两条路径共用 |
+| S4-4-P1-2 | `application-prod.yml` 内含 `spring.profiles.active` | 未设 `SPRING_PROFILES_ACTIVE` 时默认 `prod` → 启动即 `InvalidConfigDataPropertyException` | 本地验证统一 `SPRING_PROFILES_ACTIVE=local`（属既有设计，不改代码） |
+
+> **S4-4-P0-1 的隐蔽性**：打包产物是用 Eclipse JDT 编译的（javac 只报 warning），
+> 编译错误被**烘焙进字节码**，运行时才炸成 `java.lang.Error: Unresolved compilation problem`。
+> 已补 `InvoicePdfGeneratorTest`（3 例）锁死 PDF 头 `%PDF-` / 尾 `%%EOF`。
+
+### 验证结论（2026-10-31 21:40）
+
+| 套件 | 结果 |
+|---|---|
+| `scripts/verify-s4-4-refund-invoice.ps1` | **26/26 PASS** |
+| `RefundServiceTest` | 15/15 PASS |
+| `InvoiceServiceTest` | 15/15 PASS（含 2 例新回归） |
+| `InvoicePdfGeneratorTest` | 3/3 PASS（新增） |
+| S4-4 单测合计 | **33/33 PASS** |
+| `mvn -o test` 全量 | **Tests run 267, Failures 0, Errors 1** |
+| Flyway | `validated 53 migrations`，**V67 success=t** |
+| PDF 实产物 | `%PDF-1.5` 头 + `%%EOF` 尾，内嵌 `STSong-Light` / `UniGB-UCS2-H` CJK 字体 |
+
+> 全量唯一 error 仍是 `XhsAgentYunyingApplicationTests` 的 Testcontainers `ryuk:0.12.0`
+> 镜像拉取失败 —— **环境网络问题，与本次改动无关**（与批次 A+B 收口时同一现象）。
+
+### 退款 / 发票链路实测（数据库侧复核）
+
+| 验证点 | 实测结果 |
+|---|---|
+| 退款单落库 | `refund_no=RFmvwg04i5G3H5` / `amount=199.0000` / `status=refunded` / `provider_refund_id=MOCK-...-RF` |
+| 权益冲正 | 审核通过后 `entitlementReversed=true`（订阅取消 + 降级额度） |
+| 渠道幂等 | 同 `event_id` 重放 → `result=duplicate` |
+| 退款幂等 | 同幂等键重放 → 同一 `refund_no` |
+| 超额退款 | `40016 refund_amount_exceeds_order` |
+| 租户隔离 | 跨工作区查退款单 → **404** |
+| 发票落库 | `invoice_no=INV20261000000562L` / `amount=199.0000` / `tax_amount=11.2642` / `tax_rate=0.0600` |
+| 税额公式 | 价税合计 × 税率 ÷ (1+税率) = 199 × 0.06 ÷ 1.06 = 11.2642 ✓ |
+| 企业票缺税号 | `40017 tax_no_required_for_company_invoice` |
+| 重复开票 | `40917 order_already_invoiced` |
+| 签名下载 | 票据 TTL **300s**；正确签名 200 / 篡改签名 **403** / 过期签名 **403** |
+| 红冲 | 原票 `status=red_flushed` + `red_flush_invoice_id` 指向红票；红票 `status=red` |
+
+### 当前遗留
+
+- **前端未动工**：S4-4 退款 / 发票只有后端，前端页面与 i18n 仍待补
+- **真实支付渠道未联通**：支付宝 / 微信商户号与证书未落地，仅 Mock 渠道可端到端
+- **部分退款不自动红冲**：退款金额 ≠ 原票金额时跳过自动红冲，交财务人工处理（避免冲减金额错误），已在审计日志留 `INVOICE_RED_FLUSH_SKIPPED`
+- **真实浏览器驱动未接入**：`NoopBrowserDriver` 恒返回不可用
+- **Testcontainers ryuk 镜像拉取失败**：环境网络问题，致 `XhsAgentYunyingApplicationTests` 1 例 error
+
+### 下一步
+1. S4-5~S4-11：后台运营 / 开放平台 / 用户门户 / 通知 / 压测 / 高可用
+2. 前端计费页面 + i18n 补齐（阶段四目前全为后端）
+3. 真实支付渠道对接（需商户号 + 证书，依赖外部资源，需用户协调）

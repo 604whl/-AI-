@@ -9,14 +9,15 @@ SECRET_PATTERNS = [
 BLOCK_EXTENSIONS = ['.java', '.kt', '.py', '.js', '.ts', '.go', '.rb', '.php', '.cs', '.md', '.yml', '.yaml', '.json', '.properties', '.env']
 
 def get_staged_files():
-    r = subprocess.run(['git', 'diff', '--cached', '--name-only'], capture_output=True, text=True)
+    r = subprocess.run(['git', 'diff', '--cached', '--name-only'], capture_output=True, text=True, encoding='utf-8', errors='replace')
     return [f.strip() for f in r.stdout.strip().split('\n') if f.strip()]
 
 def check_file(filepath):
     if not any(filepath.endswith(ext) for ext in BLOCK_EXTENSIONS):
         return []
-    r = subprocess.run(['git', 'show', f':{filepath}'], capture_output=True, text=True)
-    if r.returncode != 0:
+    # 仓库内文件一律 UTF-8；Windows 默认 GBK 会因中文注释抛 UnicodeDecodeError
+    r = subprocess.run(['git', 'show', f':{filepath}'], capture_output=True, text=True, encoding='utf-8', errors='replace')
+    if r.returncode != 0 or r.stdout is None:
         return []
     matches = []
     for i, line in enumerate(r.stdout.split('\n'), 1):

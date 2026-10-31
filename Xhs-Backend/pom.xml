@@ -84,6 +84,12 @@
             <artifactId>minio</artifactId>
             <version>8.5.17</version>
         </dependency>
+        <!-- OpenPDF：发票 PDF 生成（内置 CJK 字体，无需外部字体文件） -->
+        <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+            <version>2.0.3</version>
+        </dependency>
         <!-- Apache POI for DOCX export -->
         <dependency>
             <groupId>org.apache.poi</groupId>
